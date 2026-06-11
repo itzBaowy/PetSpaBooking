@@ -1,4 +1,4 @@
-import { create } from 'zustand';
+import { create } from "zustand";
 
 interface FilterState {
   searchQuery: string;
@@ -11,11 +11,11 @@ interface FilterState {
 }
 
 export const useFilterStore = create<FilterState>((set) => ({
-  searchQuery: '',
-  sortBy: 'recent',
+  searchQuery: "",
+  sortBy: "recent",
   filters: {},
   setSearchQuery: (query) => set({ searchQuery: query }),
   setSortBy: (sort) => set({ sortBy: sort }),
   setFilters: (filters) => set({ filters }),
-  reset: () => set({ searchQuery: '', sortBy: 'recent', filters: {} }),
+  reset: () => set({ searchQuery: "", sortBy: "recent", filters: {} }),
 }));

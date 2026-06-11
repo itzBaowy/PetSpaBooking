@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function ChatWindow() {
   return (
@@ -13,7 +13,10 @@ export function ChatWindow() {
             placeholder="Type your message..."
             className="flex-1 border rounded px-3 py-2"
           />
-          <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded">
+          <button
+            type="submit"
+            className="bg-blue-500 text-white px-4 py-2 rounded"
+          >
             Send
           </button>
         </form>

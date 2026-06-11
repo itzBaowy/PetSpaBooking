@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function DisputeTable() {
   return (
@@ -6,7 +6,9 @@ export function DisputeTable() {
       <table className="w-full">
         <thead className="bg-gray-100">
           <tr>
-            <th className="px-6 py-3 text-left text-sm font-medium">Dispute ID</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Dispute ID
+            </th>
             <th className="px-6 py-3 text-left text-sm font-medium">Booking</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Created</th>

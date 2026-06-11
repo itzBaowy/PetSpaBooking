@@ -1,4 +1,4 @@
-import { VerificationTable } from '@/apis/admin/verification/components/verification-table';
+import { VerificationTable } from "@/apis/admin/verification/components/verification-table";
 
 export default function Verification() {
   return (

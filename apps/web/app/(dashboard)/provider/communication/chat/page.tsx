@@ -1,4 +1,4 @@
-import { ChatWindow } from '@/apis/provider/communication/components/chat-window';
+import { ChatWindow } from "@/apis/provider/communication/components/chat-window";
 
 export default function Chat() {
   return (

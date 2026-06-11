@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function BusinessGallery() {
   return (
@@ -6,7 +6,10 @@ export function BusinessGallery() {
       <h3 className="font-semibold mb-4">Gallery</h3>
       <div className="grid grid-cols-3 gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
-          <div key={i} className="aspect-square bg-gray-100 rounded flex items-center justify-center">
+          <div
+            key={i}
+            className="aspect-square bg-gray-100 rounded flex items-center justify-center"
+          >
             <span className="text-gray-400">Image {i}</span>
           </div>
         ))}

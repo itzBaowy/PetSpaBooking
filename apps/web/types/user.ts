@@ -6,7 +6,7 @@ export interface UserProfile {
   phone?: string;
   avatar?: string;
   role: string;
-  status: 'active' | 'inactive' | 'suspended';
+  status: "active" | "inactive" | "suspended";
   createdAt: string;
   updatedAt: string;
 }

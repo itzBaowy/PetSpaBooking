@@ -1,4 +1,4 @@
-import { BusinessProfileForm } from '@/apis/provider/business-profile/components/business-profile-form';
+import { BusinessProfileForm } from "@/apis/provider/business-profile/components/business-profile-form";
 
 export default function BusinessProfile() {
   return (

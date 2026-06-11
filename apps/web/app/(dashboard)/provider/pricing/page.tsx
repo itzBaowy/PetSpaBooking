@@ -1,4 +1,4 @@
-import { PriceListTable } from '@/apis/provider/pricing/components/price-list-table';
+import { PriceListTable } from "@/apis/provider/pricing/components/price-list-table";
 
 export default function Pricing() {
   return (

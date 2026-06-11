@@ -1,5 +1,5 @@
-import { ProviderDocumentViewer } from '@/apis/admin/verification/components/provider-document-viewer';
-import { VerificationActions } from '@/apis/admin/verification/components/verification-actions';
+import { ProviderDocumentViewer } from "@/apis/admin/verification/components/provider-document-viewer";
+import { VerificationActions } from "@/apis/admin/verification/components/verification-actions";
 
 export default function VerificationDetailPage() {
   return (

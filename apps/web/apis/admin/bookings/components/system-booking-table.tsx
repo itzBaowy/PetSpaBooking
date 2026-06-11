@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function SystemBookingTable() {
   return (
@@ -6,9 +6,15 @@ export function SystemBookingTable() {
       <table className="w-full">
         <thead className="bg-gray-100">
           <tr>
-            <th className="px-6 py-3 text-left text-sm font-medium">Booking ID</th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Provider</th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Customer</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Booking ID
+            </th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Provider
+            </th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Customer
+            </th>
             <th className="px-6 py-3 text-left text-sm font-medium">Amount</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
           </tr>

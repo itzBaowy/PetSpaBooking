@@ -1,5 +1,5 @@
-import { RevenueSummaryCards } from '@/apis/provider/revenue/components/revenue-summary-cards';
-import { RevenueChart } from '@/apis/provider/revenue/components/revenue-chart';
+import { RevenueSummaryCards } from "@/apis/provider/revenue/components/revenue-summary-cards";
+import { RevenueChart } from "@/apis/provider/revenue/components/revenue-chart";
 
 export default function Revenue() {
   return (

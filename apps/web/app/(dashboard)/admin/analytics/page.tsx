@@ -1,5 +1,5 @@
-import { BookingAnalyticsChart } from '@/apis/admin/analytics/components/booking-analytics-chart';
-import { PlatformRevenueChart } from '@/apis/admin/analytics/components/platform-revenue-chart';
+import { BookingAnalyticsChart } from "@/apis/admin/analytics/components/booking-analytics-chart";
+import { PlatformRevenueChart } from "@/apis/admin/analytics/components/platform-revenue-chart";
 
 export default function Analytics() {
   return (

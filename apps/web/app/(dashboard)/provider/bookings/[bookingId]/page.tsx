@@ -1,4 +1,4 @@
-import { BookingDetail } from '@/apis/provider/bookings/components/booking-detail';
+import { BookingDetail } from "@/apis/provider/bookings/components/booking-detail";
 
 export default function BookingDetailPage() {
   return (

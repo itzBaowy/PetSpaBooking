@@ -1,16 +1,16 @@
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { api } from '@/lib/axios';
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { api } from "@/lib/axios";
 
 export const adminUserKeys = {
-  all: ['admin', 'users'] as const,
-  lists: () => [...adminUserKeys.all, 'list'] as const,
-  detail: (id: string) => [...adminUserKeys.all, 'detail', id] as const,
+  all: ["admin", "users"] as const,
+  lists: () => [...adminUserKeys.all, "list"] as const,
+  detail: (id: string) => [...adminUserKeys.all, "detail", id] as const,
 };
 
 export function useAdminUsers() {
   return useQuery({
     queryKey: adminUserKeys.lists(),
-    queryFn: () => api.get('/admin/users'),
+    queryFn: () => api.get("/admin/users"),
   });
 }
 
