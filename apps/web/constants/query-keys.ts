@@ -19,4 +19,10 @@ export const queryKeys = {
     lists: () => [...queryKeys.customers.all, "list"] as const,
     detail: (id: string) => [...queryKeys.customers.all, "detail", id] as const,
   },
+  verification: {
+    all: ["verification"] as const,
+    lists: () => [...queryKeys.verification.all, "list"] as const,
+    detail: (id: string) =>
+      [...queryKeys.verification.all, "detail", id] as const,
+  },
 } as const;
