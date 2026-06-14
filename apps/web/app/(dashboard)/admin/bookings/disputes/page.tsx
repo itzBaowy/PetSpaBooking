@@ -1,10 +1,5 @@
-import { DisputeTable } from "@/apis/admin/bookings/components/dispute-table";
+import { DisputeResolutionPage } from "@/features/admin/bookings/components/dispute-resolution-page";
 
 export default function Disputes() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Booking Disputes</h1>
-      <DisputeTable />
-    </div>
-  );
+  return <DisputeResolutionPage />;
 }
