@@ -2,24 +2,65 @@
 
 export function DisputeResolutionForm() {
   return (
-    <form className="bg-white p-6 rounded-lg shadow space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Resolution</label>
-        <textarea
-          className="w-full border rounded px-3 py-2 h-24"
-          placeholder="Describe the resolution"
-        ></textarea>
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Refund Amount</label>
-        <input type="number" className="w-full border rounded px-3 py-2" />
-      </div>
-      <button
-        type="submit"
-        className="bg-green-500 text-white px-6 py-2 rounded hover:bg-green-600"
-      >
-        Resolve Dispute
-      </button>
-    </form>
+    <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+      <h2 className="text-lg font-bold text-gray-900">Resolution mock form</h2>
+      <p className="mt-1 text-sm text-gray-500">
+        This UI captures the required audit note for admin dispute actions.
+      </p>
+      <form className="mt-5 space-y-4">
+        <label className="block">
+          <span className="text-sm font-semibold text-gray-700">Outcome</span>
+          <select className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+            <option>REFUND</option>
+            <option>CLOSE_CLAIM</option>
+            <option>UPDATE_BOOKING_STATUS</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-gray-700">
+            Booking status
+          </span>
+          <select className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
+            <option>CONFIRMED</option>
+            <option>IN_PROGRESS</option>
+            <option>COMPLETED</option>
+            <option>CANCELLED</option>
+          </select>
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-gray-700">
+            Refund amount
+          </span>
+          <input
+            className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            placeholder="0 VND"
+            type="number"
+          />
+        </label>
+        <label className="block">
+          <span className="text-sm font-semibold text-gray-700">
+            Audit log note
+          </span>
+          <textarea
+            className="mt-1 min-h-28 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
+            placeholder="Reason, evidence checked, and final decision..."
+          />
+        </label>
+        <div className="flex justify-end gap-2">
+          <button
+            className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700"
+            type="button"
+          >
+            Save draft
+          </button>
+          <button
+            className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white"
+            type="button"
+          >
+            Resolve dispute
+          </button>
+        </div>
+      </form>
+    </div>
   );
 }

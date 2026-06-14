@@ -1,5 +1,5 @@
-import { ServiceModerationPage } from "@/features/admin/moderation/components/service-moderation-page";
+import { ModerationTable } from "@/apis/admin/moderation/components/moderation-table";
 
 export default function ModerationServices() {
-  return <ServiceModerationPage />;
+  return <ModerationTable />;
 }

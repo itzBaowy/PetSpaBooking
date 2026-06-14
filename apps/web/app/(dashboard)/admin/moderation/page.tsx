@@ -1,5 +1,5 @@
-import { ModerationDashboard } from "@/features/admin/moderation/components/moderation-dashboard";
+import { ModerationTable } from "@/apis/admin/moderation/components/moderation-table";
 
 export default function Moderation() {
-  return <ModerationDashboard />;
+  return <ModerationTable />;
 }

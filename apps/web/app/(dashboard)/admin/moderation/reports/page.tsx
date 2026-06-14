@@ -1,5 +1,5 @@
-import { ReportManagementPage } from "@/features/admin/moderation/components/report-management-page";
+import { ReportTable } from "@/apis/admin/moderation/components/report-table";
 
 export default function Reports() {
-  return <ReportManagementPage />;
+  return <ReportTable />;
 }

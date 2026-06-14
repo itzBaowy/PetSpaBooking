@@ -1,5 +1,5 @@
-import { BookingMonitoringPage } from "@/features/admin/bookings/components/booking-monitoring-page";
+import { SystemBookingTable } from "@/apis/admin/bookings/components/system-booking-table";
 
 export default function AdminBookings() {
-  return <BookingMonitoringPage />;
+  return <SystemBookingTable />;
 }
