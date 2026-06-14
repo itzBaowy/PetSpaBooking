@@ -1,16 +1,33 @@
-import { create } from 'zustand';
-import { User } from '@/types/auth';
+import { create } from "zustand";
+import { createJSONStorage, persist } from "zustand/middleware";
+import { createCookieStorage } from "./cookie-store";
 
-interface AuthStore {
-  user: User | null;
-  isAuthenticated: boolean;
-  setUser: (user: User | null) => void;
-  logout: () => void;
+interface Auth {
+  accessToken: string | null;
+  refreshToken: string | null;
+  setTokens: ({
+    accessToken,
+    refreshToken,
+  }: {
+    accessToken: string;
+    refreshToken: string;
+  }) => void;
+  clearTokens: () => void;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
-  user: null,
-  isAuthenticated: false,
-  setUser: (user) => set({ user, isAuthenticated: !!user }),
-  logout: () => set({ user: null, isAuthenticated: false }),
-}));
+export const useAuthStore = create<Auth>()(
+  persist(
+    (set) => ({
+      accessToken: null,
+      refreshToken: null,
+      setTokens: ({ accessToken, refreshToken }) =>
+        set({ accessToken, refreshToken }),
+      clearTokens: () => set({ accessToken: null, refreshToken: null }),
+    }),
+    {
+      name: "auth-storage",
+      skipHydration: true,
+      storage: createJSONStorage(() => createCookieStorage()),
+    },
+  ),
+);
