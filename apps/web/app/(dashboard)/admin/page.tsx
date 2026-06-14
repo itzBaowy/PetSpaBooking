@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PlatformSummaryCards } from "@/apis/admin/analytics/components/platform-summary-cards";
 import { BookingAnalyticsChart } from "@/apis/admin/analytics/components/booking-analytics-chart";
 import { PlatformRevenueChart } from "@/apis/admin/analytics/components/platform-revenue-chart";
@@ -64,8 +65,8 @@ export default function AdminDashboard() {
         <h3 className="font-semibold text-gray-800 mb-4">
           Quick Management Links
         </h3>
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          <a
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 gap-4">
+          <Link
             href="/admin/users"
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-blue-50/50 hover:border-blue-200 transition-all group"
           >
@@ -87,9 +88,9 @@ export default function AdminDashboard() {
             <span className="text-xs font-semibold text-gray-700">
               Manage Users
             </span>
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/admin/providers"
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-purple-50/50 hover:border-purple-200 transition-all group"
           >
@@ -111,9 +112,9 @@ export default function AdminDashboard() {
             <span className="text-xs font-semibold text-gray-700">
               Service Shops
             </span>
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/admin/bookings"
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-green-50/50 hover:border-green-200 transition-all group"
           >
@@ -135,9 +136,33 @@ export default function AdminDashboard() {
             <span className="text-xs font-semibold text-gray-700">
               Track Bookings
             </span>
-          </a>
+          </Link>
 
-          <a
+          <Link
+            href="/admin/bookings/disputes"
+            className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-violet-50/50 hover:border-violet-200 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"
+                />
+              </svg>
+            </div>
+            <span className="text-xs font-semibold text-gray-700">
+              Disputes
+            </span>
+          </Link>
+
+          <Link
             href="/admin/verification"
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-amber-50/50 hover:border-amber-200 transition-all group"
           >
@@ -159,9 +184,9 @@ export default function AdminDashboard() {
             <span className="text-xs font-semibold text-gray-700">
               Verifications
             </span>
-          </a>
+          </Link>
 
-          <a
+          <Link
             href="/admin/moderation"
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-rose-50/50 hover:border-rose-200 transition-all group"
           >
@@ -183,13 +208,13 @@ export default function AdminDashboard() {
             <span className="text-xs font-semibold text-gray-700">
               Moderations
             </span>
-          </a>
+          </Link>
 
-          <a
-            href="/admin/analytics"
-            className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-emerald-50/50 hover:border-emerald-200 transition-all group"
+          <Link
+            href="/admin/moderation/services"
+            className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-cyan-50/50 hover:border-cyan-200 transition-all group"
           >
-            <div className="w-10 h-10 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+            <div className="w-10 h-10 rounded-full bg-cyan-100 text-cyan-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
               <svg
                 className="w-5 h-5"
                 fill="none"
@@ -200,14 +225,86 @@ export default function AdminDashboard() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"
+                  d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
                 />
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Full Analytics
+              Service Review
             </span>
-          </a>
+          </Link>
+
+          <Link
+            href="/admin/moderation/reports"
+            className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-red-50/50 hover:border-red-200 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-6 4h6M8 4h8l3 3v13a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2h1z"
+                />
+              </svg>
+            </div>
+            <span className="text-xs font-semibold text-gray-700">
+              Reports
+            </span>
+          </Link>
+
+          <Link
+            href="/admin/marketing"
+            className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-lime-50/50 hover:border-lime-200 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-full bg-lime-100 text-lime-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M11 5.882V19.24a1.76 1.76 0 01-2.64 1.526l-3.016-1.742A2.5 2.5 0 014 16.86V8.118a2.5 2.5 0 011.344-2.164L8.36 4.212A1.76 1.76 0 0111 5.882zm0 0l7.5-2.5A1.5 1.5 0 0120 4.805v14.39a1.5 1.5 0 01-1.5 1.423L11 18.118"
+                />
+              </svg>
+            </div>
+            <span className="text-xs font-semibold text-gray-700">
+              Campaigns
+            </span>
+          </Link>
+
+          <Link
+            href="/admin/audit-logs"
+            className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-slate-50 hover:border-slate-300 transition-all group"
+          >
+            <div className="w-10 h-10 rounded-full bg-slate-100 text-slate-700 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5h6m-8 4h10M7 13h10M7 17h6M5 3h14a1 1 0 011 1v16a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"
+                />
+              </svg>
+            </div>
+            <span className="text-xs font-semibold text-gray-700">
+              Audit Logs
+            </span>
+          </Link>
         </div>
       </div>
 

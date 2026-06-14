@@ -1,6 +1,15 @@
 "use client";
 
+import { useState } from "react";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { DataTable } from "@/components/ui/data-table";
+import type { DataTableColumn } from "@/components/ui/data-table";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
 import { useModerationQueue, useReports } from "../queries";
+import type { ModerationItem } from "../queries";
 
 const contentStatusStyles = {
   PENDING: "border-yellow-200 bg-yellow-50 text-yellow-700",
@@ -28,6 +37,14 @@ function Badge({ label, className }: { label: string; className: string }) {
 export function ModerationTable() {
   const moderationQueue = useModerationQueue();
   const reports = useReports();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(2);
+  const total = moderationQueue.data.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const records = moderationQueue.data.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
 
   const pendingCount = moderationQueue.data.filter(
     (item) => item.status === "PENDING",
@@ -38,16 +55,80 @@ export function ModerationTable() {
   const openReportCount = reports.data.filter(
     (report) => report.status === "OPEN",
   ).length;
+  const columns: Array<DataTableColumn<ModerationItem>> = [
+    {
+      key: "content",
+      header: "Content",
+      widthClassName: "w-[26%]",
+      render: (item) => (
+        <div>
+          <p className="break-words font-semibold text-gray-900">
+            {item.serviceName}
+          </p>
+          <p className="text-xs text-gray-500">
+            {item.id} / {item.submittedAt}
+          </p>
+        </div>
+      ),
+    },
+    {
+      key: "provider",
+      header: "Provider",
+      widthClassName: "w-[18%]",
+      render: (item) => item.providerName,
+    },
+    {
+      key: "type",
+      header: "Type",
+      widthClassName: "w-[12%]",
+      render: (item) => item.type,
+    },
+    {
+      key: "risk",
+      header: "Risk",
+      widthClassName: "w-[12%]",
+      render: (item) => (
+        <Badge label={item.risk} className={riskStyles[item.risk]} />
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      widthClassName: "w-[14%]",
+      render: (item) => (
+        <Badge
+          label={item.status}
+          className={contentStatusStyles[item.status]}
+        />
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      isAction: true,
+      widthClassName: "w-[8%]",
+      render: () => (
+        <ActionMenu
+          items={[
+            { label: "Approve content" },
+            { label: "Request edits" },
+            { label: "Hide content", variant: "danger" },
+          ]}
+        />
+      ),
+    },
+  ];
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6 p-6">
+    <div className="w-full max-w-full space-y-6 p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
             Admin / Content Moderation
           </nav>
           <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Moderation & Reports
+            Moderation
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-gray-500">
             Review service content, images, price tables, and user reports
@@ -64,28 +145,19 @@ export function ModerationTable() {
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Pending content</p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">
-            {pendingCount}
-          </p>
-        </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Open reports</p>
-          <p className="mt-2 text-3xl font-bold text-red-600">
-            {openReportCount}
-          </p>
-        </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">
-            High risk reviews
-          </p>
-          <p className="mt-2 text-3xl font-bold text-amber-600">
-            {highRiskCount}
-          </p>
-        </div>
-      </div>
+      <StatisticCardGrid columns={3}>
+        <StatisticCard title="Pending content" value={pendingCount} />
+        <StatisticCard
+          title="Open reports"
+          value={openReportCount}
+          tone="red"
+        />
+        <StatisticCard
+          title="High risk reviews"
+          value={highRiskCount}
+          tone="amber"
+        />
+      </StatisticCardGrid>
 
       <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-gray-100 p-5 lg:flex-row lg:items-center lg:justify-between">
@@ -98,82 +170,35 @@ export function ModerationTable() {
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
-            <input
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm sm:w-80"
+            <SearchInput
+              value=""
+              onChange={() => undefined}
+              className="sm:w-80"
               placeholder="Search provider, service, content ID..."
             />
-            <select className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
-              <option>All content</option>
-              <option>Service</option>
-              <option>Image</option>
-              <option>Price table</option>
-            </select>
+            <CustomSelect
+              className="sm:w-52"
+              options={["All content", "Service", "Image", "Price table"]}
+            />
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[900px] text-left">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
-              <tr>
-                <th className="px-5 py-3">Content</th>
-                <th className="px-5 py-3">Provider</th>
-                <th className="px-5 py-3">Type</th>
-                <th className="px-5 py-3">Risk</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {moderationQueue.data.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-5 py-4">
-                    <p className="font-semibold text-gray-900">
-                      {item.serviceName}
-                    </p>
-                    <p className="text-xs text-gray-500">
-                      {item.id} / {item.submittedAt}
-                    </p>
-                  </td>
-                  <td className="px-5 py-4 text-gray-700">
-                    {item.providerName}
-                  </td>
-                  <td className="px-5 py-4 text-gray-700">{item.type}</td>
-                  <td className="px-5 py-4">
-                    <Badge label={item.risk} className={riskStyles[item.risk]} />
-                  </td>
-                  <td className="px-5 py-4">
-                    <Badge
-                      label={item.status}
-                      className={contentStatusStyles[item.status]}
-                    />
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button className="rounded-md border border-green-200 px-3 py-1.5 text-xs font-semibold text-green-700">
-                        Approve
-                      </button>
-                      <button className="rounded-md border border-purple-200 px-3 py-1.5 text-xs font-semibold text-purple-700">
-                        Request edits
-                      </button>
-                      <button className="rounded-md border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700">
-                        Hide
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="flex items-center justify-between border-t border-gray-100 px-5 py-4 text-sm text-gray-500">
-          <span>Showing 1-3 of 3 content records</span>
-          <div className="flex gap-1">
-            <button className="rounded-md border border-gray-200 px-3 py-1">
-              1
-            </button>
-            <button className="rounded-md border border-gray-200 px-3 py-1">
-              2
-            </button>
-          </div>
+        <DataTable
+          columns={columns}
+          data={records}
+          getRowKey={(item) => item.id}
+          minWidthClassName="min-w-[1180px]"
+        />
+        <div className="border-t border-gray-100 px-5 py-4">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            pageSize={pageSize}
+            onPageSizeChange={(value) => {
+              setPageSize(value);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
     </div>

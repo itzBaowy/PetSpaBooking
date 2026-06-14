@@ -2,6 +2,14 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { DataTable } from "@/components/ui/data-table";
+import type { DataTableColumn } from "@/components/ui/data-table";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import { useDebounce } from "@/hooks/use-debounce";
 import { MOCK_VERIFICATIONS } from "../queries";
 import type { MockVerificationRequest } from "../queries";
 
@@ -39,15 +47,15 @@ function formatDate(iso: string): string {
 export function VerificationTable() {
   const router = useRouter();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(3);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-
-  const pageSize = 10;
+  const debouncedSearch = useDebounce(search, 300);
 
   const filtered = MOCK_VERIFICATIONS.filter((r) => {
     if (statusFilter && r.status !== statusFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       if (
         !r.businessName.toLowerCase().includes(q) &&
         !r.email.toLowerCase().includes(q)
@@ -91,84 +99,163 @@ export function VerificationTable() {
     }
   };
 
+  const columns: Array<DataTableColumn<MockVerificationRequest>> = [
+    {
+      key: "provider",
+      header: "Provider",
+      widthClassName: "w-[28%]",
+      render: (request) => (
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-amber-200 text-sm font-semibold text-amber-700">
+            {request.businessName.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="break-words text-sm font-semibold text-gray-900">
+              {request.businessName}
+            </p>
+            <p className="text-xs text-gray-500">
+              {request.documentCount} document
+              {request.documentCount !== 1 ? "s" : ""} submitted
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "contact",
+      header: "Contact",
+      widthClassName: "w-[22%]",
+      render: (request) => (
+        <div>
+          <p className="break-words text-sm text-gray-800">{request.email}</p>
+          <p className="text-xs text-gray-500">{request.phone}</p>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      widthClassName: "w-[15%]",
+      render: (request) => (
+        <span
+          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+            STATUS_STYLES[request.status] ??
+            "bg-gray-100 text-gray-700 border-gray-200"
+          }`}
+        >
+          {STATUS_LABELS[request.status] ?? request.status}
+        </span>
+      ),
+    },
+    {
+      key: "submitted",
+      header: "Submitted",
+      widthClassName: "w-[14%]",
+      render: (request) => (
+        <span className="text-sm text-gray-700">
+          {formatDate(request.createdAt)}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      isAction: true,
+      widthClassName: "w-[10%]",
+      render: (request) => (
+        <ActionMenu
+          items={[
+            { label: "Review provider", onClick: () => handleView(request.id) },
+            ...(request.status === "pending"
+              ? [
+                  {
+                    label: "Approve provider",
+                    onClick: () => handleQuickApprove(request.id),
+                  },
+                  {
+                    label: "Reject provider",
+                    onClick: () => handleQuickReject(request.id),
+                    variant: "danger" as const,
+                  },
+                ]
+              : []),
+          ]}
+        />
+      ),
+    },
+  ];
+
   return (
     <div className="space-y-4">
       {/* Header with Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <StatisticCardGrid columns={4}>
         {[
-          { label: "Pending", value: "pending", count: pendingCount },
-          { label: "Approved", value: "approved", count: approvedCount },
-          { label: "Rejected", value: "rejected", count: rejectedCount },
-          { label: "Info Requested", value: "info_requested", count: infoCount },
-        ].map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => {
-              setStatusFilter(filter.value);
-              setPage(1);
-            }}
-            className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors text-left ${
-              statusFilter === filter.value
-                ? STATUS_STYLES[filter.value]
-                : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <span className="text-xs text-gray-600 block">
-              {filter.label}
-            </span>
-            <span className="text-lg font-bold text-gray-900">{filter.count}</span>
-          </button>
+          {
+            label: "Pending",
+            count: pendingCount,
+            tone: "amber" as const,
+          },
+          {
+            label: "Approved",
+            count: approvedCount,
+            tone: "green" as const,
+          },
+          {
+            label: "Rejected",
+            count: rejectedCount,
+            tone: "red" as const,
+          },
+          {
+            label: "Info Requested",
+            count: infoCount,
+            tone: "blue" as const,
+          },
+        ].map((stat) => (
+          <StatisticCard
+            key={stat.label}
+            title={stat.label}
+            value={stat.count}
+            tone={stat.tone}
+          />
         ))}
-      </div>
+      </StatisticCardGrid>
 
       {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-72">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by provider or email..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
+      <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <SearchInput
+            className="w-full lg:max-w-md"
+            value={search}
+            placeholder="Search provider name or email"
+            onChange={(value) => {
+              setSearch(value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {STATUS_FILTERS.map((filter) => (
-              <option key={filter.value} value={filter.value}>
-                {filter.label}
-              </option>
-            ))}
-          </select>
+          />
+          <CustomSelect
+            className="w-full lg:w-52"
+            defaultValue={statusFilter}
+            options={STATUS_FILTERS}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setPage(1);
+            }}
+          />
+          <div className="text-sm font-medium text-gray-500 lg:ml-auto">
+            {debouncedSearch || statusFilter
+              ? `${total} matching request${total === 1 ? "" : "s"}`
+              : `${total} total request${total === 1 ? "" : "s"}`}
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        {records.length === 0 ? (
+      <DataTable
+        columns={columns}
+        data={records}
+        getRowKey={(request) => request.id}
+        minWidthClassName="min-w-[1120px]"
+        emptyState={
           <div className="p-8 text-center">
             <svg
               className="w-12 h-12 mx-auto mb-3 text-gray-300"
@@ -190,127 +277,21 @@ export function VerificationTable() {
                 : "New provider registrations will appear here"}
             </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Provider
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Submitted
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {records.map((request: MockVerificationRequest) => (
-                  <tr
-                    key={request.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 font-semibold text-sm">
-                          {request.businessName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {request.businessName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {request.documentCount} document
-                            {request.documentCount !== 1 ? "s" : ""} submitted
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-800">{request.email}</p>
-                      <p className="text-xs text-gray-500">{request.phone}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                          STATUS_STYLES[request.status] ??
-                          "bg-gray-100 text-gray-700 border-gray-200"
-                        }`}
-                      >
-                        {STATUS_LABELS[request.status] ?? request.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-700">
-                        {formatDate(request.createdAt)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleView(request.id)}
-                          className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                        >
-                          Review
-                        </button>
-                        {request.status === "pending" && (
-                          <>
-                            <button
-                              onClick={() => handleQuickApprove(request.id)}
-                              className="px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleQuickReject(request.id)}
-                              className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        }
+      />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-gray-700">
-            Page {page} of {totalPages} ({total} total)
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="px-2">
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={(value) => {
+            setPageSize(value);
+            setPage(1);
+          }}
+        />
+      </div>
     </div>
   );
 }

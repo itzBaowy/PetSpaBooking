@@ -3,7 +3,7 @@ import { DisputeTable } from "./dispute-table";
 
 export function DisputeResolutionWorkspace() {
   return (
-    <div className="mx-auto max-w-[1500px] space-y-6 p-6">
+    <div className="w-full max-w-full space-y-6 p-6">
       <div>
         <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
           Admin / Bookings / Disputes

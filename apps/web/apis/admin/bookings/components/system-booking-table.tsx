@@ -1,7 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { DataTable } from "@/components/ui/data-table";
+import type { DataTableColumn } from "@/components/ui/data-table";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
 import { useAdminBookings } from "../queries";
+import type { AdminBooking } from "../queries";
 
 const bookingStatusStyles = {
   PENDING: "border-yellow-200 bg-yellow-50 text-yellow-700",
@@ -20,6 +29,11 @@ const paymentStatusStyles = {
 
 export function SystemBookingTable() {
   const bookings = useAdminBookings();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(2);
+  const total = bookings.data.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const records = bookings.data.slice((page - 1) * pageSize, page * pageSize);
   const disputedBookings = bookings.data.filter(
     (booking) => booking.disputeStatus === "OPEN",
   ).length;
@@ -27,9 +41,81 @@ export function SystemBookingTable() {
     (sum, booking) => sum + booking.amount,
     0,
   );
+  const columns: Array<DataTableColumn<AdminBooking>> = [
+    {
+      key: "booking",
+      header: "Booking",
+      widthClassName: "w-[18%]",
+      render: (booking) => (
+        <div>
+          <p className="font-semibold text-gray-900">{booking.id}</p>
+          <p className="text-xs text-gray-500">{booking.service}</p>
+        </div>
+      ),
+    },
+    {
+      key: "petOwner",
+      header: "Pet Owner",
+      widthClassName: "w-[15%]",
+      render: (booking) => booking.petOwner,
+    },
+    {
+      key: "provider",
+      header: "Provider",
+      widthClassName: "w-[16%]",
+      render: (booking) => booking.provider,
+    },
+    {
+      key: "schedule",
+      header: "Schedule",
+      widthClassName: "w-[15%]",
+      render: (booking) => booking.scheduledAt,
+    },
+    {
+      key: "payment",
+      header: "Payment",
+      widthClassName: "w-[12%]",
+      render: (booking) => (
+        <span
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${paymentStatusStyles[booking.paymentStatus]}`}
+        >
+          {booking.paymentStatus}
+        </span>
+      ),
+    },
+    {
+      key: "status",
+      header: "Status",
+      widthClassName: "w-[12%]",
+      render: (booking) => (
+        <span
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${bookingStatusStyles[booking.status]}`}
+        >
+          {booking.status}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Actions",
+      align: "right",
+      isAction: true,
+      widthClassName: "w-[8%]",
+      render: () => (
+        <ActionMenu
+          items={[
+            { label: "View booking" },
+            { label: "Adjust status" },
+            { label: "Open dispute" },
+            { label: "Cancel booking", variant: "danger" },
+          ]}
+        />
+      ),
+    },
+  ];
 
   return (
-    <div className="mx-auto max-w-[1600px] space-y-6 p-6">
+    <div className="w-full max-w-full space-y-6 p-6">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
           <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
@@ -51,106 +137,62 @@ export function SystemBookingTable() {
         </Link>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">
-            Total bookings shown
-          </p>
-          <p className="mt-2 text-3xl font-bold text-gray-900">
-            {bookings.data.length}
-          </p>
-        </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Open disputes</p>
-          <p className="mt-2 text-3xl font-bold text-red-600">
-            {disputedBookings}
-          </p>
-        </div>
-        <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-          <p className="text-sm font-medium text-gray-500">Tracked value</p>
-          <p className="mt-2 text-3xl font-bold text-green-600">
-            {new Intl.NumberFormat("vi-VN").format(totalRevenue)} VND
-          </p>
-        </div>
-      </div>
+      <StatisticCardGrid columns={3}>
+        <StatisticCard
+          title="Total bookings shown"
+          value={bookings.data.length}
+        />
+        <StatisticCard
+          title="Open disputes"
+          value={disputedBookings}
+          tone="red"
+        />
+        <StatisticCard
+          title="Tracked value"
+          value={`${new Intl.NumberFormat("vi-VN").format(totalRevenue)} VND`}
+          tone="green"
+        />
+      </StatisticCardGrid>
 
       <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-gray-100 p-5 xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col gap-2 md:flex-row">
-            <input
-              className="rounded-lg border border-gray-200 px-3 py-2 text-sm md:w-96"
+            <SearchInput
+              value=""
+              onChange={() => undefined}
+              className="md:w-96"
               placeholder="Search booking, owner, provider..."
             />
-            <select className="rounded-lg border border-gray-200 px-3 py-2 text-sm">
-              <option>All statuses</option>
-              <option>PENDING</option>
-              <option>CONFIRMED</option>
-              <option>IN_PROGRESS</option>
-              <option>COMPLETED</option>
-              <option>CANCELLED</option>
-            </select>
-          </div>
-          <div className="text-sm font-medium text-gray-500">
-            Showing 1-3 of 3 bookings
+            <CustomSelect
+              className="md:w-56"
+              options={[
+                "All statuses",
+                "PENDING",
+                "CONFIRMED",
+                "IN_PROGRESS",
+                "COMPLETED",
+                "CANCELLED",
+              ]}
+            />
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full min-w-[1000px] text-left">
-            <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
-              <tr>
-                <th className="px-5 py-3">Booking</th>
-                <th className="px-5 py-3">Pet Owner</th>
-                <th className="px-5 py-3">Provider</th>
-                <th className="px-5 py-3">Schedule</th>
-                <th className="px-5 py-3">Payment</th>
-                <th className="px-5 py-3">Status</th>
-                <th className="px-5 py-3 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100 text-sm">
-              {bookings.data.map((booking) => (
-                <tr key={booking.id}>
-                  <td className="px-5 py-4">
-                    <p className="font-semibold text-gray-900">{booking.id}</p>
-                    <p className="text-xs text-gray-500">{booking.service}</p>
-                  </td>
-                  <td className="px-5 py-4 text-gray-700">
-                    {booking.petOwner}
-                  </td>
-                  <td className="px-5 py-4 text-gray-700">
-                    {booking.provider}
-                  </td>
-                  <td className="px-5 py-4 text-gray-700">
-                    {booking.scheduledAt}
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${paymentStatusStyles[booking.paymentStatus]}`}
-                    >
-                      {booking.paymentStatus}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <span
-                      className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${bookingStatusStyles[booking.status]}`}
-                    >
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-5 py-4">
-                    <div className="flex justify-end gap-2">
-                      <button className="rounded-md border border-gray-200 px-3 py-1.5 text-xs font-semibold text-gray-700">
-                        View
-                      </button>
-                      <button className="rounded-md border border-purple-200 px-3 py-1.5 text-xs font-semibold text-purple-700">
-                        Adjust status
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+        <DataTable
+          columns={columns}
+          data={records}
+          getRowKey={(booking) => booking.id}
+          minWidthClassName="min-w-[1120px]"
+        />
+        <div className="border-t border-gray-100 px-5 py-4">
+          <Pagination
+            page={page}
+            totalPages={totalPages}
+            onPageChange={setPage}
+            pageSize={pageSize}
+            onPageSizeChange={(value) => {
+              setPageSize(value);
+              setPage(1);
+            }}
+          />
         </div>
       </div>
     </div>

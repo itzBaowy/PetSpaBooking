@@ -1,16 +1,14 @@
 "use client";
 
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
 import { formatCurrency } from "@/lib/currency";
-import { cn } from "@/lib/utils";
 
 interface CardData {
   title: string;
   value: string | number;
   change: string;
-  isPositive: boolean;
   type: "users" | "bookings" | "revenue" | "providers";
-  bgColor: string;
-  textColor: string;
+  tone: "blue" | "green" | "amber" | "purple";
 }
 
 const CARDS: CardData[] = [
@@ -18,43 +16,35 @@ const CARDS: CardData[] = [
     title: "Total Users",
     value: 4821,
     change: "+12.5%",
-    isPositive: true,
     type: "users",
-    bgColor: "bg-blue-50 text-blue-600",
-    textColor: "text-blue-600",
+    tone: "blue",
   },
   {
     title: "Total Bookings",
     value: 1340,
     change: "+8.3%",
-    isPositive: true,
     type: "bookings",
-    bgColor: "bg-green-50 text-green-600",
-    textColor: "text-green-600",
+    tone: "green",
   },
   {
     title: "Platform Revenue",
     value: 128500000,
     change: "+15.2%",
-    isPositive: true,
     type: "revenue",
-    bgColor: "bg-amber-50 text-amber-600",
-    textColor: "text-amber-600",
+    tone: "amber",
   },
   {
     title: "Active Providers",
     value: 187,
     change: "+5.4%",
-    isPositive: true,
     type: "providers",
-    bgColor: "bg-purple-50 text-purple-600",
-    textColor: "text-purple-600",
+    tone: "purple",
   },
 ];
 
 export function PlatformSummaryCards() {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+    <StatisticCardGrid columns={4} className="gap-6">
       {CARDS.map((card) => {
         const displayValue =
           card.type === "revenue"
@@ -62,20 +52,16 @@ export function PlatformSummaryCards() {
             : (card.value as number).toLocaleString("en-US");
 
         return (
-          <div
+          <StatisticCard
             key={card.title}
-            className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 transition-all duration-300 hover:-translate-y-1 hover:shadow-md"
-          >
-            <div className="flex items-center justify-between">
-              <span className="text-gray-500 text-sm font-medium">
-                {card.title}
-              </span>
-              <div
-                className={cn(
-                  "p-2.5 rounded-lg text-xs font-semibold",
-                  card.bgColor,
-                )}
-              >
+            title={card.title}
+            value={displayValue}
+            tone={card.tone}
+            change={card.change}
+            changeDirection="up"
+            footer="vs. previous month"
+            icon={
+              <>
                 {card.type === "users" && (
                   <svg
                     className="w-5 h-5"
@@ -136,50 +122,11 @@ export function PlatformSummaryCards() {
                     />
                   </svg>
                 )}
-              </div>
-            </div>
-
-            <div className="mt-4 flex items-baseline justify-between">
-              <span className="text-2xl font-bold text-gray-900 tracking-tight">
-                {displayValue}
-              </span>
-              <span
-                className={cn(
-                  "inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-semibold",
-                  card.isPositive
-                    ? "bg-green-50 text-green-700"
-                    : "bg-red-50 text-red-700",
-                )}
-              >
-                <svg
-                  className={cn(
-                    "w-3.5 h-3.5",
-                    card.isPositive ? "text-green-600" : "text-red-600",
-                  )}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d={
-                      card.isPositive
-                        ? "M5 10l7-7m0 0l7 7m-7-7v18"
-                        : "M19 14l-7 7m0 0l-7-7m7 7V3"
-                    }
-                  />
-                </svg>
-                {card.change}
-              </span>
-            </div>
-            <p className="text-xs text-gray-400 mt-2 font-normal">
-              vs. previous month
-            </p>
-          </div>
+              </>
+            }
+          />
         );
       })}
-    </div>
+    </StatisticCardGrid>
   );
 }

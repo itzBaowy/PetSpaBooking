@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+import { Pagination } from "@/components/ui/pagination";
 import { useDisputeBookings } from "../queries";
 
 const disputeStatusStyles = {
@@ -10,6 +12,11 @@ const disputeStatusStyles = {
 
 export function DisputeTable() {
   const disputes = useDisputeBookings();
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(1);
+  const total = disputes.data.length;
+  const totalPages = Math.ceil(total / pageSize);
+  const records = disputes.data.slice((page - 1) * pageSize, page * pageSize);
 
   return (
     <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
@@ -20,7 +27,7 @@ export function DisputeTable() {
         </p>
       </div>
       <div className="divide-y divide-gray-100">
-        {disputes.data.map((dispute) => (
+        {records.map((dispute) => (
           <div key={dispute.id} className="p-5">
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -47,6 +54,19 @@ export function DisputeTable() {
             </div>
           </div>
         ))}
+      </div>
+      <div className="border-t border-gray-100 px-5 py-4">
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          pageSizeOptions={[1, 2, 5]}
+          onPageSizeChange={(value) => {
+            setPageSize(value);
+            setPage(1);
+          }}
+        />
       </div>
     </div>
   );

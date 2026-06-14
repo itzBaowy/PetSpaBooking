@@ -1,24 +1,14 @@
 "use client";
 
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+
 export function RevenueSummaryCards() {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600 text-sm">Total Revenue</p>
-        <p className="text-2xl font-bold">$0.00</p>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600 text-sm">This Month</p>
-        <p className="text-2xl font-bold">$0.00</p>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600 text-sm">Pending</p>
-        <p className="text-2xl font-bold">$0.00</p>
-      </div>
-      <div className="bg-white p-6 rounded-lg shadow">
-        <p className="text-gray-600 text-sm">Completed Bookings</p>
-        <p className="text-2xl font-bold">0</p>
-      </div>
-    </div>
+    <StatisticCardGrid columns={4}>
+      <StatisticCard title="Total Revenue" value="$0.00" tone="green" />
+      <StatisticCard title="This Month" value="$0.00" tone="blue" />
+      <StatisticCard title="Pending" value="$0.00" tone="amber" />
+      <StatisticCard title="Completed Bookings" value={0} />
+    </StatisticCardGrid>
   );
 }

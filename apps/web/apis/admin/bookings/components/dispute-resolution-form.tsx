@@ -1,5 +1,7 @@
 "use client";
 
+import { CustomSelect } from "@/components/ui/custom-select";
+
 export function DisputeResolutionForm() {
   return (
     <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
@@ -10,22 +12,19 @@ export function DisputeResolutionForm() {
       <form className="mt-5 space-y-4">
         <label className="block">
           <span className="text-sm font-semibold text-gray-700">Outcome</span>
-          <select className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
-            <option>REFUND</option>
-            <option>CLOSE_CLAIM</option>
-            <option>UPDATE_BOOKING_STATUS</option>
-          </select>
+          <CustomSelect
+            className="mt-1"
+            options={["REFUND", "CLOSE_CLAIM", "UPDATE_BOOKING_STATUS"]}
+          />
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-gray-700">
             Booking status
           </span>
-          <select className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm">
-            <option>CONFIRMED</option>
-            <option>IN_PROGRESS</option>
-            <option>COMPLETED</option>
-            <option>CANCELLED</option>
-          </select>
+          <CustomSelect
+            className="mt-1"
+            options={["CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]}
+          />
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-gray-700">
