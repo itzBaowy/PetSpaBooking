@@ -1,0 +1,68 @@
+Bạn là coding agent trong dự án PetLink.
+
+Trước khi code, hãy đọc và tuân thủ các file context sau:
+
+* `agent-context.md`
+* `architecture.md`
+* `rules.md`
+* `ui-guideline.md`
+* `feature-mapping.updated.md`
+* `task.updated.md`
+* `current-state.md`
+
+## Nhiệm vụ
+
+Tôi muốn làm tính năng mới cho role:
+
+`[GHI ROLE Ở ĐÂY: PET_OWNER | SERVICE_PROVIDER | ADMIN | GUEST]`
+
+Tên tính năng:
+
+`[GHI TÊN TÍNH NĂNG Ở ĐÂY]`
+
+Mô tả nghiệp vụ:
+
+`[MÔ TẢ NGẮN TÍNH NĂNG MUỐN LÀM]`
+
+Route mong muốn nếu có:
+
+`[VD: app/(dashboard)/provider/services/create/page.tsx]`
+
+## Yêu cầu bắt buộc
+
+1. Kiểm tra cây thư mục hiện tại trước khi tạo file mới.
+2. Tìm component có thể tái sử dụng trong:
+
+   * `components/ui`
+   * `components/common`
+   * `components/layout`
+   * `features`
+3. Không tạo component trùng chức năng.
+4. Nếu là UI thuần, đặt trong `components/ui`.
+5. Nếu là component business dùng lại nhiều feature, đặt trong `components/common`.
+6. Nếu là component riêng của tính năng, đặt trong `features/[role]/[feature]/components`.
+7. Không đặt business logic trong `page.tsx`.
+8. `page.tsx` chỉ compose feature components.
+9. Dùng Zod validtion schema.
+10. Schema validation phải đặt trong `schema.ts`.
+11. Dùng TanStack Query cho server state.
+12. Query/mutation đặt trong `queries.ts`.
+13. Không gọi `fetch` trực tiếp.
+14. Dùng axios instance từ `lib/axios.ts`.
+15. Không dùng `any`.
+16. Không lưu server data vào Zustand.
+17. Global client state mới được đặt trong `stores/`.
+18. Làm đúng role nghiệp vụ:
+
+    * `PET_OWNER` cho chủ thú cưng.
+    * `SERVICE_PROVIDER` cho nhà cung cấp dịch vụ.
+    * `ADMIN` cho quản trị viên.
+    * `GUEST` cho người chưa đăng nhập.
+19. Không tạo role `USER` cho nghiệp vụ.
+20. Nếu provider từ chối booking, không tạo status `REJECTED`; dùng `CANCELLED` + `cancelledBy` + `cancelReason`.
+
+## Sau khi code xong
+
+Bắt buộc cập nhật `current-state.md` với các nội dung:
+
+
