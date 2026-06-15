@@ -6,14 +6,14 @@ export const ROUTES = {
   LOGIN: "/login",
   REGISTER: "/register-provider",
   FORGOT_PASSWORD: "/forgot-password",
-  PROVIDER_DASHBOARD: "/dashboard/provider",
-  ADMIN_DASHBOARD: "/dashboard/admin",
+  PROVIDER_DASHBOARD: "/provider",
+  ADMIN_DASHBOARD: "/admin",
 } as const;
 
 export function getProviderRoute(path: string): string {
-  return `/dashboard/provider${path}`;
+  return `/provider${path}`;
 }
 
 export function getAdminRoute(path: string): string {
-  return `/dashboard/admin${path}`;
+  return `/admin${path}`;
 }
