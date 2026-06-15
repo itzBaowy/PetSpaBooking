@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DataTable } from "@/components/ui/data-table";
 import type { DataTableColumn } from "@/components/ui/data-table";
+import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { useAuditLogs } from "../queries";
@@ -77,23 +78,16 @@ export function AuditLogTable() {
 
   return (
     <div className="w-full max-w-full space-y-6 p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Admin / Audit Logs
-          </nav>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Audit Logs
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-500">
-            Track admin decisions for content moderation, reports, booking
-            disputes, refunds, and account actions.
-          </p>
-        </div>
-        <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
-          Export audit log
-        </button>
-      </div>
+      <PageHeader
+        eyebrow="Admin / Audit Logs"
+        title="Audit Logs"
+        description="Track admin decisions for content moderation, reports, booking disputes, refunds, and account actions."
+        actions={
+          <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
+            Export audit log
+          </button>
+        }
+      />
 
       <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
         <div className="flex flex-col gap-3 border-b border-gray-100 p-5 xl:flex-row xl:items-center xl:justify-between">

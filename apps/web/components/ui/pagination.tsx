@@ -61,7 +61,7 @@ export function Pagination({
       )}
     >
       {shouldShowPageSize && (
-        <div className="flex items-center gap-2 text-sm font-medium text-gray-500">
+        <div className="flex items-center gap-2 text-sm font-medium text-muted">
           <span>Rows per page</span>
           <CustomSelect
             className="w-24"
@@ -85,7 +85,7 @@ export function Pagination({
             aria-label="Previous page"
             disabled={safePage === 1}
             onClick={() => onPageChange(safePage - 1)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface text-foreground shadow-sm transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg
               className="h-4 w-4"
@@ -107,7 +107,7 @@ export function Pagination({
             item === "ellipsis" ? (
               <span
                 key={`ellipsis-${index}`}
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-bold text-gray-700 shadow-sm"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface text-sm font-bold text-foreground shadow-sm"
               >
                 ...
               </span>
@@ -121,8 +121,8 @@ export function Pagination({
                 className={cn(
                   "inline-flex h-10 w-10 items-center justify-center rounded-full border text-sm font-semibold shadow-sm transition-colors",
                   item === safePage
-                    ? "border-gray-950 bg-gray-950 text-white"
-                    : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50",
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-border-subtle bg-surface text-foreground hover:bg-surface-muted",
                 )}
               >
                 {item}
@@ -135,7 +135,7 @@ export function Pagination({
             aria-label="Next page"
             disabled={safePage === totalPages}
             onClick={() => onPageChange(safePage + 1)}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-700 shadow-sm transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface text-foreground shadow-sm transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
           >
             <svg
               className="h-4 w-4"

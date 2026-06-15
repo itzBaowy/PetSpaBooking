@@ -6,6 +6,7 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DataTable } from "@/components/ui/data-table";
 import type { DataTableColumn } from "@/components/ui/data-table";
+import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
@@ -116,26 +117,19 @@ export function SystemBookingTable() {
 
   return (
     <div className="w-full max-w-full space-y-6 p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Admin / Booking Monitoring
-          </nav>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            System Bookings
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-500">
-            Monitor every platform booking and identify cases needing admin
-            intervention.
-          </p>
-        </div>
-        <Link
-          href="/admin/bookings/disputes"
-          className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm"
-        >
-          Open disputes
-        </Link>
-      </div>
+      <PageHeader
+        eyebrow="Admin / Booking Monitoring"
+        title="System Bookings"
+        description="Monitor every platform booking and identify cases needing admin intervention."
+        actions={
+          <Link
+            href="/admin/bookings/disputes"
+            className="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white shadow-sm"
+          >
+            Open disputes
+          </Link>
+        }
+      />
 
       <StatisticCardGrid columns={3}>
         <StatisticCard

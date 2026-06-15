@@ -28,7 +28,7 @@ export function ActionMenu({ items, align = "right" }: ActionMenuProps) {
         aria-controls={menuId}
         onClick={() => setIsOpen((current) => !current)}
         onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
-        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-gray-200 bg-white text-gray-500 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 focus:outline-none focus:ring-4 focus:ring-blue-50"
+        className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle bg-surface text-muted shadow-sm transition-colors hover:bg-surface-muted hover:text-foreground focus:outline-none focus:ring-4 focus:ring-brand-soft"
       >
         <svg
           className="h-4 w-4"
@@ -45,7 +45,7 @@ export function ActionMenu({ items, align = "right" }: ActionMenuProps) {
           id={menuId}
           role="menu"
           className={cn(
-            "absolute top-11 z-40 w-52 overflow-hidden rounded-xl border border-gray-200 bg-white p-1.5 text-left shadow-xl shadow-gray-900/10",
+            "absolute top-11 z-40 w-52 overflow-hidden rounded-xl border border-border-subtle bg-surface p-1.5 text-left shadow-xl shadow-gray-900/10",
             align === "right" ? "right-0" : "left-0",
           )}
         >
@@ -62,8 +62,8 @@ export function ActionMenu({ items, align = "right" }: ActionMenuProps) {
               className={cn(
                 "flex w-full items-center rounded-lg px-3 py-2 text-sm font-semibold transition-colors",
                 item.variant === "danger"
-                  ? "text-red-600 hover:bg-red-50"
-                  : "text-gray-700 hover:bg-gray-50",
+                  ? "text-danger hover:bg-danger-soft"
+                  : "text-foreground hover:bg-surface-muted",
               )}
             >
               {item.label}

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -319,17 +320,17 @@ export default function DashboardLayout({
       : [];
 
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-white">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Sidebar navigation */}
       <aside
         className={cn(
-          "sticky top-0 flex h-screen shrink-0 flex-col border-r border-slate-800 bg-slate-900 text-slate-100 transition-all duration-200",
+          "sticky top-0 flex h-screen shrink-0 flex-col border-r border-shell-border bg-shell text-brand-foreground transition-all duration-200",
           isSidebarCollapsed ? "w-20" : "w-64",
         )}
       >
         <div
           className={cn(
-            "flex h-16 items-center gap-3 border-b border-slate-800 bg-slate-950",
+            "flex h-16 items-center gap-3 border-b border-shell-border bg-shell-strong",
             isSidebarCollapsed ? "justify-center px-3" : "justify-between px-6",
           )}
         >
@@ -349,7 +350,7 @@ export default function DashboardLayout({
             }
             title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
             onClick={() => setIsSidebarCollapsed((current) => !current)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-slate-700/80 bg-slate-950/40 text-slate-300 transition-colors hover:bg-slate-800 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-shell-border bg-shell-strong/40 text-shell-muted transition-colors hover:bg-shell-border hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           >
             <svg
               className="h-4 w-4"
@@ -418,8 +419,8 @@ export default function DashboardLayout({
                         ? "justify-center px-3"
                         : "justify-start px-4",
                       isActive
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
-                        : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200",
+                        ? "bg-brand text-brand-foreground shadow-md shadow-blue-900/20"
+                        : "text-shell-muted hover:bg-shell-border/60 hover:text-brand-foreground",
                     )}
                   >
                     {item.icon}
@@ -429,7 +430,7 @@ export default function DashboardLayout({
               );
             })}
             {currentNav.length === 0 && !isSidebarCollapsed && (
-              <li className="text-sm text-slate-500 text-center py-4">
+              <li className="py-4 text-center text-sm text-shell-muted">
                 No navigation items
               </li>
             )}
@@ -438,8 +439,11 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-white">
-        {children}
+      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-background">
+        {(isAdmin || isProvider) && (
+          <DashboardTopbar role={isAdmin ? "admin" : "provider"} />
+        )}
+        <div className="min-w-0 flex-1">{children}</div>
       </main>
     </div>
   );

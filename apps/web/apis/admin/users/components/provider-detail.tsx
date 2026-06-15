@@ -6,14 +6,8 @@ import { PageHeader } from "@/components/ui/page-header";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
 import { accountStatusActionSchema } from "../schema";
 import type { AdminAccountStatus } from "../schema";
-import { useAdminUsers } from "../queries";
-import type { AdminUserAccount } from "../queries";
-
-const roleLabels = {
-  PET_OWNER: "Pet Owner",
-  SERVICE_PROVIDER: "Service Provider",
-  ADMIN: "Admin",
-};
+import { useAdminProviders } from "../queries";
+import type { AdminProviderAccount } from "../queries";
 
 const statusLabels: Record<AdminAccountStatus, string> = {
   ACTIVE: "Active",
@@ -36,20 +30,20 @@ function formatDate(value: string): string {
   }).format(new Date(value));
 }
 
-function handleStatusAction(account: AdminUserAccount) {
+function handleStatusAction(provider: AdminProviderAccount) {
   const nextStatus: AdminAccountStatus =
-    account.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
+    provider.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
   const reason = window.prompt(
     nextStatus === "ACTIVE"
-      ? "Reason for unlocking this account:"
-      : "Reason for suspending this account:",
+      ? "Reason for unlocking this provider:"
+      : "Reason for suspending this provider:",
   );
 
   if (!reason) return;
 
   const result = accountStatusActionSchema.safeParse({
-    accountId: account.id,
-    role: account.role,
+    accountId: provider.id,
+    role: "SERVICE_PROVIDER",
     status: nextStatus,
     reason,
     durationType: "PERMANENT",
@@ -61,29 +55,29 @@ function handleStatusAction(account: AdminUserAccount) {
   }
 
   window.alert(
-    `${account.name} status would be changed to ${statusLabels[nextStatus]} (mock).`,
+    `${provider.businessName} status would be changed to ${statusLabels[nextStatus]} (mock).`,
   );
 }
 
-export function UserDetail({ userId }: { userId: string }) {
-  const { data: accounts } = useAdminUsers();
-  const account = accounts.find((item) => item.id === userId);
+export function ProviderDetail({ providerId }: { providerId: string }) {
+  const { data: providers } = useAdminProviders();
+  const provider = providers.find((item) => item.id === providerId);
 
-  if (!account) {
+  if (!provider) {
     return (
       <div className="w-full max-w-full space-y-6 p-6">
         <Link
-          href="/admin/users"
+          href="/admin/providers"
           className="text-sm font-semibold text-blue-600 hover:text-blue-700"
         >
-          Back to users
+          Back to providers
         </Link>
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
           <p className="text-sm font-semibold text-gray-700">
-            Account not found
+            Provider not found
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            This mock account may not exist in the current dataset.
+            This mock provider may not exist in the current dataset.
           </p>
         </div>
       </div>
@@ -93,51 +87,65 @@ export function UserDetail({ userId }: { userId: string }) {
   return (
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
-        backHref="/admin/users"
-        backLabel="Back to users"
-        title={account.name}
-        description={`${account.id} / ${roleLabels[account.role]}`}
+        backHref="/admin/providers"
+        backLabel="Back to providers"
+        title={provider.businessName}
+        description={`${provider.id} / Owner: ${provider.ownerName}`}
         actions={
           <ActionMenu
             items={[
               {
+                label: "Review verification",
+                onClick: () =>
+                  window.alert("Open verification workspace (mock)."),
+              },
+              {
                 label:
-                  account.status === "ACTIVE"
-                    ? "Suspend account"
-                    : "Unlock account",
-                onClick: () => handleStatusAction(account),
-                variant: account.status === "ACTIVE" ? "danger" : "default",
+                  provider.status === "ACTIVE"
+                    ? "Suspend provider"
+                    : "Unlock provider",
+                onClick: () => handleStatusAction(provider),
+                variant: provider.status === "ACTIVE" ? "danger" : "default",
               },
             ]}
           />
         }
       />
 
-      <StatisticCardGrid columns={3}>
-        <StatisticCard title="Bookings" value={account.bookings} tone="blue" />
+      <StatisticCardGrid columns={4}>
         <StatisticCard
-          title="Tracked value"
-          value={formatCurrency(account.totalSpendVnd)}
+          title="Bookings"
+          value={provider.bookingsCount}
+          tone="blue"
+        />
+        <StatisticCard
+          title="Revenue"
+          value={formatCurrency(provider.revenueVnd)}
           tone="green"
           valueClassName="text-2xl"
         />
         <StatisticCard
-          title="Status"
-          value={statusLabels[account.status]}
-          tone={account.status === "ACTIVE" ? "green" : "red"}
+          title="Services"
+          value={provider.servicesCount}
+          tone="purple"
+        />
+        <StatisticCard
+          title="Rating"
+          value={provider.rating.toFixed(1)}
+          tone="amber"
         />
       </StatisticCardGrid>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-gray-950">Account details</h2>
+        <h2 className="text-lg font-bold text-gray-950">Provider details</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {[
-            ["Email", account.email],
-            ["Phone", account.phone],
-            ["Role", roleLabels[account.role]],
-            ["Joined", formatDate(account.joinedAt)],
-            ["Ban reason", account.banReason ?? "None"],
-            ["Ban expires", account.banExpiresAt ?? "Not set"],
+            ["Email", provider.email],
+            ["Phone", provider.phone],
+            ["Status", statusLabels[provider.status]],
+            ["Verification", provider.verificationStatus],
+            ["Joined", formatDate(provider.joinedAt)],
+            ["Ban reason", provider.banReason ?? "None"],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl bg-gray-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">

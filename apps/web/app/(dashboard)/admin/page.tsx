@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
 import { PlatformSummaryCards } from "@/apis/admin/analytics/components/platform-summary-cards";
 import { BookingAnalyticsChart } from "@/apis/admin/analytics/components/booking-analytics-chart";
 import { PlatformRevenueChart } from "@/apis/admin/analytics/components/platform-revenue-chart";
@@ -8,48 +9,41 @@ import { TopServicesTable } from "@/apis/admin/analytics/components/top-services
 export default function AdminDashboard() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-8">
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <nav className="text-xs font-semibold text-gray-400 mb-1 uppercase tracking-wider">
-            Admin / Overview
-          </nav>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">
-            Dashboard Overview
-          </h1>
-        </div>
-
-        {/* Date Filter Dropdown Mock */}
-        <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 shadow-sm text-sm text-gray-600 font-medium hover:border-gray-300 cursor-pointer transition-colors">
-          <svg
-            className="w-4 h-4 text-gray-400"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-            />
-          </svg>
-          <span>Last 30 Days (May 12 - Jun 11)</span>
-          <svg
-            className="w-3.5 h-3.5 text-gray-400 ml-1"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M19 9l-7 7-7-7"
-            />
-          </svg>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Admin / Overview"
+        title="Dashboard Overview"
+        actions={
+          <div className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:border-gray-300">
+            <svg
+              className="h-4 w-4 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
+              />
+            </svg>
+            <span>Last 30 Days (May 12 - Jun 11)</span>
+            <svg
+              className="ml-1 h-3.5 w-3.5 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M19 9l-7 7-7-7"
+              />
+            </svg>
+          </div>
+        }
+      />
 
       {/* Summary Cards */}
       <PlatformSummaryCards />

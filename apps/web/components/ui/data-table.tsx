@@ -30,7 +30,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (data.length === 0 && emptyState) {
     return (
-      <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
+      <div className="overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
         {emptyState}
       </div>
     );
@@ -40,8 +40,8 @@ export function DataTable<T>({
   const contentColumns = columns.filter((column) => !column.isAction);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm">
-      <div className="divide-y divide-gray-100 md:hidden">
+    <div className="overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
+      <div className="divide-y divide-border-subtle md:hidden">
         {data.map((row) => (
           <div key={getRowKey(row)} className="space-y-3 p-4">
             <div className="space-y-3">
@@ -50,17 +50,17 @@ export function DataTable<T>({
                   key={column.key}
                   className="flex min-w-0 items-start justify-between gap-4"
                 >
-                  <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                  <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-subtle">
                     {column.header}
                   </p>
-                  <div className="min-w-0 text-right text-sm text-gray-800">
+                  <div className="min-w-0 text-right text-sm text-foreground">
                     {column.render(row)}
                   </div>
                 </div>
               ))}
             </div>
             {actionColumns.length > 0 && (
-              <div className="border-t border-gray-100 pt-4">
+              <div className="border-t border-border-subtle pt-4">
                 {actionColumns.map((column) => (
                   <div key={column.key}>{column.render(row)}</div>
                 ))}
@@ -73,12 +73,12 @@ export function DataTable<T>({
       <div className="hidden overflow-x-auto md:block">
         <table className={cn("w-full table-fixed text-left", minWidthClassName)}>
           <thead>
-            <tr className="border-b border-gray-200 bg-gray-50">
+            <tr className="border-b border-border-subtle bg-surface-muted">
               {columns.map((column) => (
                 <th
                   key={column.key}
                   className={cn(
-                    "px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-600",
+                    "px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted",
                     column.align === "right" && "text-right",
                     column.align === "center" && "text-center",
                     column.widthClassName,
@@ -91,14 +91,14 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-border-subtle">
             {data.map((row) => (
-              <tr key={getRowKey(row)} className="transition-colors hover:bg-gray-50">
+              <tr key={getRowKey(row)} className="transition-colors hover:bg-surface-muted">
                 {columns.map((column) => (
                   <td
                     key={column.key}
                     className={cn(
-                      "px-6 py-4 align-middle text-sm text-gray-800",
+                      "px-6 py-4 align-middle text-sm text-foreground",
                       column.align === "right" && "text-right",
                       column.align === "center" && "text-center",
                       column.isAction && "whitespace-nowrap",

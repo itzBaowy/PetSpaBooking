@@ -5,6 +5,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { ActionMenu } from "@/components/ui/action-menu";
 import { DataTable } from "@/components/ui/data-table";
 import type { DataTableColumn } from "@/components/ui/data-table";
+import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
@@ -122,28 +123,21 @@ export function ModerationTable() {
 
   return (
     <div className="w-full max-w-full space-y-6 p-6">
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-        <div>
-          <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-            Admin / Content Moderation
-          </nav>
-          <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-            Moderation
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-500">
-            Review service content, images, price tables, and user reports
-            before they affect the marketplace.
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
-            Export queue
-          </button>
-          <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
-            Review next item
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="Admin / Content Moderation"
+        title="Moderation"
+        description="Review service content, images, price tables, and user reports before they affect the marketplace."
+        actions={
+          <>
+            <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
+              Export queue
+            </button>
+            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
+              Review next item
+            </button>
+          </>
+        }
+      />
 
       <StatisticCardGrid columns={3}>
         <StatisticCard title="Pending content" value={pendingCount} />

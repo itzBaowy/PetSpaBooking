@@ -15,29 +15,29 @@ const toneStyles: Record<
   { icon: string; value: string; border: string }
 > = {
   default: {
-    icon: "bg-gray-50 text-gray-600",
-    value: "text-gray-900",
-    border: "border-gray-100",
+    icon: "bg-surface-muted text-muted",
+    value: "text-foreground",
+    border: "border-border-subtle",
   },
   blue: {
-    icon: "bg-blue-50 text-blue-600",
-    value: "text-blue-600",
-    border: "border-blue-100",
+    icon: "bg-brand-soft text-brand",
+    value: "text-brand",
+    border: "border-brand-soft",
   },
   green: {
-    icon: "bg-green-50 text-green-600",
-    value: "text-green-600",
-    border: "border-green-100",
+    icon: "bg-success-soft text-success",
+    value: "text-success",
+    border: "border-success-soft",
   },
   amber: {
-    icon: "bg-amber-50 text-amber-600",
-    value: "text-amber-600",
-    border: "border-amber-100",
+    icon: "bg-warning-soft text-warning",
+    value: "text-warning",
+    border: "border-warning-soft",
   },
   red: {
-    icon: "bg-red-50 text-red-600",
-    value: "text-red-600",
-    border: "border-red-100",
+    icon: "bg-danger-soft text-danger",
+    value: "text-danger",
+    border: "border-danger-soft",
   },
   purple: {
     icon: "bg-purple-50 text-purple-600",
@@ -45,9 +45,9 @@ const toneStyles: Record<
     border: "border-purple-100",
   },
   slate: {
-    icon: "bg-slate-50 text-slate-600",
-    value: "text-slate-700",
-    border: "border-slate-100",
+    icon: "bg-surface-soft text-muted",
+    value: "text-foreground",
+    border: "border-border-subtle",
   },
 };
 
@@ -79,13 +79,13 @@ export function StatisticCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-white p-5 shadow-sm transition-colors",
+        "rounded-xl border bg-surface p-5 shadow-sm transition-colors",
         styles.border,
         className,
       )}
     >
       <div className="flex min-w-0 items-start justify-between gap-3">
-        <p className="min-w-0 text-sm font-medium text-gray-500">{title}</p>
+        <p className="min-w-0 text-sm font-medium text-muted">{title}</p>
         {icon && (
           <div
             className={cn(
@@ -114,7 +114,7 @@ export function StatisticCard({
               "inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold",
               changeDirection === "up" && "bg-green-50 text-green-700",
               changeDirection === "down" && "bg-red-50 text-red-700",
-              changeDirection === "neutral" && "bg-gray-50 text-gray-600",
+              changeDirection === "neutral" && "bg-surface-muted text-muted",
             )}
           >
             {change}
@@ -122,7 +122,7 @@ export function StatisticCard({
         )}
       </div>
 
-      {footer && <div className="mt-2 text-xs text-gray-400">{footer}</div>}
+      {footer && <div className="mt-2 text-xs text-subtle">{footer}</div>}
     </div>
   );
 }

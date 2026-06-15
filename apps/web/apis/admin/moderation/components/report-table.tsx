@@ -5,6 +5,7 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DataTable } from "@/components/ui/data-table";
 import type { DataTableColumn } from "@/components/ui/data-table";
+import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -137,17 +138,11 @@ export function ReportTable() {
 
   return (
     <div className="w-full max-w-full space-y-6 p-6">
-      <div>
-        <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-gray-400">
-          Admin / Moderation / Reports
-        </nav>
-        <h1 className="text-3xl font-extrabold tracking-tight text-gray-900">
-          Content Reports
-        </h1>
-        <p className="mt-2 max-w-2xl text-sm text-gray-500">
-          Handle reports about providers and low quality services.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Admin / Moderation / Reports"
+        title="Content Reports"
+        description="Handle reports about providers and low quality services."
+      />
 
       <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">

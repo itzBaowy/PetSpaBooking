@@ -1,10 +1,11 @@
 import { UserDetail } from "@/apis/admin/users/components/user-detail";
 
-export default function UserDetailPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">User Details</h1>
-      <UserDetail />
-    </div>
-  );
+interface PageProps {
+  params: Promise<{ userId: string }>;
+}
+
+export default async function UserDetailPage({ params }: PageProps) {
+  const { userId } = await params;
+
+  return <UserDetail userId={userId} />;
 }
