@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { ActionMenu } from "@/components/ui/action-menu";
@@ -35,6 +36,19 @@ function Badge({ label, className }: { label: string; className: string }) {
   );
 }
 
+const contentStatusLabels = {
+  PENDING: "Chờ duyệt",
+  APPROVED: "Đã duyệt",
+  HIDDEN: "Đã ẩn",
+  NEEDS_REVISION: "Cần chỉnh sửa",
+};
+
+const riskLabels = {
+  LOW: "Thấp",
+  MEDIUM: "Trung bình",
+  HIGH: "Cao",
+};
+
 export function ModerationTable() {
   const moderationQueue = useModerationQueue();
   const reports = useReports();
@@ -59,7 +73,7 @@ export function ModerationTable() {
   const columns: Array<DataTableColumn<ModerationItem>> = [
     {
       key: "content",
-      header: "Content",
+      header: "Nội dung",
       widthClassName: "w-[26%]",
       render: (item) => (
         <div>
@@ -74,47 +88,47 @@ export function ModerationTable() {
     },
     {
       key: "provider",
-      header: "Provider",
+      header: "Nhà cung cấp",
       widthClassName: "w-[18%]",
       render: (item) => item.providerName,
     },
     {
       key: "type",
-      header: "Type",
+      header: "Loại",
       widthClassName: "w-[12%]",
       render: (item) => item.type,
     },
     {
       key: "risk",
-      header: "Risk",
+      header: "Rủi ro",
       widthClassName: "w-[12%]",
       render: (item) => (
-        <Badge label={item.risk} className={riskStyles[item.risk]} />
+        <Badge label={riskLabels[item.risk]} className={riskStyles[item.risk]} />
       ),
     },
     {
       key: "status",
-      header: "Status",
+      header: "Trạng thái",
       widthClassName: "w-[14%]",
       render: (item) => (
         <Badge
-          label={item.status}
+          label={contentStatusLabels[item.status]}
           className={contentStatusStyles[item.status]}
         />
       ),
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "Thao tác",
       align: "right",
       isAction: true,
       widthClassName: "w-[8%]",
       render: () => (
         <ActionMenu
           items={[
-            { label: "Approve content" },
-            { label: "Request edits" },
-            { label: "Hide content", variant: "danger" },
+            { label: "Duyệt nội dung" },
+            { label: "Yêu cầu chỉnh sửa" },
+            { label: "Ẩn nội dung", variant: "danger" },
           ]}
         />
       ),
@@ -124,30 +138,36 @@ export function ModerationTable() {
   return (
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
-        eyebrow="Admin / Content Moderation"
-        title="Moderation"
-        description="Review service content, images, price tables, and user reports before they affect the marketplace."
+        eyebrow="Quản trị / Kiểm duyệt nội dung"
+        title="Kiểm duyệt"
+        description="Duyệt nội dung dịch vụ, hình ảnh, bảng giá và báo cáo trước khi ảnh hưởng đến sàn."
         actions={
           <>
-            <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
-              Export queue
-            </button>
-            <button className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white shadow-sm">
-              Review next item
-            </button>
+            <Link
+              href="/admin/moderation"
+              className="rounded-xl bg-foreground px-4 py-2 text-sm font-bold text-background shadow-sm"
+            >
+              Hàng đợi nội dung
+            </Link>
+            <Link
+              href="/admin/moderation/reports"
+              className="rounded-xl border border-border-subtle bg-surface px-4 py-2 text-sm font-bold text-foreground shadow-sm hover:bg-surface-muted"
+            >
+              Báo cáo
+            </Link>
           </>
         }
       />
 
       <StatisticCardGrid columns={3}>
-        <StatisticCard title="Pending content" value={pendingCount} />
+        <StatisticCard title="Nội dung chờ duyệt" value={pendingCount} />
         <StatisticCard
-          title="Open reports"
+          title="Báo cáo đang mở"
           value={openReportCount}
           tone="red"
         />
         <StatisticCard
-          title="High risk reviews"
+          title="Rà soát rủi ro cao"
           value={highRiskCount}
           tone="amber"
         />
@@ -157,10 +177,10 @@ export function ModerationTable() {
         <div className="flex flex-col gap-3 border-b border-gray-100 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-bold text-gray-900">
-              Service content queue
+              Hàng đợi nội dung dịch vụ
             </h2>
             <p className="text-sm text-gray-500">
-              Approve, hide, or request edits for provider content.
+              Duyệt, ẩn hoặc yêu cầu chỉnh sửa nội dung của nhà cung cấp.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -168,11 +188,11 @@ export function ModerationTable() {
               value=""
               onChange={() => undefined}
               className="sm:w-80"
-              placeholder="Search provider, service, content ID..."
+              placeholder="Tìm nhà cung cấp, dịch vụ, mã nội dung..."
             />
             <CustomSelect
               className="sm:w-52"
-              options={["All content", "Service", "Image", "Price table"]}
+              options={["Tất cả nội dung", "Dịch vụ", "Hình ảnh", "Bảng giá"]}
             />
           </div>
         </div>
