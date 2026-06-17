@@ -22,36 +22,36 @@ import { useAdminProviders } from "../queries";
 import type { AdminProviderAccount } from "../queries";
 
 const TYPE_FILTERS: Array<{ label: string; value: "" | ProviderType }> = [
-  { label: "All types", value: "" },
-  { label: "Clinics", value: "CLINIC" },
+  { label: "Tất cả loại", value: "" },
+  { label: "Phòng khám", value: "CLINIC" },
   { label: "Grooming", value: "GROOMING" },
-  { label: "Pet Hotels", value: "PET_HOTEL" },
+  { label: "Khách sạn thú cưng", value: "PET_HOTEL" },
   { label: "Spa", value: "SPA" },
 ];
 
 const STATUS_FILTERS: Array<{ label: string; value: "" | AdminAccountStatus }> =
   [
-    { label: "All statuses", value: "" },
-    { label: "Active", value: "ACTIVE" },
-    { label: "Suspended", value: "SUSPENDED" },
+    { label: "Tất cả trạng thái", value: "" },
+    { label: "Đang hoạt động", value: "ACTIVE" },
+    { label: "Bị tạm khóa", value: "SUSPENDED" },
   ];
 
 const typeLabels: Record<ProviderType, string> = {
-  CLINIC: "Clinic",
+  CLINIC: "Phòng khám",
   GROOMING: "Grooming",
-  PET_HOTEL: "Pet Hotel",
+  PET_HOTEL: "Khách sạn thú cưng",
   SPA: "Spa",
 };
 
 const verificationLabels: Record<ProviderVerificationStatus, string> = {
-  VERIFIED: "Verified",
-  PENDING: "Pending",
-  REJECTED: "Rejected",
+  VERIFIED: "Đã xác thực",
+  PENDING: "Chờ duyệt",
+  REJECTED: "Từ chối",
 };
 
 const statusLabels: Record<AdminAccountStatus, string> = {
-  ACTIVE: "Active",
-  SUSPENDED: "Suspended",
+  ACTIVE: "Đang hoạt động",
+  SUSPENDED: "Bị tạm khóa",
 };
 
 function formatCurrency(value: number): string {
@@ -103,7 +103,7 @@ function createStatusPayload(provider: AdminProviderAccount) {
     provider.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
 
   if (nextStatus === "ACTIVE") {
-    const reason = window.prompt("Reason for unlocking this provider:");
+    const reason = window.prompt("Lý do mở khóa nhà cung cấp này:");
     if (!reason) return null;
 
     return accountStatusActionSchema.safeParse({
@@ -115,11 +115,11 @@ function createStatusPayload(provider: AdminProviderAccount) {
     });
   }
 
-  const reason = window.prompt("Reason for suspending this provider:");
+  const reason = window.prompt("Lý do tạm khóa nhà cung cấp này:");
   if (!reason) return null;
 
   const days = window.prompt(
-    "Temporary suspension duration in days. Leave blank for permanent suspension:",
+    "Thời hạn tạm khóa theo ngày. Để trống nếu khóa vĩnh viễn:",
   );
   const durationDays = days ? Number(days) : undefined;
 
@@ -184,19 +184,19 @@ export function ProviderManagement() {
     if (!result) return;
 
     if (!result.success) {
-      window.alert(result.error.issues[0]?.message ?? "Invalid status action.");
+      window.alert(result.error.issues[0]?.message ?? "Thao tác trạng thái không hợp lệ.");
       return;
     }
 
     window.alert(
-      `${provider.businessName} status would be changed to ${statusLabels[result.data.status]} (mock).`,
+      `Trạng thái của ${provider.businessName} sẽ đổi thành ${statusLabels[result.data.status]} (mock).`,
     );
   };
 
   const columns: Array<DataTableColumn<AdminProviderAccount>> = [
     {
       key: "provider",
-      header: "Provider",
+      header: "Nhà cung cấp",
       widthClassName: "w-[24%]",
       render: (provider) => (
         <div className="flex min-w-0 items-center gap-3">
@@ -214,7 +214,7 @@ export function ProviderManagement() {
     },
     {
       key: "owner",
-      header: "Owner contact",
+      header: "Liên hệ chủ sở hữu",
       widthClassName: "w-[22%]",
       render: (provider) => (
         <div>
@@ -228,7 +228,7 @@ export function ProviderManagement() {
     },
     {
       key: "type",
-      header: "Type",
+      header: "Loại",
       widthClassName: "w-[12%]",
       render: (provider) => (
         <span className="inline-flex rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700">
@@ -238,12 +238,12 @@ export function ProviderManagement() {
     },
     {
       key: "performance",
-      header: "Performance",
+      header: "Hiệu suất",
       widthClassName: "w-[18%]",
       render: (provider) => (
         <div>
           <p className="text-sm font-semibold text-gray-900">
-            {provider.bookingsCount} bookings
+            {provider.bookingsCount} đặt lịch
           </p>
           <p className="text-xs text-gray-500">
             {formatCurrency(provider.revenueVnd)} / {provider.rating.toFixed(1)}
@@ -253,7 +253,7 @@ export function ProviderManagement() {
     },
     {
       key: "verification",
-      header: "Verification",
+      header: "Xác thực",
       widthClassName: "w-[13%]",
       render: (provider) => (
         <VerificationBadge status={provider.verificationStatus} />
@@ -261,13 +261,13 @@ export function ProviderManagement() {
     },
     {
       key: "status",
-      header: "Status",
+      header: "Trạng thái",
       widthClassName: "w-[11%]",
       render: (provider) => <StatusBadge status={provider.status} />,
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "Thao tác",
       align: "right",
       isAction: true,
       widthClassName: "w-[8%]",
@@ -275,18 +275,18 @@ export function ProviderManagement() {
         <ActionMenu
           items={[
             {
-              label: "View provider",
+              label: "Xem nhà cung cấp",
               onClick: () => router.push(`/admin/providers/${provider.id}`),
             },
             {
-              label: "Review verification",
+              label: "Xem hồ sơ xác thực",
               onClick: () => router.push("/admin/verification"),
             },
             {
               label:
                 provider.status === "ACTIVE"
-                  ? "Suspend provider"
-                  : "Unlock provider",
+                  ? "Tạm khóa nhà cung cấp"
+                  : "Mở khóa nhà cung cấp",
               onClick: () => handleStatusAction(provider),
               variant: provider.status === "ACTIVE" ? "danger" : "default",
             },
@@ -299,16 +299,16 @@ export function ProviderManagement() {
   return (
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
-        eyebrow="Admin / Providers"
-        title="Provider Management"
-        description="Manage service provider accounts, access status, verification, and performance."
+        eyebrow="Quản trị / Nhà cung cấp"
+        title="Quản lý nhà cung cấp"
+        description="Quản lý tài khoản nhà cung cấp, trạng thái truy cập, xác thực và hiệu suất."
       />
 
       <StatisticCardGrid columns={4}>
-        <StatisticCard title="Total providers" value={providers.length} tone="blue" />
-        <StatisticCard title="Active" value={activeCount} tone="green" />
-        <StatisticCard title="Verified" value={verifiedCount} tone="purple" />
-        <StatisticCard title="Suspended" value={suspendedCount} tone="red" />
+        <StatisticCard title="Tổng nhà cung cấp" value={providers.length} tone="blue" />
+        <StatisticCard title="Đang hoạt động" value={activeCount} tone="green" />
+        <StatisticCard title="Đã xác thực" value={verifiedCount} tone="purple" />
+        <StatisticCard title="Bị tạm khóa" value={suspendedCount} tone="red" />
       </StatisticCardGrid>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
@@ -316,7 +316,7 @@ export function ProviderManagement() {
           <SearchInput
             className="w-full xl:max-w-md"
             value={search}
-            placeholder="Search business, owner, email, or phone"
+            placeholder="Tìm tên cơ sở, chủ sở hữu, email hoặc số điện thoại"
             onChange={(value) => {
               setSearch(value);
               setPage(1);
@@ -341,7 +341,7 @@ export function ProviderManagement() {
             }}
           />
           <div className="text-sm font-medium text-gray-500 xl:ml-auto">
-            {total} provider{total === 1 ? "" : "s"}
+            {total} nhà cung cấp
           </div>
         </div>
       </div>
@@ -354,10 +354,10 @@ export function ProviderManagement() {
         emptyState={
           <div className="p-8 text-center">
             <p className="text-sm font-semibold text-gray-700">
-              No providers found
+              Không tìm thấy nhà cung cấp
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              Try another search keyword, provider type, or status filter.
+              Thử từ khóa, loại nhà cung cấp hoặc bộ lọc trạng thái khác.
             </p>
           </div>
         }

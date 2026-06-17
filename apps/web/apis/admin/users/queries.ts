@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
+import type { ProviderBalance, ProviderTrustScore } from "@/types/provider";
 import { accountStatusActionSchema } from "./schema";
 import type {
   AccountStatusActionData,
@@ -37,6 +38,15 @@ export interface AdminProviderAccount {
   bookingsCount: number;
   rating: number;
   revenueVnd: number;
+  balance: ProviderBalance;
+  trustScore: ProviderTrustScore;
+  violations: Array<{
+    id: string;
+    type: "REPORT" | "NO_SHOW" | "DISPUTE" | "CONTENT_POLICY";
+    note: string;
+    createdAt: string;
+    severity: "LOW" | "MEDIUM" | "HIGH";
+  }>;
   banReason?: string;
   banExpiresAt?: string;
 }
@@ -150,6 +160,24 @@ export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
     bookingsCount: 342,
     rating: 4.9,
     revenueVnd: 38400000,
+    balance: {
+      availableBalance: 7200000,
+      reservedBalance: 1260000,
+      debtBalance: 0,
+      safetyBuffer: 1500000,
+      currency: "VND",
+      lastUpdatedAt: "2026-06-14 09:30",
+    },
+    trustScore: {
+      score: 92,
+      riskLevel: "LOW",
+      completionRate: 97,
+      noShowRate: 1.2,
+      disputeRate: 0.8,
+      cashAbnormalityRate: 0.5,
+      lastCalculatedAt: "2026-06-14",
+    },
+    violations: [],
   },
   {
     id: "PRV-2002",
@@ -165,6 +193,32 @@ export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
     bookingsCount: 218,
     rating: 4.7,
     revenueVnd: 27600000,
+    balance: {
+      availableBalance: 3100000,
+      reservedBalance: 840000,
+      debtBalance: 450000,
+      safetyBuffer: 1200000,
+      currency: "VND",
+      lastUpdatedAt: "2026-06-14 08:10",
+    },
+    trustScore: {
+      score: 81,
+      riskLevel: "WATCH",
+      completionRate: 91,
+      noShowRate: 3.6,
+      disputeRate: 2.4,
+      cashAbnormalityRate: 1.8,
+      lastCalculatedAt: "2026-06-14",
+    },
+    violations: [
+      {
+        id: "VIO-1202",
+        type: "REPORT",
+        note: "Late response to service quality report.",
+        createdAt: "2026-06-10",
+        severity: "LOW",
+      },
+    ],
   },
   {
     id: "PRV-2003",
@@ -181,6 +235,39 @@ export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
     rating: 4.2,
     revenueVnd: 12300000,
     banReason: "Unresolved service quality reports",
+    balance: {
+      availableBalance: 520000,
+      reservedBalance: 630000,
+      debtBalance: 1850000,
+      safetyBuffer: 1500000,
+      currency: "VND",
+      lastUpdatedAt: "2026-06-13 18:45",
+    },
+    trustScore: {
+      score: 58,
+      riskLevel: "RESTRICTED",
+      completionRate: 76,
+      noShowRate: 8.5,
+      disputeRate: 7.2,
+      cashAbnormalityRate: 5.1,
+      lastCalculatedAt: "2026-06-14",
+    },
+    violations: [
+      {
+        id: "VIO-1301",
+        type: "DISPUTE",
+        note: "Two unresolved disputes in the last 30 days.",
+        createdAt: "2026-06-11",
+        severity: "HIGH",
+      },
+      {
+        id: "VIO-1294",
+        type: "CONTENT_POLICY",
+        note: "Uploaded pricing image did not match listed package.",
+        createdAt: "2026-06-08",
+        severity: "MEDIUM",
+      },
+    ],
   },
   {
     id: "PRV-2004",
@@ -196,6 +283,32 @@ export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
     bookingsCount: 71,
     rating: 4.1,
     revenueVnd: 9800000,
+    balance: {
+      availableBalance: 1420000,
+      reservedBalance: 380000,
+      debtBalance: 0,
+      safetyBuffer: 1000000,
+      currency: "VND",
+      lastUpdatedAt: "2026-06-12 14:00",
+    },
+    trustScore: {
+      score: 73,
+      riskLevel: "WATCH",
+      completionRate: 84,
+      noShowRate: 4.8,
+      disputeRate: 3.9,
+      cashAbnormalityRate: 1.1,
+      lastCalculatedAt: "2026-06-14",
+    },
+    violations: [
+      {
+        id: "VIO-1280",
+        type: "NO_SHOW",
+        note: "No-show report rejected after pet owner evidence review.",
+        createdAt: "2026-06-03",
+        severity: "MEDIUM",
+      },
+    ],
   },
   {
     id: "PRV-2005",
@@ -211,6 +324,24 @@ export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
     bookingsCount: 126,
     rating: 4.8,
     revenueVnd: 18100000,
+    balance: {
+      availableBalance: 4800000,
+      reservedBalance: 710000,
+      debtBalance: 0,
+      safetyBuffer: 1200000,
+      currency: "VND",
+      lastUpdatedAt: "2026-06-14 10:20",
+    },
+    trustScore: {
+      score: 89,
+      riskLevel: "LOW",
+      completionRate: 95,
+      noShowRate: 1.9,
+      disputeRate: 1.6,
+      cashAbnormalityRate: 0.7,
+      lastCalculatedAt: "2026-06-14",
+    },
+    violations: [],
   },
   {
     id: "PRV-2006",
@@ -226,6 +357,24 @@ export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
     bookingsCount: 38,
     rating: 4.5,
     revenueVnd: 5200000,
+    balance: {
+      availableBalance: 980000,
+      reservedBalance: 210000,
+      debtBalance: 0,
+      safetyBuffer: 1000000,
+      currency: "VND",
+      lastUpdatedAt: "2026-06-14 07:15",
+    },
+    trustScore: {
+      score: 78,
+      riskLevel: "WATCH",
+      completionRate: 88,
+      noShowRate: 3.2,
+      disputeRate: 2.8,
+      cashAbnormalityRate: 2.1,
+      lastCalculatedAt: "2026-06-14",
+    },
+    violations: [],
   },
 ];
 
