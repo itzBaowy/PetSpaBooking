@@ -10,14 +10,14 @@ import { useAdminUsers } from "../queries";
 import type { AdminUserAccount } from "../queries";
 
 const roleLabels = {
-  PET_OWNER: "Pet Owner",
-  SERVICE_PROVIDER: "Service Provider",
-  ADMIN: "Admin",
+  PET_OWNER: "Chủ thú cưng",
+  SERVICE_PROVIDER: "Nhà cung cấp",
+  ADMIN: "Quản trị viên",
 };
 
 const statusLabels: Record<AdminAccountStatus, string> = {
-  ACTIVE: "Active",
-  SUSPENDED: "Suspended",
+  ACTIVE: "Đang hoạt động",
+  SUSPENDED: "Tạm khóa",
 };
 
 function formatCurrency(value: number): string {
@@ -29,7 +29,7 @@ function formatCurrency(value: number): string {
 }
 
 function formatDate(value: string): string {
-  return new Intl.DateTimeFormat("en-US", {
+  return new Intl.DateTimeFormat("vi-VN", {
     month: "short",
     day: "numeric",
     year: "numeric",
@@ -41,8 +41,8 @@ function handleStatusAction(account: AdminUserAccount) {
     account.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
   const reason = window.prompt(
     nextStatus === "ACTIVE"
-      ? "Reason for unlocking this account:"
-      : "Reason for suspending this account:",
+      ? "Nhập lý do mở khóa tài khoản:"
+      : "Nhập lý do tạm khóa tài khoản:",
   );
 
   if (!reason) return;
@@ -56,12 +56,12 @@ function handleStatusAction(account: AdminUserAccount) {
   });
 
   if (!result.success) {
-    window.alert(result.error.issues[0]?.message ?? "Invalid status action.");
+    window.alert(result.error.issues[0]?.message ?? "Thao tác trạng thái không hợp lệ.");
     return;
   }
 
   window.alert(
-    `${account.name} status would be changed to ${statusLabels[nextStatus]} (mock).`,
+    `Trạng thái của ${account.name} sẽ đổi thành ${statusLabels[nextStatus]} (mock).`,
   );
 }
 
@@ -76,14 +76,14 @@ export function UserDetail({ userId }: { userId: string }) {
           href="/admin/users"
           className="text-sm font-semibold text-blue-600 hover:text-blue-700"
         >
-          Back to users
+          Quay lại người dùng
         </Link>
         <div className="rounded-2xl border border-gray-100 bg-white p-8 text-center shadow-sm">
           <p className="text-sm font-semibold text-gray-700">
-            Account not found
+            Không tìm thấy tài khoản
           </p>
           <p className="mt-1 text-xs text-gray-500">
-            This mock account may not exist in the current dataset.
+            Tài khoản mock này có thể chưa tồn tại trong bộ dữ liệu hiện tại.
           </p>
         </div>
       </div>
@@ -94,7 +94,7 @@ export function UserDetail({ userId }: { userId: string }) {
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
         backHref="/admin/users"
-        backLabel="Back to users"
+        backLabel="Quay lại người dùng"
         title={account.name}
         description={`${account.id} / ${roleLabels[account.role]}`}
         actions={
@@ -103,8 +103,8 @@ export function UserDetail({ userId }: { userId: string }) {
               {
                 label:
                   account.status === "ACTIVE"
-                    ? "Suspend account"
-                    : "Unlock account",
+                    ? "Tạm khóa tài khoản"
+                    : "Mở khóa tài khoản",
                 onClick: () => handleStatusAction(account),
                 variant: account.status === "ACTIVE" ? "danger" : "default",
               },
@@ -114,30 +114,30 @@ export function UserDetail({ userId }: { userId: string }) {
       />
 
       <StatisticCardGrid columns={3}>
-        <StatisticCard title="Bookings" value={account.bookings} tone="blue" />
+        <StatisticCard title="Đặt lịch" value={account.bookings} tone="blue" />
         <StatisticCard
-          title="Tracked value"
+          title="Giá trị theo dõi"
           value={formatCurrency(account.totalSpendVnd)}
           tone="green"
           valueClassName="text-2xl"
         />
         <StatisticCard
-          title="Status"
+          title="Trạng thái"
           value={statusLabels[account.status]}
           tone={account.status === "ACTIVE" ? "green" : "red"}
         />
       </StatisticCardGrid>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-gray-950">Account details</h2>
+        <h2 className="text-lg font-bold text-gray-950">Chi tiết tài khoản</h2>
         <div className="mt-5 grid gap-4 md:grid-cols-2">
           {[
             ["Email", account.email],
-            ["Phone", account.phone],
-            ["Role", roleLabels[account.role]],
-            ["Joined", formatDate(account.joinedAt)],
-            ["Ban reason", account.banReason ?? "None"],
-            ["Ban expires", account.banExpiresAt ?? "Not set"],
+            ["Số điện thoại", account.phone],
+            ["Vai trò", roleLabels[account.role]],
+            ["Ngày tham gia", formatDate(account.joinedAt)],
+            ["Lý do khóa", account.banReason ?? "Không có"],
+            ["Hết hạn khóa", account.banExpiresAt ?? "Chưa đặt"],
           ].map(([label, value]) => (
             <div key={label} className="rounded-xl bg-gray-50 p-4">
               <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">

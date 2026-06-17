@@ -18,28 +18,28 @@ import { useAdminUsers } from "../queries";
 import type { AdminUserAccount } from "../queries";
 
 const ROLE_FILTERS: Array<{ label: string; value: "" | AdminAccountRole }> = [
-  { label: "All roles", value: "" },
-  { label: "Pet Owners", value: "PET_OWNER" },
-  { label: "Service Providers", value: "SERVICE_PROVIDER" },
-  { label: "Admins", value: "ADMIN" },
+  { label: "Tất cả vai trò", value: "" },
+  { label: "Chủ thú cưng", value: "PET_OWNER" },
+  { label: "Nhà cung cấp", value: "SERVICE_PROVIDER" },
+  { label: "Quản trị viên", value: "ADMIN" },
 ];
 
 const STATUS_FILTERS: Array<{ label: string; value: "" | AdminAccountStatus }> =
   [
-    { label: "All statuses", value: "" },
-    { label: "Active", value: "ACTIVE" },
-    { label: "Suspended", value: "SUSPENDED" },
+    { label: "Tất cả trạng thái", value: "" },
+    { label: "Đang hoạt động", value: "ACTIVE" },
+    { label: "Bị tạm khóa", value: "SUSPENDED" },
   ];
 
 const roleLabels: Record<AdminAccountRole, string> = {
-  PET_OWNER: "Pet Owner",
-  SERVICE_PROVIDER: "Service Provider",
-  ADMIN: "Admin",
+  PET_OWNER: "Chủ thú cưng",
+  SERVICE_PROVIDER: "Nhà cung cấp",
+  ADMIN: "Quản trị viên",
 };
 
 const statusLabels: Record<AdminAccountStatus, string> = {
-  ACTIVE: "Active",
-  SUSPENDED: "Suspended",
+  ACTIVE: "Đang hoạt động",
+  SUSPENDED: "Bị tạm khóa",
 };
 
 function formatDate(value: string): string {
@@ -94,7 +94,7 @@ function createStatusPayload(account: AdminUserAccount) {
     account.status === "ACTIVE" ? "SUSPENDED" : "ACTIVE";
 
   if (nextStatus === "ACTIVE") {
-    const reason = window.prompt("Reason for unlocking this account:");
+    const reason = window.prompt("Lý do mở khóa tài khoản này:");
     if (!reason) return null;
 
     return accountStatusActionSchema.safeParse({
@@ -106,11 +106,11 @@ function createStatusPayload(account: AdminUserAccount) {
     });
   }
 
-  const reason = window.prompt("Reason for suspending this account:");
+  const reason = window.prompt("Lý do tạm khóa tài khoản này:");
   if (!reason) return null;
 
   const days = window.prompt(
-    "Temporary suspension duration in days. Leave blank for permanent suspension:",
+    "Thời hạn tạm khóa theo ngày. Để trống nếu khóa vĩnh viễn:",
   );
   const durationDays = days ? Number(days) : undefined;
 
@@ -171,19 +171,19 @@ export function UserTable() {
     if (!result) return;
 
     if (!result.success) {
-      window.alert(result.error.issues[0]?.message ?? "Invalid status action.");
+      window.alert(result.error.issues[0]?.message ?? "Thao tác trạng thái không hợp lệ.");
       return;
     }
 
     window.alert(
-      `${account.name} status would be changed to ${statusLabels[result.data.status]} (mock).`,
+      `Trạng thái của ${account.name} sẽ đổi thành ${statusLabels[result.data.status]} (mock).`,
     );
   };
 
   const columns: Array<DataTableColumn<AdminUserAccount>> = [
     {
       key: "profile",
-      header: "Profile",
+      header: "Hồ sơ",
       widthClassName: "w-[24%]",
       render: (account) => (
         <div className="flex min-w-0 items-center gap-3">
@@ -201,7 +201,7 @@ export function UserTable() {
     },
     {
       key: "contact",
-      header: "Contact",
+      header: "Liên hệ",
       widthClassName: "w-[22%]",
       render: (account) => (
         <div className="min-w-0">
@@ -214,18 +214,18 @@ export function UserTable() {
     },
     {
       key: "role",
-      header: "Role",
+      header: "Vai trò",
       widthClassName: "w-[14%]",
       render: (account) => <RoleBadge role={account.role} />,
     },
     {
       key: "activity",
-      header: "Activity",
+      header: "Hoạt động",
       widthClassName: "w-[18%]",
       render: (account) => (
         <div>
           <p className="text-sm font-semibold text-gray-900">
-            {account.bookings} bookings
+            {account.bookings} đặt lịch
           </p>
           <p className="text-xs text-gray-500">
             {formatCurrency(account.totalSpendVnd)}
@@ -235,7 +235,7 @@ export function UserTable() {
     },
     {
       key: "joined",
-      header: "Joined",
+      header: "Ngày tham gia",
       widthClassName: "w-[12%]",
       render: (account) => (
         <span className="text-sm text-gray-700">
@@ -245,13 +245,13 @@ export function UserTable() {
     },
     {
       key: "status",
-      header: "Status",
+      header: "Trạng thái",
       widthClassName: "w-[12%]",
       render: (account) => <StatusBadge status={account.status} />,
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "Thao tác",
       align: "right",
       isAction: true,
       widthClassName: "w-[8%]",
@@ -259,14 +259,14 @@ export function UserTable() {
         <ActionMenu
           items={[
             {
-              label: "View account",
+              label: "Xem tài khoản",
               onClick: () => router.push(`/admin/users/${account.id}`),
             },
             {
               label:
                 account.status === "ACTIVE"
-                  ? "Suspend account"
-                  : "Unlock account",
+                  ? "Tạm khóa tài khoản"
+                  : "Mở khóa tài khoản",
               onClick: () => handleStatusAction(account),
               variant: account.status === "ACTIVE" ? "danger" : "default",
             },
@@ -279,20 +279,20 @@ export function UserTable() {
   return (
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
-        eyebrow="Admin / Accounts"
-        title="User Management"
-        description="Manage platform participants, roles, access status, and ban actions."
+        eyebrow="Quản trị / Tài khoản"
+        title="Quản lý người dùng"
+        description="Quản lý người tham gia nền tảng, vai trò, trạng thái truy cập và thao tác khóa tài khoản."
       />
 
       <StatisticCardGrid columns={4}>
-        <StatisticCard title="Total accounts" value={accounts.length} tone="blue" />
-        <StatisticCard title="Pet owners" value={totalPetOwners} tone="green" />
+        <StatisticCard title="Tổng tài khoản" value={accounts.length} tone="blue" />
+        <StatisticCard title="Chủ thú cưng" value={totalPetOwners} tone="green" />
         <StatisticCard
-          title="Service providers"
+          title="Nhà cung cấp"
           value={totalProviders}
           tone="purple"
         />
-        <StatisticCard title="Suspended" value={suspendedCount} tone="red" />
+        <StatisticCard title="Bị tạm khóa" value={suspendedCount} tone="red" />
       </StatisticCardGrid>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
@@ -300,7 +300,7 @@ export function UserTable() {
           <SearchInput
             className="w-full xl:max-w-md"
             value={search}
-            placeholder="Search name, email, phone, or ID"
+            placeholder="Tìm tên, email, số điện thoại hoặc mã"
             onChange={(value) => {
               setSearch(value);
               setPage(1);
@@ -325,7 +325,7 @@ export function UserTable() {
             }}
           />
           <div className="text-sm font-medium text-gray-500 xl:ml-auto">
-            {total} account{total === 1 ? "" : "s"}
+            {total} tài khoản
           </div>
         </div>
       </div>
@@ -338,10 +338,10 @@ export function UserTable() {
         emptyState={
           <div className="p-8 text-center">
             <p className="text-sm font-semibold text-gray-700">
-              No accounts found
+              Không tìm thấy tài khoản
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              Try another search keyword, role, or status filter.
+              Thử từ khóa, vai trò hoặc bộ lọc trạng thái khác.
             </p>
           </div>
         }
