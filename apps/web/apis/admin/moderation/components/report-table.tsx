@@ -14,16 +14,22 @@ import type { ReportStatus, UserReport } from "../queries";
 
 const REPORT_STATUS_FILTERS: Array<{ label: string; value: "" | ReportStatus }> =
   [
-    { label: "All statuses", value: "" },
-    { label: "Open", value: "OPEN" },
-    { label: "Investigating", value: "INVESTIGATING" },
-    { label: "Resolved", value: "RESOLVED" },
+    { label: "Tất cả trạng thái", value: "" },
+    { label: "Đang mở", value: "OPEN" },
+    { label: "Đang xử lý", value: "INVESTIGATING" },
+    { label: "Đã xử lý", value: "RESOLVED" },
   ];
 
 const reportStatusStyles = {
   OPEN: "border-red-200 bg-red-50 text-red-700",
   INVESTIGATING: "border-blue-200 bg-blue-50 text-blue-700",
   RESOLVED: "border-green-200 bg-green-50 text-green-700",
+};
+
+const reportStatusLabels: Record<ReportStatus, string> = {
+  OPEN: "Đang mở",
+  INVESTIGATING: "Đang xử lý",
+  RESOLVED: "Đã xử lý",
 };
 
 export function ReportTable() {
@@ -59,7 +65,7 @@ export function ReportTable() {
   const columns: Array<DataTableColumn<UserReport>> = [
     {
       key: "report",
-      header: "Report",
+      header: "Báo cáo",
       widthClassName: "w-[17%]",
       render: (report) => (
         <div>
@@ -72,7 +78,7 @@ export function ReportTable() {
     },
     {
       key: "target",
-      header: "Target",
+      header: "Đối tượng",
       widthClassName: "w-[20%]",
       render: (report) => (
         <p className="break-words text-sm font-semibold text-gray-900">
@@ -82,7 +88,7 @@ export function ReportTable() {
     },
     {
       key: "reason",
-      header: "Reason",
+      header: "Lý do",
       widthClassName: "w-[30%]",
       render: (report) => (
         <p className="line-clamp-2 text-sm text-gray-600">{report.reason}</p>
@@ -90,19 +96,19 @@ export function ReportTable() {
     },
     {
       key: "status",
-      header: "Status",
+      header: "Trạng thái",
       widthClassName: "w-[14%]",
       render: (report) => (
         <span
           className={`inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${reportStatusStyles[report.status]}`}
         >
-          {report.status}
+          {reportStatusLabels[report.status]}
         </span>
       ),
     },
     {
       key: "created",
-      header: "Created",
+      header: "Ngày tạo",
       widthClassName: "w-[13%]",
       render: (report) => (
         <span className="text-sm text-gray-700">{report.createdAt}</span>
@@ -110,7 +116,7 @@ export function ReportTable() {
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "Thao tác",
       align: "right",
       isAction: true,
       widthClassName: "w-[8%]",
@@ -118,16 +124,16 @@ export function ReportTable() {
         <ActionMenu
           items={[
             {
-              label: "Dismiss report",
+              label: "Bỏ qua báo cáo",
               onClick: () => alert(`${report.id} dismissed (mock)`),
             },
             {
-              label: "Hide service",
+              label: "Ẩn dịch vụ",
               onClick: () => alert(`${report.target} hidden (mock)`),
               variant: "danger",
             },
             {
-              label: "Resolve report",
+              label: "Xử lý báo cáo",
               onClick: () => alert(`${report.id} resolved (mock)`),
             },
           ]}
@@ -139,9 +145,9 @@ export function ReportTable() {
   return (
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
-        eyebrow="Admin / Moderation / Reports"
-        title="Content Reports"
-        description="Handle reports about providers and low quality services."
+        eyebrow="Quản trị / Kiểm duyệt / Báo cáo"
+        title="Báo cáo nội dung"
+        description="Xử lý báo cáo về nhà cung cấp và dịch vụ kém chất lượng."
       />
 
       <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
@@ -149,7 +155,7 @@ export function ReportTable() {
           <SearchInput
             className="w-full lg:max-w-md"
             value={search}
-            placeholder="Search report ID, provider, service"
+            placeholder="Tìm mã báo cáo, nhà cung cấp, dịch vụ"
             onChange={(value) => {
               setSearch(value);
               setPage(1);
@@ -166,12 +172,8 @@ export function ReportTable() {
           />
           <div className="text-sm font-medium text-gray-500 lg:ml-auto">
             {debouncedSearch || statusFilter
-              ? `${filteredReports.length} matching report${
-                  filteredReports.length === 1 ? "" : "s"
-                }`
-              : `${filteredReports.length} total report${
-                  filteredReports.length === 1 ? "" : "s"
-                }`}
+              ? `${filteredReports.length} báo cáo phù hợp`
+              : `${filteredReports.length} tổng báo cáo`}
           </div>
         </div>
       </div>
@@ -184,10 +186,10 @@ export function ReportTable() {
         emptyState={
           <div className="p-8 text-center">
             <p className="text-sm font-semibold text-gray-700">
-              No reports found
+              Không tìm thấy báo cáo
             </p>
             <p className="mt-1 text-xs text-gray-500">
-              Try another search keyword or status filter.
+              Thử từ khóa hoặc bộ lọc trạng thái khác.
             </p>
           </div>
         }
