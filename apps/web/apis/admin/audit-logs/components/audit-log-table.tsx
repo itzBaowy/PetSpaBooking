@@ -19,6 +19,15 @@ const actionStyles = {
   ACCOUNT_LOCKED: "border-gray-200 bg-gray-50 text-gray-700",
 };
 
+const actionLabels = {
+  CONTENT_APPROVED: "Duyệt nội dung",
+  CONTENT_HIDDEN: "Ẩn nội dung",
+  REPORT_RESOLVED: "Xử lý báo cáo",
+  DISPUTE_REFUNDED: "Hoàn tiền tranh chấp",
+  BOOKING_STATUS_UPDATED: "Cập nhật trạng thái đặt lịch",
+  ACCOUNT_LOCKED: "Khóa tài khoản",
+};
+
 export function AuditLogTable() {
   const auditLogs = useAuditLogs();
   const [page, setPage] = useState(1);
@@ -29,13 +38,13 @@ export function AuditLogTable() {
   const columns: Array<DataTableColumn<AuditLogItem>> = [
     {
       key: "id",
-      header: "Log ID",
+      header: "Mã log",
       widthClassName: "w-[12%]",
       render: (log) => <span className="font-semibold text-gray-900">{log.id}</span>,
     },
     {
       key: "actor",
-      header: "Actor",
+      header: "Người thực hiện",
       widthClassName: "w-[16%]",
       render: (log) => (
         <div>
@@ -46,31 +55,31 @@ export function AuditLogTable() {
     },
     {
       key: "action",
-      header: "Action",
+      header: "Hành động",
       widthClassName: "w-[20%]",
       render: (log) => (
         <span
           className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${actionStyles[log.actionType]}`}
         >
-          {log.actionType}
+          {actionLabels[log.actionType]}
         </span>
       ),
     },
     {
       key: "target",
-      header: "Target",
+      header: "Đối tượng",
       widthClassName: "w-[18%]",
       render: (log) => log.target,
     },
     {
       key: "note",
-      header: "Audit Note",
+      header: "Ghi chú kiểm toán",
       widthClassName: "w-[24%]",
       render: (log) => <span className="text-gray-600">{log.note}</span>,
     },
     {
       key: "time",
-      header: "Time",
+      header: "Thời gian",
       widthClassName: "w-[14%]",
       render: (log) => log.createdAt,
     },
@@ -79,12 +88,12 @@ export function AuditLogTable() {
   return (
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
-        eyebrow="Admin / Audit Logs"
-        title="Audit Logs"
-        description="Track admin decisions for content moderation, reports, booking disputes, refunds, and account actions."
+        eyebrow="Quản trị / Nhật ký"
+        title="Nhật ký kiểm toán"
+        description="Theo dõi quyết định của quản trị viên về kiểm duyệt nội dung, báo cáo, tranh chấp đặt lịch, hoàn tiền và thao tác tài khoản."
         actions={
           <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
-            Export audit log
+            Xuất nhật ký
           </button>
         }
       />
@@ -96,16 +105,21 @@ export function AuditLogTable() {
               value=""
               onChange={() => undefined}
               className="md:w-96"
-              placeholder="Search action, actor, target..."
+              placeholder="Tìm hành động, người thực hiện, đối tượng..."
             />
             <CustomSelect
               className="md:w-48"
-              options={["All roles", "ADMIN", "PET_OWNER", "SERVICE_PROVIDER"]}
+              options={[
+                "Tất cả vai trò",
+                "ADMIN",
+                "PET_OWNER",
+                "SERVICE_PROVIDER",
+              ]}
             />
             <CustomSelect
               className="md:w-64"
               options={[
-                "All actions",
+                "Tất cả hành động",
                 "DISPUTE_REFUNDED",
                 "BOOKING_STATUS_UPDATED",
                 "CONTENT_HIDDEN",
