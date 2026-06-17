@@ -13,28 +13,28 @@ interface CardData {
 
 const CARDS: CardData[] = [
   {
-    title: "Total Users",
+    title: "Tổng người dùng",
     value: 4821,
     change: "+12.5%",
     type: "users",
     tone: "blue",
   },
   {
-    title: "Total Bookings",
+    title: "Tổng đặt lịch",
     value: 1340,
     change: "+8.3%",
     type: "bookings",
     tone: "green",
   },
   {
-    title: "Platform Revenue",
+    title: "Doanh thu nền tảng",
     value: 128500000,
     change: "+15.2%",
     type: "revenue",
     tone: "amber",
   },
   {
-    title: "Active Providers",
+    title: "Nhà cung cấp hoạt động",
     value: 187,
     change: "+5.4%",
     type: "providers",
@@ -59,7 +59,7 @@ export function PlatformSummaryCards() {
             tone={card.tone}
             change={card.change}
             changeDirection="up"
-            footer="vs. previous month"
+            footer="so với tháng trước"
             icon={
               <>
                 {card.type === "users" && (

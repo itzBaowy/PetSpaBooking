@@ -5,13 +5,15 @@ import { BookingAnalyticsChart } from "@/apis/admin/analytics/components/booking
 import { PlatformRevenueChart } from "@/apis/admin/analytics/components/platform-revenue-chart";
 import { TopProvidersTable } from "@/apis/admin/analytics/components/top-providers-table";
 import { TopServicesTable } from "@/apis/admin/analytics/components/top-services-table";
+import { CommissionRevenueChart } from "@/apis/admin/analytics/components/commission-revenue-chart";
+import { ProviderRiskOverviewCard } from "@/apis/admin/analytics/components/provider-risk-overview-card";
 
 export default function AdminDashboard() {
   return (
     <div className="p-6 max-w-[1600px] mx-auto space-y-8">
       <PageHeader
-        eyebrow="Admin / Overview"
-        title="Dashboard Overview"
+        eyebrow="Quản trị / Tổng quan"
+        title="Tổng quan hệ thống"
         actions={
           <div className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-medium text-gray-600 shadow-sm transition-colors hover:border-gray-300">
             <svg
@@ -27,7 +29,7 @@ export default function AdminDashboard() {
                 d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
               />
             </svg>
-            <span>Last 30 Days (May 12 - Jun 11)</span>
+            <span>30 ngày gần nhất (12/05 - 11/06)</span>
             <svg
               className="ml-1 h-3.5 w-3.5 text-gray-400"
               fill="none"
@@ -54,10 +56,15 @@ export default function AdminDashboard() {
         <PlatformRevenueChart />
       </div>
 
+      <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1.4fr)_minmax(360px,0.6fr)] gap-6">
+        <CommissionRevenueChart />
+        <ProviderRiskOverviewCard />
+      </div>
+
       {/* Quick Actions Panel */}
       <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
         <h3 className="font-semibold text-gray-800 mb-4">
-          Quick Management Links
+          Lối tắt quản lý
         </h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 xl:grid-cols-10 gap-4">
           <Link
@@ -80,7 +87,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Manage Users
+              Quản lý người dùng
             </span>
           </Link>
 
@@ -104,7 +111,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Service Shops
+              Cửa hàng dịch vụ
             </span>
           </Link>
 
@@ -128,7 +135,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Track Bookings
+              Theo dõi đặt lịch
             </span>
           </Link>
 
@@ -152,7 +159,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Disputes
+              Tranh chấp
             </span>
           </Link>
 
@@ -176,7 +183,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Verifications
+              Hồ sơ xác thực
             </span>
           </Link>
 
@@ -200,7 +207,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Moderations
+              Kiểm duyệt
             </span>
           </Link>
 
@@ -224,7 +231,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Service Review
+              Duyệt dịch vụ
             </span>
           </Link>
 
@@ -248,7 +255,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Reports
+              Báo cáo
             </span>
           </Link>
 
@@ -272,7 +279,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Campaigns
+              Chiến dịch
             </span>
           </Link>
 
@@ -296,7 +303,7 @@ export default function AdminDashboard() {
               </svg>
             </div>
             <span className="text-xs font-semibold text-gray-700">
-              Audit Logs
+              Nhật ký
             </span>
           </Link>
         </div>

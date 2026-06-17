@@ -46,9 +46,9 @@ export function PlatformRevenueChart() {
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between h-85">
       <div>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="font-semibold text-gray-800">Revenue Analytics</h3>
+          <h3 className="font-semibold text-gray-800">Phân tích doanh thu</h3>
           <span className="text-[10px] text-blue-600 bg-blue-50 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-            Yearly total
+            Tổng năm
           </span>
         </div>
         <p className="text-2xl font-bold text-gray-900 leading-none">
