@@ -1,5 +1,243 @@
 # IMPLEMENTATION STATUS
 
+## Feature: A-06 Provider Balance & Deposit Management
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/finance/schema.ts
+- apis/admin/finance/queries.ts
+- apis/admin/finance/components/finance-ledger-page.tsx
+- apis/admin/finance/components/provider-balance-page.tsx
+- apis/admin/finance/components/provider-balance-table.tsx
+- apis/admin/finance/components/provider-ledger-detail.tsx
+- apis/admin/finance/components/ledger-transaction-table.tsx
+- apis/admin/finance/components/balance-adjustment-form.tsx
+- apis/admin/finance/components/debt-management-table.tsx
+- apis/admin/finance/components/trust-score-detail.tsx
+- apis/admin/finance/components/status-pill.tsx
+- apis/admin/finance/components/finance-format.ts
+- app/(dashboard)/admin/finance/ledger/page.tsx
+- app/(dashboard)/admin/providers/[providerId]/balance/page.tsx
+- types/ledger.ts
+- constants/ledger-types.ts
+- constants/trust-score.ts
+
+Files modified:
+- app/(dashboard)/layout.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+- types/provider.ts
+- apis/admin/users/queries.ts
+- apis/admin/users/components/provider-detail.tsx
+
+Components reused:
+- PageHeader
+- StatisticCard / StatisticCardGrid
+- DataTable
+- SearchInput
+- CustomSelect
+- ActionMenu
+
+API endpoints used:
+- GET /admin/finance/balances
+- GET /admin/finance/ledger
+- GET /admin/providers/:providerId/balance
+- GET /admin/finance/debts
+- POST /admin/finance/adjustments
+- POST /admin/finance/debts
+
+Query keys used:
+- ["admin", "finance", "balances"]
+- ["admin", "finance", "ledger"]
+- ["admin", "finance", "provider-balance", providerId]
+- ["admin", "finance", "debts"]
+
+Types added or reused:
+- ProviderBalance
+- ProviderTrustScore
+- TrustRiskLevel
+- LedgerTransaction
+- LedgerTransactionType
+
+Libraries used:
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Axios via lib/axios.ts
+- TanStack React Query
+- Zod
+
+Notes:
+- Mock UI only. Query hooks use initialData and enabled: false.
+- Admin balance adjustment validates ledger type ADMIN_ADJUSTMENT and requires admin_id + reason.
+- Provider detail now shows balance overview, trust score metrics, violation history, and link to provider balance.
+
+Known issues:
+- Backend endpoints are mocked and not integrated yet.
+
+Next steps:
+- Connect real ledger and provider balance APIs.
+- Add optimistic query invalidation once backend contracts are available.
+
+## Feature: A-07 Commission Management
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/commission/schema.ts
+- apis/admin/commission/queries.ts
+- apis/admin/commission/components/commission-management-page.tsx
+- apis/admin/commission/components/commission-config-page.tsx
+- apis/admin/commission/components/commission-summary-cards.tsx
+- apis/admin/commission/components/commission-table.tsx
+- apis/admin/commission/components/pending-commission-table.tsx
+- apis/admin/commission/components/commission-config-form.tsx
+- apis/admin/commission/components/commission-rate-table.tsx
+- apis/admin/commission/components/commission-status-pill.tsx
+- apis/admin/commission/components/commission-format.ts
+- app/(dashboard)/admin/finance/commission/page.tsx
+- app/(dashboard)/admin/finance/commission/config/page.tsx
+- types/commission.ts
+- constants/commission.ts
+
+Files modified:
+- app/(dashboard)/layout.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+
+Components reused:
+- PageHeader
+- StatisticCard / StatisticCardGrid
+- DataTable
+- SearchInput
+- CustomSelect
+- ActionMenu
+
+API endpoints used:
+- GET /admin/finance/commission
+- GET /admin/finance/commission/pending
+- GET /admin/finance/commission/config
+- POST /admin/finance/commission/config
+- POST /admin/finance/commission/config/:configId
+
+Query keys used:
+- ["admin", "commission", "summary"]
+- ["admin", "commission", "records"]
+- ["admin", "commission", "pending"]
+- ["admin", "commission", "configs"]
+
+Types added or reused:
+- Commission
+- CommissionStatus
+- CommissionType
+- CommissionScope
+- CommissionConfig
+
+Libraries used:
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Axios via lib/axios.ts
+- TanStack React Query
+- Zod
+
+Notes:
+- Commission config UI explicitly says changes apply only to new bookings.
+- Commission status PENDING is used only for commission reserve state, not booking status.
+
+Known issues:
+- Backend endpoints are mocked and not integrated yet.
+
+Next steps:
+- Connect commission record/config APIs and add permission checks for config mutation.
+
+## Feature: A-01 to A-05 Admin Extensions
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/bookings/components/booking-status-override-dialog.tsx
+- apis/admin/bookings/components/no-show-resolution-dialog.tsx
+- apis/admin/bookings/components/no-show-review-table.tsx
+- app/(dashboard)/admin/bookings/no-show/page.tsx
+- apis/admin/analytics/components/commission-revenue-chart.tsx
+- apis/admin/analytics/components/provider-risk-overview-card.tsx
+
+Files modified:
+- types/booking.ts
+- constants/booking-status.ts
+- apis/admin/bookings/schema.ts
+- apis/admin/bookings/queries.ts
+- apis/admin/bookings/components/system-booking-table.tsx
+- apis/admin/bookings/components/dispute-resolution-form.tsx
+- apis/admin/analytics/queries.ts
+- app/(dashboard)/admin/page.tsx
+- apis/admin/users/queries.ts
+- apis/admin/users/components/provider-detail.tsx
+
+Components reused:
+- PageHeader
+- StatisticCard / StatisticCardGrid
+- DataTable
+- SearchInput
+- CustomSelect
+- ActionMenu
+- Pagination
+
+API endpoints used:
+- GET /admin/bookings
+- GET /admin/bookings/disputes
+- GET /admin/bookings/no-show
+- POST /admin/bookings/no-show/resolve
+- PATCH /admin/bookings/:bookingId/status
+- GET /admin/analytics/commission-revenue
+- GET /admin/analytics/provider-risk
+
+Query keys used:
+- ["admin", "bookings", "list"]
+- ["admin", "bookings", "disputes"]
+- ["admin", "bookings", "no-shows"]
+- ["analytics", "commission-revenue"]
+- ["analytics", "provider-risk"]
+
+Types added or reused:
+- BookingStatus
+- AdminBookingStatus
+- NoShowReview
+- NoShowResolutionData
+- BookingStatusOverrideData
+- ProviderBalance
+- ProviderTrustScore
+
+Libraries used:
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+- Axios via lib/axios.ts
+- TanStack React Query
+- Zod
+
+Notes:
+- Booking flow now uses allowed SRS booking statuses: BOOKED, CONFIRMED, CHECKED_IN, IN_SERVICE, COMPLETED, COMMISSION_CHARGED, CANCELLED_BY_CUSTOMER, CANCELLED_BY_PROVIDER, NO_SHOW_REPORTED, DISPUTED, FAILED_APPROVED.
+- A-03 was checked: Moderation and Reports still share apis/admin/moderation; report resolution requires action + reason.
+- Admin dashboard composes analytics components and now includes commission revenue trend + provider risk overview.
+- No features/ folder was created or kept.
+- No @/features, SWR, React Hook Form, or zodResolver imports were found in the checked app/apis/components/hooks/stores/lib/constants/types/providers paths.
+
+Known issues:
+- pnpm.cmd --filter web lint still fails on pre-existing issues outside this change: auth forgot-password unescaped quote, provider query any types, filter-store any types, and unused vars in verification/error/permission files.
+
+Next steps:
+- Clean existing lint debt outside admin finance/commission scope.
+- Integrate backend endpoints when API contracts are available.
+
 ## COMPLETED
 
 ### Admin
@@ -62,44 +300,18 @@ Libraries used:
 Notes:
 
 - Mock UI only. Query hooks use `initialData` and `enabled: false`.
-- Booking statuses in existing code still use OLD values (PENDING, IN_PROGRESS, CANCELLED).
-  → Cần refactor sang status mới theo SRS-SDN302 khi integrate với backend thực.
+- Admin booking mock flow now uses the SRS booking status set.
 - Dispute resolution UI includes audit log note input.
 - Moderation và Reports là 2 sub-view cùng feature `apis/admin/moderation/` — đúng convention.
 - Sidebar includes: Dashboard, Users, Providers, Bookings, Verification, Moderation, Reports, Marketing, Audit Logs.
 
 Known issues:
 
-- Booking status constants chưa được cập nhật sang status mới (BOOKED, IN_SERVICE, CHECKED_IN...).
-- Provider detail chưa có Trust Score và Balance overview (cần mở rộng A-01).
-- A-04 chưa có no-show review flow và filter cho status mới.
-- A-05 chưa có commission revenue chart và provider risk overview.
-- `pnpm --filter web lint` vẫn fail trên pre-existing issues ngoài scope.
+- `pnpm.cmd --filter web lint` vẫn fail trên pre-existing issues ngoài scope.
 
 ---
 
 ## NOT STARTED
-
-### Admin
-
-- A-06: Provider Balance & Deposit Management (`apis/admin/finance/`)
-- A-07: Commission Management (`apis/admin/commission/`)
-
-### Admin — Cần mở rộng
-
-- A-01: Provider detail → thêm Trust Score card + Balance overview card
-- A-04: Booking Monitoring → thêm no-show review flow + filter status mới
-- A-05: Analytics → thêm commission revenue chart + provider risk overview card
-
-### Shared — Cần cập nhật
-
-- `types/booking.ts` → BookingStatus mới
-- `types/provider.ts` → ProviderBalance, ProviderTrustScore
-- `types/ledger.ts` → LedgerTransaction, LedgerTransactionType (tạo mới)
-- `types/commission.ts` → Commission, CommissionConfig (tạo mới)
-- `constants/booking-status.ts` → cập nhật values
-- `constants/ledger-types.ts` → tạo mới
-- `constants/trust-score.ts` → tạo mới
 
 ### Provider
 
@@ -129,3 +341,65 @@ Thêm mới:
 - `NO_SHOW_REPORTED`
 - `DISPUTED`
 - `FAILED_APPROVED`
+
+---
+
+## Feature: Admin UI Vietnamese Localization
+
+Role: Admin
+Status: Done
+
+Files created:
+- None
+
+Files modified:
+- app/(dashboard)/layout.tsx
+- app/(dashboard)/admin/page.tsx
+- app/(dashboard)/admin/verification/page.tsx
+- app/(dashboard)/admin/verification/[verificationId]/page.tsx
+- components/layout/dashboard-topbar.tsx
+- constants/booking-status.ts
+- constants/commission.ts
+- constants/ledger-types.ts
+- constants/trust-score.ts
+- apis/admin/analytics/components/*
+- apis/admin/audit-logs/components/audit-log-table.tsx
+- apis/admin/bookings/components/*
+- apis/admin/commission/components/*
+- apis/admin/finance/components/*
+- apis/admin/marketing/components/marketing-management.tsx
+- apis/admin/moderation/components/*
+- apis/admin/users/components/*
+- apis/admin/verification/components/*
+
+Components reused:
+- PageHeader
+- StatisticCard / StatisticCardGrid
+- DataTable
+- SearchInput
+- CustomSelect
+- Pagination
+- ActionMenu
+
+API endpoints used:
+- Mock UI only; existing query hooks remain unchanged.
+
+Query keys used:
+- Existing admin query keys only.
+
+Types added or reused:
+- Reused existing admin booking, finance, commission, ledger, provider, moderation, user, and verification types.
+
+Libraries used:
+- Next.js, React, TypeScript, Tailwind CSS, TanStack React Query, Zod
+
+Notes:
+- Refactored user-facing Admin UI text to Vietnamese across sidebar, topbar, dashboard, analytics, booking, moderation, reports, verification, users, providers, finance, commission, marketing, and audit log screens.
+- Kept route paths, enum values, schemas, and domain identifiers unchanged.
+- Fixed display labels for booking status, ledger types, commission status, trust risk levels, dispute status, debt status, and payment status.
+
+Known issues:
+- Older notes above contain some mojibake text from previous file writes; this update only appended the new localization state.
+
+Next steps:
+- Optional pass for provider/pet-owner UI localization if the product scope requires full Vietnamese across all roles.

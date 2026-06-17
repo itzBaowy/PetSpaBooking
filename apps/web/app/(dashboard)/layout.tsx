@@ -24,7 +24,7 @@ export default function DashboardLayout({
 
   const adminNavItems: NavItem[] = [
     {
-      label: "Dashboard",
+      label: "Tổng quan",
       href: "/admin",
       icon: (
         <svg
@@ -43,7 +43,7 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Users",
+      label: "Người dùng",
       href: "/admin/users",
       icon: (
         <svg
@@ -62,7 +62,7 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Providers",
+      label: "Nhà cung cấp",
       href: "/admin/providers",
       icon: (
         <svg
@@ -81,7 +81,7 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Bookings",
+      label: "Đặt lịch",
       href: "/admin/bookings",
       icon: (
         <svg
@@ -119,7 +119,7 @@ export default function DashboardLayout({
     //   ),
     // },
     {
-      label: "Verification",
+      label: "Xác thực",
       href: "/admin/verification",
       icon: (
         <svg
@@ -138,7 +138,7 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Moderation",
+      label: "Kiểm duyệt",
       href: "/admin/moderation",
       icon: (
         <svg
@@ -152,25 +152,6 @@ export default function DashboardLayout({
             strokeLinejoin="round"
             strokeWidth={2}
             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-          />
-        </svg>
-      ),
-    },
-    {
-      label: "Reports",
-      href: "/admin/moderation/reports",
-      icon: (
-        <svg
-          className="w-5 h-5"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M9 12h6m-6 4h6M8 4h8l3 3v13a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2h1z"
           />
         </svg>
       ),
@@ -214,7 +195,45 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Audit Logs",
+      label: "Tài chính",
+      href: "/admin/finance/ledger",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 10v2M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      label: "Hoa hồng",
+      href: "/admin/finance/commission",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 14l2 2 4-4M7 4h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      label: "Nhật ký",
       href: "/admin/audit-logs",
       icon: (
         <svg
@@ -337,18 +356,18 @@ export default function DashboardLayout({
           {!isSidebarCollapsed && (
             <span className="font-extrabold text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
               {isAdmin
-                ? "PetLink Admin"
+                ? "Quản trị PetLink"
                 : isProvider
-                  ? "Provider Hub"
-                  : "PetLink Dashboard"}
+                  ? "Trung tâm Nhà cung cấp"
+                  : "Bảng điều khiển PetLink"}
             </span>
           )}
           <button
             type="button"
             aria-label={
-              isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"
+              isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"
             }
-            title={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
             onClick={() => setIsSidebarCollapsed((current) => !current)}
             className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-shell-border bg-shell-strong/40 text-shell-muted transition-colors hover:bg-shell-border hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
           >
@@ -431,7 +450,7 @@ export default function DashboardLayout({
             })}
             {currentNav.length === 0 && !isSidebarCollapsed && (
               <li className="py-4 text-center text-sm text-shell-muted">
-                No navigation items
+                Chưa có mục điều hướng
               </li>
             )}
           </ul>
