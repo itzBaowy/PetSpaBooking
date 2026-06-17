@@ -1,3 +1,5 @@
+import type { BookingStatus } from "@/constants/booking-status";
+
 export interface Booking {
   id: string;
   customerId: string;
@@ -6,7 +8,12 @@ export interface Booking {
   scheduledAt: string;
   duration: number;
   totalPrice: number;
-  status: "pending" | "confirmed" | "completed" | "cancelled";
+  status: BookingStatus;
+  paymentMethod?: "CASH" | "ONLINE_MOMO";
+  cancelledBy?: "PET_OWNER" | "SERVICE_PROVIDER" | "ADMIN";
+  cancelReason?: string;
+  checkedInAt?: string;
+  noShowReportedAt?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;

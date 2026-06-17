@@ -25,4 +25,19 @@ export const queryKeys = {
     detail: (id: string) =>
       [...queryKeys.verification.all, "detail", id] as const,
   },
+  adminFinance: {
+    all: ["admin", "finance"] as const,
+    balances: () => [...queryKeys.adminFinance.all, "balances"] as const,
+    ledger: () => [...queryKeys.adminFinance.all, "ledger"] as const,
+    providerBalance: (providerId: string) =>
+      [...queryKeys.adminFinance.all, "provider-balance", providerId] as const,
+    debts: () => [...queryKeys.adminFinance.all, "debts"] as const,
+  },
+  adminCommission: {
+    all: ["admin", "commission"] as const,
+    records: () => [...queryKeys.adminCommission.all, "records"] as const,
+    pending: () => [...queryKeys.adminCommission.all, "pending"] as const,
+    configs: () => [...queryKeys.adminCommission.all, "configs"] as const,
+    summary: () => [...queryKeys.adminCommission.all, "summary"] as const,
+  },
 } as const;
