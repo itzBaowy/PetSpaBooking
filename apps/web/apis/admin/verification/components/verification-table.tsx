@@ -14,11 +14,11 @@ import { MOCK_VERIFICATIONS } from "../queries";
 import type { MockVerificationRequest } from "../queries";
 
 const STATUS_FILTERS = [
-  { label: "All", value: "" },
-  { label: "Pending", value: "pending" },
-  { label: "Approved", value: "approved" },
-  { label: "Rejected", value: "rejected" },
-  { label: "Info Requested", value: "info_requested" },
+  { label: "Tất cả", value: "" },
+  { label: "Chờ duyệt", value: "pending" },
+  { label: "Đã duyệt", value: "approved" },
+  { label: "Đã từ chối", value: "rejected" },
+  { label: "Yêu cầu bổ sung", value: "info_requested" },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -29,15 +29,15 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-  info_requested: "Info Requested",
+  pending: "Chờ duyệt",
+  approved: "Đã duyệt",
+  rejected: "Đã từ chối",
+  info_requested: "Yêu cầu bổ sung",
 };
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US", {
+  return d.toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -87,22 +87,22 @@ export function VerificationTable() {
   };
 
   const handleQuickApprove = (id: string) => {
-    if (confirm("Approve this provider verification?")) {
-      alert(`Provider ${id} approved (mock)`);
+    if (confirm("Duyệt hồ sơ xác thực nhà cung cấp này?")) {
+      alert(`Nhà cung cấp ${id} đã được duyệt (mock)`);
     }
   };
 
   const handleQuickReject = (id: string) => {
-    const reason = prompt("Please provide a reason for rejection:");
+    const reason = prompt("Nhập lý do từ chối:");
     if (reason) {
-      alert(`Provider ${id} rejected (mock). Reason: ${reason}`);
+      alert(`Nhà cung cấp ${id} đã bị từ chối (mock). Lý do: ${reason}`);
     }
   };
 
   const columns: Array<DataTableColumn<MockVerificationRequest>> = [
     {
       key: "provider",
-      header: "Provider",
+      header: "Nhà cung cấp",
       widthClassName: "w-[28%]",
       render: (request) => (
         <div className="flex min-w-0 items-center gap-3">
@@ -114,8 +114,7 @@ export function VerificationTable() {
               {request.businessName}
             </p>
             <p className="text-xs text-gray-500">
-              {request.documentCount} document
-              {request.documentCount !== 1 ? "s" : ""} submitted
+              Đã nộp {request.documentCount} tài liệu
             </p>
           </div>
         </div>
@@ -123,7 +122,7 @@ export function VerificationTable() {
     },
     {
       key: "contact",
-      header: "Contact",
+      header: "Liên hệ",
       widthClassName: "w-[22%]",
       render: (request) => (
         <div>
@@ -134,7 +133,7 @@ export function VerificationTable() {
     },
     {
       key: "status",
-      header: "Status",
+      header: "Trạng thái",
       widthClassName: "w-[15%]",
       render: (request) => (
         <span
@@ -149,7 +148,7 @@ export function VerificationTable() {
     },
     {
       key: "submitted",
-      header: "Submitted",
+      header: "Ngày nộp",
       widthClassName: "w-[14%]",
       render: (request) => (
         <span className="text-sm text-gray-700">
@@ -159,22 +158,22 @@ export function VerificationTable() {
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "Thao tác",
       align: "right",
       isAction: true,
       widthClassName: "w-[10%]",
       render: (request) => (
         <ActionMenu
           items={[
-            { label: "Review provider", onClick: () => handleView(request.id) },
+            { label: "Xem hồ sơ", onClick: () => handleView(request.id) },
             ...(request.status === "pending"
               ? [
                   {
-                    label: "Approve provider",
+                    label: "Duyệt nhà cung cấp",
                     onClick: () => handleQuickApprove(request.id),
                   },
                   {
-                    label: "Reject provider",
+                    label: "Từ chối nhà cung cấp",
                     onClick: () => handleQuickReject(request.id),
                     variant: "danger" as const,
                   },
@@ -192,22 +191,22 @@ export function VerificationTable() {
       <StatisticCardGrid columns={4}>
         {[
           {
-            label: "Pending",
+            label: "Chờ duyệt",
             count: pendingCount,
             tone: "amber" as const,
           },
           {
-            label: "Approved",
+            label: "Đã duyệt",
             count: approvedCount,
             tone: "green" as const,
           },
           {
-            label: "Rejected",
+            label: "Đã từ chối",
             count: rejectedCount,
             tone: "red" as const,
           },
           {
-            label: "Info Requested",
+            label: "Yêu cầu bổ sung",
             count: infoCount,
             tone: "blue" as const,
           },
@@ -221,13 +220,13 @@ export function VerificationTable() {
         ))}
       </StatisticCardGrid>
 
-      {/* Search & Filter Bar */}
+      {/* Thanh tìm kiếm và bộ lọc */}
       <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <SearchInput
             className="w-full lg:max-w-md"
             value={search}
-            placeholder="Search provider name or email"
+            placeholder="Tìm tên nhà cung cấp hoặc email"
             onChange={(value) => {
               setSearch(value);
               setPage(1);
@@ -244,8 +243,8 @@ export function VerificationTable() {
           />
           <div className="text-sm font-medium text-gray-500 lg:ml-auto">
             {debouncedSearch || statusFilter
-              ? `${total} matching request${total === 1 ? "" : "s"}`
-              : `${total} total request${total === 1 ? "" : "s"}`}
+              ? `${total} yêu cầu phù hợp`
+              : `${total} tổng yêu cầu`}
           </div>
         </div>
       </div>
@@ -270,11 +269,11 @@ export function VerificationTable() {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            <p className="font-medium text-gray-700">No verification requests found</p>
+            <p className="font-medium text-gray-700">Không tìm thấy yêu cầu xác thực</p>
             <p className="text-xs text-gray-500 mt-1">
               {statusFilter
-                ? `No ${STATUS_LABELS[statusFilter]?.toLowerCase()} requests`
-                : "New provider registrations will appear here"}
+                ? `Không có yêu cầu trạng thái ${STATUS_LABELS[statusFilter]?.toLowerCase()}`
+                : "Đăng ký nhà cung cấp mới sẽ xuất hiện tại đây"}
             </p>
           </div>
         }

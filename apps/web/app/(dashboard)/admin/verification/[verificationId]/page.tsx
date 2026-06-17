@@ -13,13 +13,13 @@ export default async function VerificationDetailPage({ params }: PageProps) {
     <div className="p-6 max-w-[1600px] mx-auto space-y-6">
       <PageHeader
         backHref="/admin/verification"
-        backLabel="Back to verification"
-        eyebrow="Admin / Verification / Review"
-        title="Verification Review"
-        description="Review provider documents and make an approval decision"
+        backLabel="Quay lại xác thực"
+        eyebrow="Quản trị / Xác thực / Rà soát"
+        title="Rà soát xác thực"
+        description="Kiểm tra tài liệu nhà cung cấp và đưa ra quyết định phê duyệt"
       />
 
-      {/* Main Content: Split View */}
+      {/* Nội dung chính */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-6">
           <ProviderDocumentViewer />
