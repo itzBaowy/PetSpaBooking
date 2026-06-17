@@ -31,15 +31,15 @@ export function BookingAnalyticsChart() {
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between h-85">
       <div>
         <div className="flex items-center justify-between mb-4">
-          <h3 className="font-semibold text-gray-800">Booking Trends</h3>
+          <h3 className="font-semibold text-gray-800">Xu hướng đặt lịch</h3>
           <div className="flex items-center gap-4 text-xs font-medium">
             <span className="flex items-center gap-1.5 text-gray-500">
               <span className="w-3 h-3 bg-blue-500 rounded-sm inline-block"></span>
-              Completed
+              Hoàn tất
             </span>
             <span className="flex items-center gap-1.5 text-gray-500">
               <span className="w-3 h-3 bg-rose-400 rounded-sm inline-block"></span>
-              Cancelled
+              Đã hủy
             </span>
           </div>
         </div>
@@ -98,7 +98,7 @@ export function BookingAnalyticsChart() {
                   rx="3"
                   className="fill-blue-500 hover:fill-blue-600 transition-colors duration-200"
                 >
-                  <title>{`Completed: ${d.completed}`}</title>
+                  <title>{`Hoàn tất: ${d.completed}`}</title>
                 </rect>
 
                 {/* Cancelled Bar */}
@@ -110,7 +110,7 @@ export function BookingAnalyticsChart() {
                   rx="3"
                   className="fill-rose-400 hover:fill-rose-500 transition-colors duration-200"
                 >
-                  <title>{`Cancelled: ${d.cancelled}`}</title>
+                  <title>{`Đã hủy: ${d.cancelled}`}</title>
                 </rect>
 
                 {/* X-axis Label */}

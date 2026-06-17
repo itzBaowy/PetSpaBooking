@@ -14,35 +14,35 @@ interface ServiceData {
 
 const SERVICES: ServiceData[] = [
   {
-    name: "Luxury Dog Bathing & Blow Dry",
-    category: "Spa & Bathing",
+    name: "Tắm và sấy lông chó cao cấp",
+    category: "Spa & tắm",
     bookings: 420,
     revenue: 16800000,
     growth: "+18.4%",
   },
   {
-    name: "Full Cat Grooming & Haircut",
+    name: "Grooming và cắt tỉa mèo trọn gói",
     category: "Grooming",
     bookings: 380,
     revenue: 22800000,
     growth: "+14.2%",
   },
   {
-    name: "Aromatherapy Pet Massage",
-    category: "Therapy & Spa",
+    name: "Massage thú cưng bằng tinh dầu",
+    category: "Trị liệu & spa",
     bookings: 290,
     revenue: 20300000,
     growth: "+22.1%",
   },
   {
-    name: "Anti-Flea & Tick Treatment",
-    category: "Treatment",
+    name: "Điều trị ve rận",
+    category: "Điều trị",
     bookings: 240,
     revenue: 12000000,
     growth: "+8.5%",
   },
   {
-    name: "De-shedding & Undercoat Care",
+    name: "Chăm sóc lông rụng và lông tơ",
     category: "Grooming",
     bookings: 195,
     revenue: 11700000,
@@ -51,10 +51,10 @@ const SERVICES: ServiceData[] = [
 ];
 
 const CATEGORY_STYLES: Record<string, string> = {
-  "Spa & Bathing": "bg-blue-50 text-blue-700 border-blue-100",
+  "Spa & tắm": "bg-blue-50 text-blue-700 border-blue-100",
   Grooming: "bg-indigo-50 text-indigo-700 border-indigo-100",
-  "Therapy & Spa": "bg-purple-50 text-purple-700 border-purple-100",
-  Treatment: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  "Trị liệu & spa": "bg-purple-50 text-purple-700 border-purple-100",
+  "Điều trị": "bg-emerald-50 text-emerald-700 border-emerald-100",
 };
 
 type SortKey = "bookings" | "revenue";
@@ -121,9 +121,9 @@ export function TopServicesTable() {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-gray-50 p-6 pb-4">
-        <h3 className="font-semibold text-gray-800">Popular Services</h3>
+        <h3 className="font-semibold text-gray-800">Dịch vụ phổ biến</h3>
         <span className="text-xs font-normal text-gray-400">
-          By Bookings Volume
+          Theo số lượt đặt
         </span>
       </div>
 
@@ -131,11 +131,11 @@ export function TopServicesTable() {
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/75">
             <th className="w-[52%] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Service Name
+              Tên dịch vụ
             </th>
             <th className="w-[20%] px-6 py-3 text-right">
               <SortButton
-                label="Bookings"
+                label="Đặt lịch"
                 active={sortKey === "bookings"}
                 direction={sortDirection}
                 onClick={() => handleSort("bookings")}
@@ -143,7 +143,7 @@ export function TopServicesTable() {
             </th>
             <th className="w-[28%] px-6 py-3 text-right">
               <SortButton
-                label="Revenue"
+                label="Doanh thu"
                 active={sortKey === "revenue"}
                 direction={sortDirection}
                 onClick={() => handleSort("revenue")}

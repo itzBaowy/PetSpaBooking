@@ -10,6 +10,12 @@ const disputeStatusStyles = {
   RESOLVED: "border-green-200 bg-green-50 text-green-700",
 };
 
+const disputeStatusLabels = {
+  OPEN: "Đang mở",
+  REVIEWING: "Đang xem xét",
+  RESOLVED: "Đã xử lý",
+};
+
 export function DisputeTable() {
   const disputes = useDisputeBookings();
   const [page, setPage] = useState(1);
@@ -21,9 +27,9 @@ export function DisputeTable() {
   return (
     <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
       <div className="border-b border-gray-100 p-5">
-        <h2 className="text-lg font-bold text-gray-900">Dispute queue</h2>
+        <h2 className="text-lg font-bold text-gray-900">Hàng đợi tranh chấp</h2>
         <p className="text-sm text-gray-500">
-          Cases between Pet Owners and Service Providers.
+          Các vụ việc giữa chủ thú cưng và nhà cung cấp dịch vụ.
         </p>
       </div>
       <div className="divide-y divide-gray-100">
@@ -36,21 +42,21 @@ export function DisputeTable() {
                   <span
                     className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${disputeStatusStyles[dispute.status]}`}
                   >
-                    {dispute.status}
+                    {disputeStatusLabels[dispute.status]}
                   </span>
                 </div>
                 <p className="mt-2 text-sm text-gray-600">{dispute.issue}</p>
                 <p className="mt-2 text-xs text-gray-400">
-                  Booking {dispute.bookingId} / {dispute.petOwner} vs{" "}
+                  Đặt lịch {dispute.bookingId} / {dispute.petOwner} với{" "}
                   {dispute.provider}
                 </p>
               </div>
               <span className="rounded-lg bg-gray-50 px-3 py-2 text-xs font-semibold text-gray-700">
-                Requested: {dispute.requestedOutcome}
+                Yêu cầu: {dispute.requestedOutcome}
               </span>
             </div>
             <div className="mt-4 rounded-lg border border-gray-100 bg-gray-50 p-3 text-xs text-gray-500">
-              Audit: {dispute.lastAuditLog}
+              Nhật ký: {dispute.lastAuditLog}
             </div>
           </div>
         ))}
