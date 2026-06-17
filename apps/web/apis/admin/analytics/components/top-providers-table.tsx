@@ -134,9 +134,9 @@ export function TopProvidersTable() {
   return (
     <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
       <div className="flex items-center justify-between border-b border-gray-50 p-6 pb-4">
-        <h3 className="font-semibold text-gray-800">Top Performing Providers</h3>
+        <h3 className="font-semibold text-gray-800">Nhà cung cấp nổi bật</h3>
         <span className="text-xs font-normal text-gray-400">
-          By Monthly Revenue
+          Theo doanh thu tháng
         </span>
       </div>
 
@@ -144,11 +144,11 @@ export function TopProvidersTable() {
         <thead>
           <tr className="border-b border-gray-100 bg-gray-50/75">
             <th className="w-[52%] px-6 py-3 text-xs font-semibold uppercase tracking-wider text-gray-500">
-              Provider
+              Nhà cung cấp
             </th>
             <th className="w-[20%] px-6 py-3 text-right">
               <SortButton
-                label="Bookings"
+                label="Đặt lịch"
                 active={sortKey === "bookings"}
                 direction={sortDirection}
                 onClick={() => handleSort("bookings")}
@@ -156,7 +156,7 @@ export function TopProvidersTable() {
             </th>
             <th className="w-[28%] px-6 py-3 text-right">
               <SortButton
-                label="Revenue"
+                label="Doanh thu"
                 active={sortKey === "revenue"}
                 direction={sortDirection}
                 onClick={() => handleSort("revenue")}
