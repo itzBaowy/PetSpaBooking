@@ -8,28 +8,28 @@ type DashboardTopbarRole = "admin" | "provider";
 
 const notifications = [
   {
-    title: "Pending provider verification",
-    detail: "4 provider requests need review",
+    title: "Hồ sơ nhà cung cấp chờ duyệt",
+    detail: "4 yêu cầu cần được xem xét",
     tone: "bg-amber-50 text-amber-700",
   },
   {
-    title: "New dispute opened",
-    detail: "Booking BK-92002 needs admin action",
+    title: "Có tranh chấp mới",
+    detail: "Đặt lịch BK-92002 cần quản trị xử lý",
     tone: "bg-red-50 text-red-700",
   },
   {
-    title: "Reported service waiting for moderation",
-    detail: "Basic Bath Service has a new report",
+    title: "Dịch vụ bị báo cáo đang chờ kiểm duyệt",
+    detail: "Dịch vụ Tắm cơ bản có báo cáo mới",
     tone: "bg-blue-50 text-blue-700",
   },
   {
-    title: "Failed payment",
-    detail: "Payment retry failed for BK-91988",
+    title: "Thanh toán thất bại",
+    detail: "Thử thanh toán lại thất bại cho BK-91988",
     tone: "bg-orange-50 text-orange-700",
   },
   {
-    title: "Critical audit log",
-    detail: "Refund action was recorded for review",
+    title: "Nhật ký kiểm toán quan trọng",
+    detail: "Hành động hoàn tiền đã được ghi nhận để rà soát",
     tone: "bg-surface-soft text-foreground",
   },
 ];
@@ -42,13 +42,13 @@ const profileMeta: Record<
     initials: "SA",
     name: "Super Admin",
     email: "admin@petlink.vn",
-    roleLabel: "Administrator",
+    roleLabel: "Quản trị viên",
   },
   provider: {
     initials: "AN",
     name: "Anh Nguyen",
     email: "owner@happypaws.vn",
-    roleLabel: "Service Provider",
+    roleLabel: "Nhà cung cấp dịch vụ",
   },
 };
 
@@ -103,7 +103,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
         <div className="relative">
           <button
             type="button"
-            aria-label="Open notifications"
+            aria-label="Mở thông báo"
             aria-haspopup="menu"
             aria-expanded={isNotificationsOpen}
             onBlur={() =>
@@ -123,10 +123,10 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
             <div className="absolute right-0 top-12 z-40 w-80 overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-xl shadow-gray-900/10">
               <div className="border-b border-border-subtle px-4 py-3">
                 <p className="text-sm font-bold text-foreground">
-                  Notifications
+                  Thông báo
                 </p>
                 <p className="text-xs text-muted">
-                  5 items need attention
+                  5 mục cần chú ý
                 </p>
               </div>
               <div className="max-h-80 overflow-y-auto p-1.5">
@@ -161,7 +161,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
         <div className="relative">
           <button
             type="button"
-            aria-label="Open profile menu"
+            aria-label="Mở menu hồ sơ"
             aria-haspopup="menu"
             aria-expanded={isProfileOpen}
             onBlur={() => window.setTimeout(() => setIsProfileOpen(false), 120)}
@@ -210,21 +210,21 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
                   href={`/${role}/profile`}
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted"
                 >
-                  Profile
+                  Hồ sơ
                 </Link>
                 <button
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-foreground transition-colors hover:bg-surface-muted"
                 >
-                  Settings
+                  Cài đặt
                 </button>
                 <button
                   type="button"
                   onMouseDown={(event) => event.preventDefault()}
                   className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-danger transition-colors hover:bg-danger-soft"
                 >
-                  Logout
+                  Đăng xuất
                 </button>
               </div>
             </div>
