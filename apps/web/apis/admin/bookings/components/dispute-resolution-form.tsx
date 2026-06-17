@@ -1,34 +1,39 @@
 "use client";
 
 import { CustomSelect } from "@/components/ui/custom-select";
+import { BOOKING_STATUS_OPTIONS } from "@/constants/booking-status";
 
 export function DisputeResolutionForm() {
   return (
     <div className="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
-      <h2 className="text-lg font-bold text-gray-900">Resolution mock form</h2>
+      <h2 className="text-lg font-bold text-gray-900">Biểu mẫu xử lý mock</h2>
       <p className="mt-1 text-sm text-gray-500">
-        This UI captures the required audit note for admin dispute actions.
+        Giao diện này ghi nhận ghi chú kiểm toán bắt buộc cho thao tác xử lý tranh chấp.
       </p>
       <form className="mt-5 space-y-4">
         <label className="block">
-          <span className="text-sm font-semibold text-gray-700">Outcome</span>
+          <span className="text-sm font-semibold text-gray-700">Kết quả</span>
           <CustomSelect
             className="mt-1"
-            options={["REFUND", "CLOSE_CLAIM", "UPDATE_BOOKING_STATUS"]}
+            options={[
+              { label: "Hoàn tiền", value: "REFUND" },
+              { label: "Đóng khiếu nại", value: "CLOSE_CLAIM" },
+              { label: "Cập nhật trạng thái đặt lịch", value: "UPDATE_BOOKING_STATUS" },
+            ]}
           />
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-gray-700">
-            Booking status
+            Trạng thái đặt lịch
           </span>
           <CustomSelect
             className="mt-1"
-            options={["CONFIRMED", "IN_PROGRESS", "COMPLETED", "CANCELLED"]}
+            options={BOOKING_STATUS_OPTIONS}
           />
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-gray-700">
-            Refund amount
+            Số tiền hoàn
           </span>
           <input
             className="mt-1 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
@@ -38,11 +43,11 @@ export function DisputeResolutionForm() {
         </label>
         <label className="block">
           <span className="text-sm font-semibold text-gray-700">
-            Audit log note
+            Ghi chú kiểm toán
           </span>
           <textarea
             className="mt-1 min-h-28 w-full rounded-lg border border-gray-200 px-3 py-2 text-sm"
-            placeholder="Reason, evidence checked, and final decision..."
+            placeholder="Lý do, bằng chứng đã kiểm tra và quyết định cuối cùng..."
           />
         </label>
         <div className="flex justify-end gap-2">
@@ -50,13 +55,13 @@ export function DisputeResolutionForm() {
             className="rounded-lg border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700"
             type="button"
           >
-            Save draft
+            Lưu nháp
           </button>
           <button
             className="rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white"
             type="button"
           >
-            Resolve dispute
+            Xử lý tranh chấp
           </button>
         </div>
       </form>
