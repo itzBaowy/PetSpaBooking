@@ -22,12 +22,12 @@ import type {
 } from "../schema";
 
 const STATUS_FILTERS: Array<{ label: string; value: "" | MarketingStatus }> = [
-  { label: "All statuses", value: "" },
-  { label: "Active", value: "ACTIVE" },
-  { label: "Scheduled", value: "SCHEDULED" },
-  { label: "Draft", value: "DRAFT" },
-  { label: "Paused", value: "PAUSED" },
-  { label: "Expired", value: "EXPIRED" },
+  { label: "Tất cả trạng thái", value: "" },
+  { label: "Đang chạy", value: "ACTIVE" },
+  { label: "Đã lên lịch", value: "SCHEDULED" },
+  { label: "Bản nháp", value: "DRAFT" },
+  { label: "Tạm dừng", value: "PAUSED" },
+  { label: "Hết hạn", value: "EXPIRED" },
 ];
 
 const statusStyles: Record<MarketingStatus, string> = {
@@ -38,6 +38,14 @@ const statusStyles: Record<MarketingStatus, string> = {
   EXPIRED: "border-red-200 bg-red-50 text-red-700",
 };
 
+const statusLabels: Record<MarketingStatus, string> = {
+  ACTIVE: "Đang chạy",
+  SCHEDULED: "Đã lên lịch",
+  DRAFT: "Bản nháp",
+  PAUSED: "Tạm dừng",
+  EXPIRED: "Hết hạn",
+};
+
 function StatusBadge({ status }: { status: MarketingStatus }) {
   return (
     <span
@@ -46,7 +54,7 @@ function StatusBadge({ status }: { status: MarketingStatus }) {
         statusStyles[status],
       )}
     >
-      {status}
+      {statusLabels[status]}
     </span>
   );
 }
@@ -88,7 +96,7 @@ export function MarketingManagement() {
   const campaignColumns: Array<DataTableColumn<MarketingCampaign>> = [
     {
       key: "campaign",
-      header: "Campaign",
+      header: "Chiến dịch",
       widthClassName: "w-[26%]",
       render: (campaign) => (
         <div>
@@ -103,7 +111,7 @@ export function MarketingManagement() {
     },
     {
       key: "window",
-      header: "Window",
+      header: "Thời gian",
       widthClassName: "w-[20%]",
       render: (campaign) => (
         <span className="text-sm text-gray-700">
@@ -113,7 +121,7 @@ export function MarketingManagement() {
     },
     {
       key: "budget",
-      header: "Budget",
+      header: "Ngân sách",
       widthClassName: "w-[16%]",
       render: (campaign) => (
         <span className="font-semibold text-gray-900">
@@ -123,43 +131,43 @@ export function MarketingManagement() {
     },
     {
       key: "performance",
-      header: "Performance",
+      header: "Hiệu quả",
       widthClassName: "w-[18%]",
       render: (campaign) => (
         <div>
           <p className="text-sm font-semibold text-gray-900">
-            {campaign.usageCount.toLocaleString("en-US")} views/actions
+            {campaign.usageCount.toLocaleString("vi-VN")} lượt xem/thao tác
           </p>
           <p className="text-xs text-gray-500">
-            {campaign.conversionRate}% conversion
+            {campaign.conversionRate}% chuyển đổi
           </p>
         </div>
       ),
     },
     {
       key: "status",
-      header: "Status",
+      header: "Trạng thái",
       widthClassName: "w-[12%]",
       render: (campaign) => <StatusBadge status={campaign.status} />,
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "Thao tác",
       align: "right",
       isAction: true,
       widthClassName: "w-[8%]",
       render: (campaign) => (
         <ActionMenu
           items={[
-            { label: "Preview campaign" },
-            { label: "Edit campaign" },
+            { label: "Xem trước chiến dịch" },
+            { label: "Sửa chiến dịch" },
             ...(campaign.status === "DRAFT" || campaign.status === "SCHEDULED"
-              ? [{ label: "Activate campaign" }]
+              ? [{ label: "Kích hoạt chiến dịch" }]
               : []),
             ...(campaign.status === "ACTIVE"
-              ? [{ label: "Pause campaign" }]
+              ? [{ label: "Tạm dừng chiến dịch" }]
               : []),
-            { label: "Archive campaign", variant: "danger" },
+            { label: "Lưu trữ chiến dịch", variant: "danger" },
           ]}
         />
       ),
@@ -169,7 +177,7 @@ export function MarketingManagement() {
   const couponColumns: Array<DataTableColumn<CouponConfig>> = [
     {
       key: "code",
-      header: "Coupon",
+      header: "Mã giảm giá",
       widthClassName: "w-[24%]",
       render: (coupon) => (
         <div>
@@ -180,7 +188,7 @@ export function MarketingManagement() {
     },
     {
       key: "discount",
-      header: "Discount",
+      header: "Giảm giá",
       widthClassName: "w-[20%]",
       render: (coupon) =>
         coupon.type === "PERCENTAGE"
@@ -189,34 +197,34 @@ export function MarketingManagement() {
     },
     {
       key: "minimum",
-      header: "Min Order",
+      header: "Đơn tối thiểu",
       widthClassName: "w-[20%]",
       render: (coupon) => formatCurrency(coupon.minOrderValue, "VND"),
     },
     {
       key: "usage",
-      header: "Usage",
+      header: "Lượt dùng",
       widthClassName: "w-[20%]",
       render: (coupon) => `${coupon.usedCount}/${coupon.usageLimit}`,
     },
     {
       key: "status",
-      header: "Status",
+      header: "Trạng thái",
       widthClassName: "w-[12%]",
       render: (coupon) => <StatusBadge status={coupon.status} />,
     },
     {
       key: "actions",
-      header: "Actions",
+      header: "Thao tác",
       align: "right",
       isAction: true,
       widthClassName: "w-[8%]",
       render: () => (
         <ActionMenu
           items={[
-            { label: "Edit coupon" },
-            { label: "Duplicate coupon" },
-            { label: "Pause coupon", variant: "danger" },
+            { label: "Sửa mã giảm giá" },
+            { label: "Nhân bản mã giảm giá" },
+            { label: "Tạm dừng mã giảm giá", variant: "danger" },
           ]}
         />
       ),
@@ -226,16 +234,16 @@ export function MarketingManagement() {
   return (
     <div className="w-full max-w-full space-y-6 p-6">
       <PageHeader
-        eyebrow="Admin / Marketing"
-        title="Marketing & Banner Management"
-        description="Manage platform-wide banners, coupons, flash sales, and campaign visibility across the marketplace."
+        eyebrow="Quản trị / Marketing"
+        title="Quản lý marketing & banner"
+        description="Quản lý banner, mã giảm giá, flash sale và mức hiển thị chiến dịch trên toàn sàn."
         actions={
           <>
             <button className="rounded-lg border border-gray-200 bg-white px-4 py-2 text-sm font-semibold text-gray-700 shadow-sm">
-              Save draft
+              Lưu nháp
             </button>
             <button className="rounded-lg bg-gray-950 px-4 py-2 text-sm font-semibold text-white shadow-sm">
-              Create campaign
+              Tạo chiến dịch
             </button>
           </>
         }
@@ -243,22 +251,22 @@ export function MarketingManagement() {
 
       <StatisticCardGrid columns={4}>
         <StatisticCard
-          title="Active campaigns"
+          title="Chiến dịch đang chạy"
           value={activeCampaignCount}
           tone="green"
         />
         <StatisticCard
-          title="Scheduled launches"
+          title="Lịch sắp chạy"
           value={scheduledCampaignCount}
           tone="blue"
         />
         <StatisticCard
-          title="Active coupons"
+          title="Mã giảm giá đang chạy"
           value={activeCouponCount}
           tone="amber"
         />
         <StatisticCard
-          title="Total budget"
+          title="Tổng ngân sách"
           value={formatCurrency(totalBudget, "VND")}
           tone="purple"
         />
@@ -269,14 +277,14 @@ export function MarketingManagement() {
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-lg font-bold text-gray-900">
-                Homepage banner slots
+                Vị trí banner trang chủ
               </h2>
               <p className="text-sm text-gray-500">
-                Reorder key placements before campaigns go live.
+                Sắp xếp vị trí hiển thị trước khi chiến dịch chạy.
               </p>
             </div>
             <span className="rounded-full bg-green-50 px-3 py-1 text-xs font-semibold text-green-700">
-              Auto-save enabled
+              Tự động lưu đã bật
             </span>
           </div>
           <div className="grid gap-3 md:grid-cols-3">
@@ -297,7 +305,7 @@ export function MarketingManagement() {
                     <StatusBadge status={banner.status} />
                   </div>
                   <div className="flex items-center justify-between text-xs text-gray-500">
-                    <span>Priority #{banner.priority}</span>
+                    <span>Ưu tiên #{banner.priority}</span>
                     <span>{banner.id}</span>
                   </div>
                 </div>
@@ -308,14 +316,14 @@ export function MarketingManagement() {
 
         <div className="rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">
-            Coupon configuration
+            Cấu hình mã giảm giá
           </h2>
           <p className="mt-1 text-sm text-gray-500">
-            Mock controls for global discount rules.
+            Điều khiển mock cho quy tắc giảm giá toàn sàn.
           </p>
           <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <label className="space-y-1 text-sm font-semibold text-gray-700">
-              Coupon code
+              Mã giảm giá
               <input
                 value="PETWELCOME"
                 readOnly
@@ -323,16 +331,16 @@ export function MarketingManagement() {
               />
             </label>
             <label className="space-y-1 text-sm font-semibold text-gray-700">
-              Discount type
+              Loại giảm giá
               <CustomSelect
                 options={[
-                  { label: "Percentage", value: "PERCENTAGE" },
-                  { label: "Fixed amount", value: "FIXED_AMOUNT" },
+                  { label: "Theo phần trăm", value: "PERCENTAGE" },
+                  { label: "Số tiền cố định", value: "FIXED_AMOUNT" },
                 ]}
               />
             </label>
             <label className="space-y-1 text-sm font-semibold text-gray-700">
-              Min order
+              Đơn tối thiểu
               <input
                 value="150000"
                 readOnly
@@ -340,7 +348,7 @@ export function MarketingManagement() {
               />
             </label>
             <label className="space-y-1 text-sm font-semibold text-gray-700">
-              Usage limit
+              Giới hạn lượt dùng
               <input
                 value="3000"
                 readOnly
@@ -355,10 +363,10 @@ export function MarketingManagement() {
         <div className="flex flex-col gap-3 border-b border-gray-100 p-5 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-bold text-gray-900">
-              Global campaigns
+              Chiến dịch toàn sàn
             </h2>
             <p className="text-sm text-gray-500">
-              Banner, coupon, and flash sale programs for the full platform.
+              Chương trình banner, mã giảm giá và flash sale cho toàn nền tảng.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -366,7 +374,7 @@ export function MarketingManagement() {
               value={search}
               onChange={setSearch}
               className="sm:w-80"
-              placeholder="Search campaign, coupon, banner..."
+              placeholder="Tìm chiến dịch, mã giảm giá, banner..."
             />
             <CustomSelect
               className="sm:w-52"
@@ -385,7 +393,7 @@ export function MarketingManagement() {
           minWidthClassName="min-w-[1180px]"
           emptyState={
             <div className="p-8 text-center text-sm font-semibold text-gray-600">
-              No marketing campaigns found.
+              Không tìm thấy chiến dịch marketing.
             </div>
           }
         />
@@ -394,10 +402,10 @@ export function MarketingManagement() {
       <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
         <div className="border-b border-gray-100 p-5">
           <h2 className="text-lg font-bold text-gray-900">
-            Global coupon rules
+            Quy tắc mã giảm giá toàn sàn
           </h2>
           <p className="text-sm text-gray-500">
-            Manage reusable discounts for campaigns and flash sales.
+            Quản lý ưu đãi dùng lại cho chiến dịch và flash sale.
           </p>
         </div>
         <DataTable
