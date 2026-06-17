@@ -65,8 +65,6 @@ zodResolver is forbidden unless @hookform/resolvers is added first.
 
 ## 3. Current Project Structure
 
-The project follows this structure:
-
 ```txt
 petlink-web/
 ├── app/
@@ -132,20 +130,6 @@ export default function AdminBookingsPage() {
 }
 ```
 
-Wrong example:
-
-```tsx
-export default function AdminBookingsPage() {
-  const [data, setData] = useState([])
-
-  const handleSubmit = async () => {
-    await fetch("/api/bookings")
-  }
-
-  return <div>...</div>
-}
-```
-
 ---
 
 ## 5. APIs Folder Rules
@@ -167,28 +151,16 @@ Examples:
 
 ```txt
 apis/admin/bookings/
-├── components/
-├── queries.ts
-└── schema.ts
-
 apis/admin/verification/
-├── components/
-├── queries.ts
-└── schema.ts
-
+apis/admin/moderation/
+apis/admin/finance/
+apis/admin/commission/
 apis/admin/analytics/
-├── components/
-└── queries.ts
-
+apis/admin/promotions/
 apis/provider/services/
-├── components/
-├── queries.ts
-└── schema.ts
-
+apis/provider/bookings/
+apis/provider/deposit/
 apis/auth/
-├── components/
-├── queries.ts
-└── schema.ts
 ```
 
 Responsibilities of `apis/`:
@@ -201,18 +173,6 @@ Responsibilities of `apis/`:
 * Feature-specific mutations
 * Feature-specific Zod validation schemas
 * Feature-specific business logic
-
-Rules:
-
-* Feature-specific components belong in `apis/[role]/[feature]/components`.
-* Feature-specific query and mutation logic belongs in `apis/[role]/[feature]/queries.ts`.
-* Feature-specific validation schema belongs in `apis/[role]/[feature]/schema.ts`.
-* Do not create a `features/` folder.
-* Do not create `components/admin` or `components/provider`.
-* Do not move mock files from `apis/` into new folders.
-* Reuse existing mock files in `apis/` instead of creating new duplicates.
-* Do not place shared generic UI inside `apis/`.
-* Do not place global layout components inside `apis/`.
 
 ---
 
@@ -231,701 +191,458 @@ components/
 └── guards/
 ```
 
----
-
 ### 6.1 `components/ui`
 
-Use `components/ui` for generic reusable UI components only.
+Generic reusable UI only. No business logic, no API calls, no domain knowledge.
 
-A UI component:
-
-* Has no business logic.
-* Has no API calls.
-* Has no TanStack Query hooks.
-* Does not know about domain entities such as booking, user, provider, service, payment, review, or verification.
-* Only receives generic props such as `label`, `value`, `error`, `variant`, `disabled`, `children`, `onClick`.
-
-Examples:
-
-```txt
-components/ui/Button.tsx
-components/ui/Input.tsx
-components/ui/Textarea.tsx
-components/ui/Select.tsx
-components/ui/Dialog.tsx
-components/ui/Card.tsx
-components/ui/Table.tsx
-components/ui/Badge.tsx
-components/ui/Pagination.tsx
-components/ui/FormError.tsx
-```
-
-Do not place feature-specific forms or tables in `components/ui`.
-
-Wrong examples:
-
-```txt
-components/ui/ServiceForm.tsx
-components/ui/BookingTable.tsx
-components/ui/VerificationActions.tsx
-```
-
----
+Examples: Button, Input, Textarea, Select, Dialog, Card, Table, Badge, Pagination, FormError.
 
 ### 6.2 `components/common`
 
-Use `components/common` only for shared application components reused by multiple features.
+Shared application components reused by multiple features.
 
-Examples:
-
-```txt
-components/common/PageHeader.tsx
-components/common/ActionBar.tsx
-components/common/ConfirmDialog.tsx
-components/common/StatusBadge.tsx
-components/common/EmptyState.tsx
-components/common/ErrorState.tsx
-components/common/LoadingState.tsx
-components/common/SearchFilterBar.tsx
-```
-
-Rules:
-
-* It can contain shared business UI.
-* It must be reusable by more than one feature.
-* It must not belong to only one feature.
-* Do not put feature-specific forms in `components/common`.
-* Do not put feature-specific tables in `components/common`.
-
-Wrong examples:
-
-```txt
-components/common/BookingTable.tsx
-components/common/ServiceForm.tsx
-components/common/VerificationTable.tsx
-components/common/DisputeResolutionForm.tsx
-```
-
-These belong in `apis/[role]/[feature]/components`.
-
----
+Examples: PageHeader, ActionBar, ConfirmDialog, StatusBadge, EmptyState, ErrorState, LoadingState, SearchFilterBar.
 
 ### 6.3 `components/layout`
 
-Use `components/layout` for shared layout components.
+Shared layout components only. Must not contain feature-specific business logic.
 
-Examples:
-
-```txt
-components/layout/PublicNavbar.tsx
-components/layout/Footer.tsx
-components/layout/DashboardSidebar.tsx
-components/layout/DashboardHeader.tsx
-components/layout/DashboardShell.tsx
-```
-
-Rules:
-
-* Layout components should not contain feature-specific business logic.
-* Layout components should not call feature APIs directly.
-* Layout components can read auth/role information only when needed for navigation or guards.
-
----
+Examples: PublicNavbar, Footer, DashboardSidebar, DashboardHeader, DashboardShell.
 
 ### 6.4 `components/landing`
 
-Use `components/landing` for public landing page sections.
-
-Examples:
-
-```txt
-components/landing/HeroSection.tsx
-components/landing/ServiceSection.tsx
-components/landing/ProviderSection.tsx
-components/landing/TestimonialSection.tsx
-components/landing/CtaSection.tsx
-```
-
-Rules:
-
-* Only public marketing/homepage UI belongs here.
-* Do not put admin dashboard components here.
-* Do not put provider dashboard components here.
-* Do not put feature-specific API logic here.
-
----
+Public landing page sections only.
 
 ### 6.5 `components/guards`
 
-Use `components/guards` for auth and permission guards.
+Auth and permission guards only.
 
-Examples:
+---
 
-```txt
-components/guards/AuthGuard.tsx
-components/guards/RoleGuard.tsx
-components/guards/PermissionGuard.tsx
+## 7. Booking Status Rules
+
+### 7.1 Allowed Booking Statuses
+
+Use only these booking statuses:
+
+```ts
+type BookingStatus =
+  | "BOOKED"                  // Customer just created the booking (replaces PENDING)
+  | "CONFIRMED"               // Provider accepted; commission reserved if cash payment
+  | "CHECKED_IN"              // Customer verified via QR or OTP at provider location
+  | "IN_SERVICE"              // Service is in progress (replaces IN_PROGRESS)
+  | "COMPLETED"               // Service completed; commission charged if cash payment
+  | "COMMISSION_CHARGED"      // Commission deducted from provider balance (ledger recorded)
+  | "CANCELLED_BY_CUSTOMER"   // Customer cancelled (replaces CANCELLED + cancelledBy PET_OWNER)
+  | "CANCELLED_BY_PROVIDER"   // Provider rejected or cancelled (replaces CANCELLED + cancelledBy SERVICE_PROVIDER)
+  | "NO_SHOW_REPORTED"        // Provider reported customer did not arrive (only before CHECKED_IN)
+  | "DISPUTED"                // Active dispute; funds and status held pending admin resolution
+  | "FAILED_APPROVED"         // Admin approved the failure after review
 ```
 
-Rules:
+### 7.2 Forbidden Statuses
 
-* Guards may check authentication, role, and permission.
-* Guards should reuse role and permission constants from `constants/`.
-* Guards should not contain feature-specific UI.
-
----
-
-## 7. Component Placement Rules
-
-Before creating any component, classify it into one of three levels.
-
----
-
-### 7.1 UI Component
-
-Place in `components/ui` only if:
-
-* It is generic.
-* It is reusable across the whole app.
-* It has no business logic.
-* It has no domain-specific logic.
-* It has no API or TanStack Query logic.
-
-Examples:
+Do NOT use these statuses:
 
 ```txt
-Button
-Input
-Textarea
-Select
-Dialog
-Card
-Table
-Badge
-Pagination
-FormError
+PENDING       → use BOOKED instead
+IN_PROGRESS   → use IN_SERVICE instead
+CANCELLED     → use CANCELLED_BY_CUSTOMER or CANCELLED_BY_PROVIDER instead
+REJECTED      → use CANCELLED_BY_PROVIDER instead
 ```
 
----
+### 7.3 Booking Workflow
 
-### 7.2 Common Component
+Cash payment flow:
 
-Place in `components/common` only if:
-
-* It is reused by multiple features.
-* It contains shared application UI.
-* It is not tied to only one feature.
-
-Examples:
-
-```txt
-PageHeader
-ActionBar
-ConfirmDialog
-StatusBadge
-EmptyState
-ErrorState
-LoadingState
-SearchFilterBar
+```
+BOOKED → CONFIRMED (commission reserved) → CHECKED_IN → IN_SERVICE → COMPLETED (commission charged) → COMMISSION_CHARGED
 ```
 
----
+Online payment flow:
 
-### 7.3 Feature Component
+```
+BOOKED → CONFIRMED → CHECKED_IN → IN_SERVICE → COMPLETED
+```
 
-Place in `apis/[role]/[feature]/components` if:
+Cancellation flows:
 
-* It belongs to one business feature.
-* It uses feature-specific query, mutation, schema, or types.
-* It displays or edits a domain entity.
-* It is used by only one feature.
+```
+BOOKED     → CANCELLED_BY_CUSTOMER
+BOOKED     → CANCELLED_BY_PROVIDER
+CONFIRMED  → CANCELLED_BY_CUSTOMER
+CONFIRMED  → CANCELLED_BY_PROVIDER
+```
 
-Examples:
+No-show / dispute flows:
 
-```txt
-apis/auth/components/LoginForm.tsx
-apis/auth/components/RegisterProviderForm.tsx
+```
+CONFIRMED  → NO_SHOW_REPORTED (only if customer has NOT checked in)
+CHECKED_IN → DISPUTED (provider cannot self-fail after check-in)
+NO_SHOW_REPORTED → DISPUTED (if customer contradicts no-show report)
+DISPUTED   → FAILED_APPROVED (after admin review)
+DISPUTED   → COMPLETED (if admin confirms service was delivered)
+```
 
-apis/admin/bookings/components/BookingTable.tsx
-apis/admin/bookings/components/BookingDetail.tsx
+### 7.4 Cancellation Data Rule
 
-apis/admin/verification/components/VerificationTable.tsx
-apis/admin/verification/components/VerificationActions.tsx
+If customer cancels:
 
-apis/provider/services/components/ServiceForm.tsx
-apis/provider/services/components/ServiceTable.tsx
+```ts
+status: "CANCELLED_BY_CUSTOMER"
+cancelledBy: "PET_OWNER"
+cancelReason: string
+```
 
-apis/provider/business-profile/components/BusinessProfileForm.tsx
+If provider cancels or rejects:
+
+```ts
+status: "CANCELLED_BY_PROVIDER"
+cancelledBy: "SERVICE_PROVIDER"
+cancelReason: string
+```
+
+If admin intervenes:
+
+```ts
+status: "CANCELLED_BY_PROVIDER" | "FAILED_APPROVED"
+cancelledBy: "ADMIN"
+cancelReason: string
 ```
 
 ---
 
-## 8. Query and Mutation Rules
+## 8. Payment Method Rules
 
-This project uses TanStack React Query for server state.
+Allowed payment methods:
 
-Rules:
-
-* Use `@tanstack/react-query`.
-* Use `useQuery` for fetching server data.
-* Use `useMutation` for create, update, delete, approve, reject, and submit actions.
-* Store feature-specific query hooks in `apis/[role]/[feature]/queries.ts`.
-* Do not use SWR.
-* Do not create SWR hooks.
-* Do not put query hooks inside `components/ui`.
-* Do not put feature-specific query hooks inside shared `hooks/`.
-* Do not call Axios directly inside `page.tsx`.
-* Do not call Axios directly inside shared UI components.
-* Do not manually duplicate server state in Zustand.
-* Use `queryClient.invalidateQueries()` or `queryClient.setQueryData()` after successful mutations.
-* Use consistent query keys from `constants/query-keys.ts` when available.
-
-Correct pattern:
-
-```txt
-apis/admin/bookings/queries.ts
-apis/admin/verification/queries.ts
-apis/provider/services/queries.ts
-apis/auth/queries.ts
+```ts
+type PaymentMethod = "CASH" | "ONLINE_MOMO"
 ```
 
-Wrong pattern:
+Cash payment eligibility rule:
 
-```txt
-app/admin/bookings/page.tsx with API call
-components/ui/Table.tsx with query hook
-components/common/BookingTable.tsx with booking-only API logic
-features/admin/bookings/queries.ts
-apis/admin/bookings/swr.ts
+```
+canAcceptCashBooking = provider.availableBalance >= estimatedCommission + provider.safetyBuffer
+                    && provider.status === "ACTIVE"
+```
+
+If `canAcceptCashBooking` is false:
+- Do NOT show `CASH` as a payment option for this provider in the booking flow.
+- Show balance warning on provider dashboard.
+
+---
+
+## 9. Provider Balance Rules
+
+Provider balance model:
+
+```ts
+interface ProviderBalance {
+  availableBalance: number    // Usable balance; must cover commission + safetyBuffer for cash bookings
+  reservedBalance: number     // Held for confirmed cash bookings not yet completed
+  debtBalance: number         // Amount provider owes to platform
+  safetyBuffer: number        // Minimum buffer required (adjusted by trust score)
+  totalDeposited: number      // Cumulative top-ups
+  totalCommissionCharged: number // Cumulative commission charged
+}
+```
+
+Balance transitions:
+
+```
+When CONFIRMED (cash booking): availableBalance -= estimatedCommission; reservedBalance += estimatedCommission
+When COMPLETED (cash booking): reservedBalance -= commission; commission is charged (CHARGE_COMMISSION ledger entry)
+When CANCELLED or no-show approved: reservedBalance -= commission; availableBalance += commission (RELEASE_RESERVE)
 ```
 
 ---
 
-## 9. API Client Rules
+## 10. Trust Score Rules
 
-API client setup belongs in `lib/`.
+Trust score fields:
 
-Expected files:
-
-```txt
-lib/axios.ts
-lib/query-client.ts
-constants/api-endpoints.ts
-constants/query-keys.ts
+```ts
+interface ProviderTrustScore {
+  completionRate: number
+  noShowReportRate: number
+  lateFailCancelRate: number
+  disputeRate: number
+  customerContradictionRate: number
+  cashAbnormalityRate: number
+  riskLevel: "LOW" | "MEDIUM" | "HIGH" | "CRITICAL"
+}
 ```
 
-Rules:
+Risk level actions:
 
-* Use the existing Axios client from `lib/axios.ts`.
-* Do not call `fetch` directly.
-* Do not create a new Axios client if one already exists.
-* API endpoint strings should be reused from `constants/api-endpoints.ts` when available.
-* Query keys should be reused from `constants/query-keys.ts` when available.
-* Feature query files should import the API client and endpoint constants.
-
-Correct flow:
-
-```txt
-apis/admin/bookings/queries.ts
-↓
-lib/axios.ts
-↓
-constants/api-endpoints.ts
-↓
-Backend API
+```
+LOW      → warning notification only
+MEDIUM   → increase safetyBuffer, higher minimum balance required
+HIGH     → block cash bookings, online only
+CRITICAL → suspend account, block all new bookings
 ```
 
 ---
 
-## 10. Form and Validation Rules
+## 11. Ledger Transaction Rules
 
-This project currently has `zod`, but does not have `react-hook-form` or `@hookform/resolvers`.
+Every balance change must be recorded as an immutable ledger entry.
 
-Rules:
+Ledger transaction types:
 
-* Use Zod for validation schemas.
-* Store feature-specific validation schemas in `apis/[role]/[feature]/schema.ts`.
-* Do not use React Hook Form unless `react-hook-form` is installed.
-* Do not use `zodResolver` unless `@hookform/resolvers` is installed.
-* Do not add form libraries unless explicitly requested.
-* Do not put validation logic inside `page.tsx`.
-* Do not put feature validation schema inside `components/`.
-
-Correct example:
-
-```txt
-apis/provider/services/schema.ts
-apis/admin/verification/schema.ts
-apis/auth/schema.ts
+```ts
+type LedgerTransactionType =
+  | "TOPUP"                // Provider topped up deposit
+  | "RESERVE_COMMISSION"   // Commission reserved when cash booking confirmed
+  | "RELEASE_RESERVE"      // Reserve released due to cancellation or approved no-show
+  | "CHARGE_COMMISSION"    // Commission charged after booking completed
+  | "PAYOUT"               // Platform paid out to provider
+  | "DEBT_OFFSET"          // Debt automatically offset from payout
+  | "ADMIN_ADJUSTMENT"     // Manual balance adjustment by admin (must include reason and admin_id)
 ```
 
-Wrong example:
+All admin balance adjustments must use type `ADMIN_ADJUSTMENT` and include metadata with `admin_id` and `reason`.
+
+---
+
+## 12. QR / OTP Check-in Rules
+
+* When customer arrives, their app displays a unique QR code or OTP for the booking.
+* Provider scans QR or enters OTP to confirm customer arrival → booking moves to `CHECKED_IN`.
+* After `CHECKED_IN`, provider CANNOT change status to failed directly.
+* After `CHECKED_IN`, if an issue arises, provider must open a dispute with evidence.
+* Provider can only report no-show (`NO_SHOW_REPORTED`) if the customer has NOT checked in.
+
+---
+
+## 13. Moderation & Reports Rules
+
+Moderation (A-03) covers two sub-sections that share the same feature folder:
 
 ```txt
-app/provider/services/create/page.tsx contains validation logic
-components/common/service.schema.ts
-features/provider/services/schema.ts
+apis/admin/moderation/
+├── components/
+│   ├── moderation-table.tsx       (service content queue)
+│   ├── report-table.tsx           (content reports)
+│   └── report-resolution-dialog.tsx
+├── queries.ts
+└── schema.ts
 ```
 
-If a form is needed with the current dependencies:
+Routes:
 
 ```txt
-Use React state or existing project form pattern.
-Use Zod manually for validation.
-Do not import react-hook-form.
-Do not import zodResolver.
+admin/moderation          → service content queue (Moderation page)
+admin/moderation/reports  → content reports (Reports page)
+```
+
+These are two views of the same feature, not two separate features.
+
+---
+
+## 14. Marketing / Promotions Rules
+
+Marketing (A-08, was A-06) covers banner management, coupon management, and flash sales.
+
+Feature folder:
+
+```txt
+apis/admin/promotions/
+├── components/
+│   ├── banner-table.tsx
+│   ├── banner-form.tsx
+│   ├── coupon-table.tsx
+│   ├── coupon-form.tsx
+│   └── flash-sale-form.tsx
+├── queries.ts
+└── schema.ts
+```
+
+Route:
+
+```txt
+admin/promotions          → campaign overview + banner slots
+admin/promotions/banners  → banner management
+admin/promotions/coupons  → coupon management
+```
+
+Scope rule: if not implemented in current phase, mark as `OUT_OF_SCOPE_NOW`. Do not create empty files.
+
+Marketing does NOT affect commission flow. Commission is handled separately in `apis/admin/finance/` and `apis/admin/commission/`.
+
+---
+
+## 15. Admin Finance Feature Rules
+
+Two separate admin features handle financial operations:
+
+### A-06 Provider Balance & Deposit Management
+
+```txt
+apis/admin/finance/
+├── components/
+│   ├── provider-balance-table.tsx
+│   ├── provider-ledger-detail.tsx
+│   ├── balance-adjustment-form.tsx
+│   ├── debt-management-table.tsx
+│   ├── ledger-transaction-table.tsx
+│   └── trust-score-detail.tsx
+├── queries.ts
+└── schema.ts
+```
+
+Routes:
+
+```txt
+admin/providers/[providerId]/balance
+admin/finance/ledger
+```
+
+### A-07 Commission Management
+
+```txt
+apis/admin/commission/
+├── components/
+│   ├── commission-summary-cards.tsx
+│   ├── commission-table.tsx
+│   ├── pending-commission-table.tsx
+│   └── commission-config-form.tsx
+├── queries.ts
+└── schema.ts
+```
+
+Routes:
+
+```txt
+admin/finance/commission
+admin/finance/commission/config
 ```
 
 ---
 
-## 11. Type Rules
+## 16. Shared Types for New Business Concepts
 
-Use `types/` for shared TypeScript types and interfaces.
-
-Current examples:
+Add these to `types/` as shared types:
 
 ```txt
-types/auth.ts
-types/user.ts
-types/provider.ts
-types/service.ts
-types/booking.ts
-types/customer.ts
-types/pet.ts
-types/review.ts
-types/revenue.ts
-types/analytics.ts
-types/api.ts
-types/common.ts
-```
-
-Rules:
-
-* Avoid using `any`.
-* Shared DTOs belong in `types/api.ts`.
-* Shared domain types belong in their own files.
-* Feature-specific types can stay close to the feature if needed.
-* Use PascalCase for type and interface names.
-* Use `interface` when possible.
-
-Naming examples:
-
-```txt
-User
-UserDto
-UserResponse
-Provider
-ProviderDto
-Service
-ServiceResponse
-Booking
-BookingDto
-BookingResponse
+types/booking.ts       → BookingStatus, Booking, BookingDto (updated with new statuses)
+types/provider.ts      → Provider, ProviderBalance, ProviderTrustScore
+types/ledger.ts        → LedgerTransaction, LedgerTransactionType (new)
+types/commission.ts    → Commission, CommissionConfig, CommissionType (new)
+types/payment.ts       → PaymentMethod, PaymentStatus
 ```
 
 ---
 
-## 12. Store Rules
+## 17. Shared Constants for New Business Concepts
 
-Use `stores/` for global client state with Zustand.
-
-Current examples:
+Add or update these in `constants/`:
 
 ```txt
-stores/auth-store.ts
-stores/ui-store.ts
-stores/provider-store.ts
-stores/filter-store.ts
-```
-
-Rules:
-
-* Use stores only for global client state.
-* Do not duplicate server state in stores.
-* Server state must use TanStack React Query.
-* Do not store API list data in Zustand if it comes from the server.
-
-Allowed store examples:
-
-```txt
-auth user/session state
-sidebar open/close state
-theme-related UI state
-selected provider context
-global filters if reused across pages
-```
-
-Not allowed in stores:
-
-```txt
-booking list from API
-user list from API
-provider list from API
-analytics data from API
-verification request list from API
+constants/booking-status.ts    → updated with new BookingStatus values
+constants/payment-method.ts    → CASH, ONLINE_MOMO
+constants/ledger-types.ts      → LedgerTransactionType values (new)
+constants/trust-score.ts       → risk level thresholds (new)
+constants/query-keys.ts        → add keys for finance, commission, ledger, trust-score
+constants/api-endpoints.ts     → add endpoints for balance, commission, ledger
 ```
 
 ---
 
-## 13. Hooks Rules
-
-Use `hooks/` for shared reusable hooks.
-
-Current examples:
-
-```txt
-hooks/use-debounce.ts
-hooks/use-pagination.ts
-hooks/use-permission.ts
-hooks/use-upload.ts
-hooks/use-toast.ts
-```
-
-Rules:
-
-* Shared hooks used by many features belong in `hooks/`.
-* Feature-specific TanStack Query hooks belong in `apis/[role]/[feature]/queries.ts`.
-* Hooks used by only one feature should stay inside that feature if needed.
-* Hook names must start with `use`.
-
-Examples:
-
-```txt
-useDebounce
-usePagination
-usePermission
-useUpload
-useToast
-```
-
----
-
-## 14. Constants Rules
-
-Use `constants/` for shared constants.
-
-Current examples:
-
-```txt
-constants/roles.ts
-constants/permissions.ts
-constants/booking-status.ts
-constants/service-category.ts
-constants/query-keys.ts
-constants/api-endpoints.ts
-```
-
-Rules:
-
-* Constant names must use `UPPER_SNAKE_CASE`.
-* Reuse constants instead of hardcoding strings.
-* Role and permission checks must use constants.
-* Query keys should be centralized in `constants/query-keys.ts`.
-* API endpoints should be centralized in `constants/api-endpoints.ts`.
-
----
-
-## 15. Lib Rules
-
-Use `lib/` for shared utilities and infrastructure.
-
-Current examples:
-
-```txt
-lib/axios.ts
-lib/query-client.ts
-lib/auth.ts
-lib/rbac.ts
-lib/routes.ts
-lib/permissions.ts
-lib/upload-adapter.ts
-lib/date.ts
-lib/currency.ts
-lib/utils.ts
-```
-
-Rules:
-
-* Axios client setup belongs in `lib/axios.ts`.
-* TanStack Query client setup belongs in `lib/query-client.ts`.
-* Auth helpers belong in `lib/auth.ts`.
-* RBAC helpers belong in `lib/rbac.ts`.
-* Route helpers belong in `lib/routes.ts`.
-* Permission helpers belong in `lib/permissions.ts`.
-* Date formatting belongs in `lib/date.ts`.
-* Currency formatting belongs in `lib/currency.ts`.
-* Generic utilities belong in `lib/utils.ts`.
-* Do not put feature-specific business logic in `lib/`.
-* Do not put feature-specific UI in `lib/`.
-
----
-
-## 16. Providers Rules
-
-Use `providers/` for global app providers.
-
-Current examples:
-
-```txt
-providers/app-provider.tsx
-providers/query-provider.tsx
-providers/theme-provider.tsx
-providers/auth-provider.tsx
-```
-
-Rules:
-
-* Providers are allowed to stay outside `components/`.
-* Providers are used to wrap the whole app.
-* `app-provider.tsx` should compose global providers.
-* `query-provider.tsx` should use TanStack React Query.
-* Do not use SWR provider.
-* Do not put feature-specific UI inside `providers/`.
-* Do not put page-specific logic inside `providers/`.
-
----
-
-## 17. Styling Rules
+## 18. Styling Rules
 
 * Reuse the existing design system.
 * Do not introduce a new color system.
 * Use existing spacing and typography.
 * Use existing UI components from `components/ui`.
-* Do not hard-code random colors unless the design system already defines them.
 * Keep UI style consistent between admin and provider dashboards.
-* Do not create separate visual styles for admin and provider unless required.
+
+Status color conventions:
+
+```txt
+BOOKED          → Yellow
+CONFIRMED       → Blue
+CHECKED_IN      → Indigo
+IN_SERVICE      → Purple
+COMPLETED       → Green
+COMMISSION_CHARGED → Teal
+CANCELLED_BY_CUSTOMER → Red
+CANCELLED_BY_PROVIDER → Red
+NO_SHOW_REPORTED → Orange
+DISPUTED        → Amber
+FAILED_APPROVED → Gray
+```
 
 ---
 
-## 18. Naming Convention
+## 19. Naming Convention
 
 ### Components
 
 Use PascalCase.
 
-Examples:
-
-```txt
-LoginForm.tsx
-ServiceTable.tsx
-VerificationActions.tsx
-BusinessProfileForm.tsx
-```
-
 ### Hooks
 
-Use camelCase and start with `use`.
-
-Examples:
-
-```txt
-useDebounce
-usePagination
-usePermission
-useUpload
-```
+Use camelCase, start with `use`.
 
 ### Stores
 
 Use kebab-case with `-store.ts`.
 
-Examples:
-
-```txt
-auth-store.ts
-ui-store.ts
-provider-store.ts
-filter-store.ts
-```
-
 ### Types
 
 Use PascalCase.
-
-Examples:
-
-```txt
-User
-UserDto
-UserResponse
-Service
-BookingResponse
-```
 
 ### Constants
 
 Use `UPPER_SNAKE_CASE`.
 
-Examples:
-
-```txt
-USER_ROLES
-BOOKING_STATUS
-QUERY_KEYS
-API_ENDPOINTS
-```
-
 ---
 
-## 19. Next.js Client Component Rules
+## 20. Next.js Client Component Rules
 
 Use Server Components by default.
 
 Only add `"use client"` when the component uses:
 
-* `useState`
-* `useEffect`
-* event handlers
-* browser APIs
+* `useState`, `useEffect`, event handlers, browser APIs
 * TanStack Query hooks
 * Zustand hooks
 * client-only libraries
 
-Rules:
-
-* Do not add `"use client"` to every file.
-* Keep server components as server components when possible.
-* Client components should be as small as possible.
-* If only one child component needs client behavior, make only that child component a client component.
-
 ---
 
-## 20. File Creation Policy
+## 21. File Creation Policy
 
 Before creating a new file:
 
 1. Check `package.json`.
 2. Search existing `apis/` feature modules.
-3. Search existing components in `components/ui`.
-4. Search existing components in `components/common`.
-5. Search existing hooks in `hooks/`.
-6. Search existing types in `types/`.
-7. Search existing stores in `stores/`.
-8. Search existing constants in `constants/`.
-9. Search existing utilities in `lib/`.
-10. Reuse existing implementation if available.
+3. Search existing components in `components/ui` and `components/common`.
+4. Search existing hooks in `hooks/`.
+5. Search existing types in `types/`.
+6. Search existing stores in `stores/`.
+7. Search existing constants in `constants/`.
+8. Search existing utilities in `lib/`.
+9. Reuse existing implementation if available.
 
 Create a new file only if no suitable implementation exists.
 
 ---
 
-## 21. Forbidden Patterns
+## 22. Forbidden Patterns
 
-Do not create these:
+Do not create:
 
 ```txt
 features/
-features/admin/
-features/provider/
 components/admin/
 components/provider/
-components/ui/ServiceForm.tsx
-components/common/VerificationTable.tsx
-app/admin/verification/page.tsx with business logic
-app/provider/services/page.tsx with fetch logic
+apis/components/
 ```
 
-Do not use these libraries unless they are installed first:
+Do not use these unless installed:
 
 ```txt
 swr
@@ -933,194 +650,79 @@ react-hook-form
 @hookform/resolvers
 ```
 
-Do not do this:
+Do not use deprecated booking statuses:
 
 ```txt
-features/admin/bookings/components/BookingTable.tsx
-components/admin/bookings/BookingTable.tsx
-apis/components/
-apis/admin/components/
-apis/provider/components/
-apis/admin/bookings/swr.ts
-```
-
-Use this instead:
-
-```txt
-apis/admin/bookings/components/BookingTable.tsx
-apis/admin/bookings/queries.ts
-apis/admin/bookings/schema.ts
-
-apis/provider/services/components/ServiceForm.tsx
-apis/provider/services/queries.ts
-apis/provider/services/schema.ts
-
-apis/auth/components/LoginForm.tsx
-apis/auth/queries.ts
-apis/auth/schema.ts
+PENDING      (use BOOKED)
+IN_PROGRESS  (use IN_SERVICE)
+CANCELLED    (use CANCELLED_BY_CUSTOMER or CANCELLED_BY_PROVIDER)
+REJECTED     (use CANCELLED_BY_PROVIDER)
 ```
 
 ---
 
-## 22. Required Workflow For AI Agent
+## 23. Required Workflow For AI Agent
 
-Before implementing any new feature, the AI agent must:
+Before implementing any new feature:
 
-1. Read `package.json`.
-2. Use only installed libraries.
-3. Read the existing folder structure.
-4. Check whether the feature already exists in `apis/`.
-5. Reuse existing mock files if they already exist.
-6. Identify the correct route inside `app/`.
-7. Identify the correct feature module inside `apis/`.
-8. Search for reusable components in `components/ui`.
-9. Search for reusable components in `components/common`.
-10. Search for reusable hooks in `hooks/`.
-11. Search for reusable types in `types/`.
-12. Search for reusable constants in `constants/`.
-13. Search for reusable stores in `stores/`.
-14. Search for existing utility functions in `lib/`.
-15. Create files only in the correct folders.
-16. Do not create duplicate components.
-17. Do not create a `features/` folder.
-18. Do not use SWR.
-19. Do not use React Hook Form unless installed.
-20. Do not put business logic in `page.tsx`.
+1. Read `package.json` — use only installed libraries.
+2. Read the existing folder structure.
+3. Check whether the feature already exists in `apis/`.
+4. Reuse existing mock files if they exist.
+5. Identify the correct route in `app/`.
+6. Identify the correct feature module in `apis/`.
+7. Search for reusable components, hooks, types, constants, stores, utilities.
+8. Create files only in the correct folders.
+9. Do not create duplicate components.
+10. Do not create `features/`.
+11. Do not use SWR or React Hook Form.
+12. Do not use deprecated booking statuses.
+13. Do not put business logic in `page.tsx`.
+14. After finishing, update `CURRENT_STATE.md`.
 
 ---
 
-## 23. CURRENT_STATE.md Update Rule
+## 24. CURRENT_STATE.md Update Rule
 
-After finishing any feature, update `CURRENT_STATE.md`.
-
-Use this format:
+After finishing any feature, update `CURRENT_STATE.md` with:
 
 ```txt
 ## Feature: [Feature Name]
 
-Role:
-- Admin / Provider / Auth / Public
+Role: Admin / Provider / Auth / Public
+Status: Done / In Progress / Blocked
 
-Status:
-- Done / In Progress / Blocked
-
-Files created:
-- ...
-
-Files modified:
-- ...
-
-Components reused:
-- ...
-
-API endpoints used:
-- ...
-
-Query keys used:
-- ...
-
-Types added or reused:
-- ...
-
-Libraries used:
-- ...
-
-Notes:
-- ...
-
-Known issues:
-- ...
-
-Next steps:
-- ...
+Files created: ...
+Files modified: ...
+Components reused: ...
+API endpoints used: ...
+Query keys used: ...
+Types added or reused: ...
+Libraries used: ...
+Notes: ...
+Known issues: ...
+Next steps: ...
 ```
 
 ---
 
-## 24. Final Placement Rule
-
-When unsure where to place a file, follow this priority:
+## 25. Final Placement Rule
 
 ```txt
-Route / page / layout?
-→ app/
-
-Feature-specific component?
-→ apis/[role]/[feature]/components/
-
-Feature-specific TanStack Query hook or mutation?
-→ apis/[role]/[feature]/queries.ts
-
-Feature-specific validation schema?
-→ apis/[role]/[feature]/schema.ts
-
-Generic reusable UI?
-→ components/ui/
-
-Shared application component?
-→ components/common/
-
-Layout component?
-→ components/layout/
-
-Auth or permission guard?
-→ components/guards/
-
-Landing page section?
-→ components/landing/
-
-Shared reusable hook?
-→ hooks/
-
-Global client state?
-→ stores/
-
-Axios / auth / RBAC / utility?
-→ lib/
-
-Shared type?
-→ types/
-
-Shared constant?
-→ constants/
-
-Global provider?
-→ providers/
-
-Static asset?
-→ public/
+Route / page / layout?             → app/
+Feature-specific component?        → apis/[role]/[feature]/components/
+Feature-specific query/mutation?   → apis/[role]/[feature]/queries.ts
+Feature-specific schema?           → apis/[role]/[feature]/schema.ts
+Generic reusable UI?               → components/ui/
+Shared application component?      → components/common/
+Layout component?                  → components/layout/
+Auth or permission guard?          → components/guards/
+Landing page section?              → components/landing/
+Shared reusable hook?              → hooks/
+Global client state?               → stores/
+Axios / auth / RBAC / utility?     → lib/
+Shared type?                       → types/
+Shared constant?                   → constants/
+Global provider?                   → providers/
+Static asset?                      → public/
 ```
-
----
-
-## 25. Final Important Rule
-
-This project uses:
-
-```txt
-apis/ = feature modules
-TanStack React Query = server state
-Axios = HTTP client
-Zod = validation
-Zustand = global client state
-```
-
-This project does not use:
-
-```txt
-features/
-SWR
-React Hook Form
-@hookform/resolvers
-```
-
-Therefore:
-
-* Do not create `features/`.
-* Do not move files from `apis/` to `features/`.
-* Do not create duplicate feature implementations.
-* Do not create SWR hooks.
-* Do not import `useSWR`.
-* Do not import `react-hook-form`.
-* Do not import `zodResolver`.
-* Always continue from the existing mock feature modules inside `apis/`.

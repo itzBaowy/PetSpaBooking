@@ -7,7 +7,7 @@ Application roles:
 - `GUEST`: User is not logged in. This role is handled by route guards and public routes, not stored as an account role.
 - `PET_OWNER`: Logged-in pet owner who manages pets, bookings, payments, reviews, notifications, and health records.
 - `SERVICE_PROVIDER`: Logged-in business/provider account that manages business profile, services, pricing, bookings, customers, revenue, and communication.
-- `ADMIN`: System administrator who manages users, provider verification, moderation, booking disputes, analytics, and platform promotions.
+- `ADMIN`: System administrator who manages users, provider verification, moderation, booking disputes, analytics, provider balance, commission, and platform promotions.
 
 Do not use `USER` as a business role. Use `PET_OWNER` instead.
 
@@ -37,7 +37,7 @@ Routes:
 
 Feature:
 
-features/auth
+apis/auth
 
 Components:
 
@@ -64,7 +64,7 @@ Routes:
 
 Feature:
 
-features/public
+apis/public
 
 Components:
 
@@ -92,7 +92,7 @@ pet-owner/profile
 
 Feature:
 
-features/pet-owner/profile
+apis/pet-owner/profile
 
 Components:
 
@@ -111,7 +111,7 @@ pet-owner/pets/[petId]
 
 Feature:
 
-features/pet-owner/pets
+apis/pet-owner/pets
 
 Components:
 
@@ -138,7 +138,7 @@ pet-owner/services/[serviceId]
 
 Feature:
 
-features/pet-owner/discovery
+apis/pet-owner/discovery
 
 Components:
 
@@ -152,6 +152,7 @@ Rules:
 
 - Filter by location, distance, service type, price range, and rating.
 - Service categories include Clinic, Vaccination, Spa, Grooming, Pet Hotel, Training, and Home Care.
+- If provider's Available Balance is insufficient for cash payment, do NOT show cash payment option for that provider.
 
 ---
 
@@ -165,7 +166,7 @@ pet-owner/bookings/[bookingId]
 
 Feature:
 
-features/pet-owner/bookings
+apis/pet-owner/bookings
 
 Components:
 
@@ -178,28 +179,46 @@ Components:
 - pet-owner-booking-detail
 - reschedule-booking-form
 - cancel-booking-dialog
+- qr-code-display
+- otp-display
+- no-show-response-dialog
 
-Workflow:
+Workflow (Cash Payment):
 
-PENDING
+BOOKED
+→ CONFIRMED (commission reserved)
+→ CHECKED_IN (QR/OTP verified)
+→ IN_SERVICE
+→ COMPLETED (commission charged)
+
+Workflow (Online Payment):
+
+BOOKED
 → CONFIRMED
-→ IN_PROGRESS
+→ CHECKED_IN
+→ IN_SERVICE
 → COMPLETED
 
-Alternative:
+Alternative (Cancellation):
 
-PENDING
-→ CANCELLED
+BOOKED → CANCELLED_BY_CUSTOMER
+CONFIRMED → CANCELLED_BY_CUSTOMER
+CONFIRMED → CANCELLED_BY_PROVIDER
 
-CONFIRMED
-→ CANCELLED
+Alternative (No-show / Dispute):
+
+CONFIRMED → NO_SHOW_REPORTED → DISPUTED → FAILED_APPROVED
+CHECKED_IN → DISPUTED (provider cannot self-fail after check-in)
 
 Rules:
 
-- Pet Owner can cancel only when booking status is `PENDING` or `CONFIRMED`.
+- Pet Owner can cancel only when booking status is `BOOKED` or `CONFIRMED`.
 - Cancellation must happen at least 2 hours before the appointment time.
 - Cancellation requires a reason.
-- Reschedule returns the booking to `PENDING` for provider approval.
+- Reschedule returns the booking to `BOOKED` for provider approval.
+- When payment method is `CASH`, show QR code / OTP for check-in at the provider location.
+- Pet Owner can respond to `NO_SHOW_REPORTED` within a defined time window (e.g. X hours).
+- If Pet Owner does not respond to no-show report, booking may auto-resolve after the time window.
 
 ---
 
@@ -213,7 +232,7 @@ pet-owner/invoices/[invoiceId]
 
 Feature:
 
-features/pet-owner/payments
+apis/pet-owner/payments
 
 Components:
 
@@ -221,6 +240,7 @@ Components:
 - invoice-detail
 - transaction-history-table
 - payment-status-badge
+- cash-payment-notice
 
 Payment Methods:
 
@@ -238,6 +258,8 @@ Notes:
 
 - For demo scope, payment may stay inside booking flow.
 - Create a separate payments feature only if invoices and transaction history are implemented.
+- If provider's Available Balance is insufficient, the `CASH` option must be hidden for that provider in the booking flow.
+- Show a notice to Pet Owner when selecting CASH explaining the check-in process (QR/OTP required).
 
 ---
 
@@ -250,7 +272,7 @@ pet-owner/bookings/[bookingId]/review
 
 Feature:
 
-features/pet-owner/reviews
+apis/pet-owner/reviews
 
 Components:
 
@@ -275,7 +297,7 @@ pet-owner/notifications
 
 Feature:
 
-features/pet-owner/notifications
+apis/pet-owner/notifications
 
 Components:
 
@@ -287,6 +309,7 @@ Notification Types:
 
 - Appointment reminder
 - Booking confirmed / changed / cancelled
+- No-show reported — prompt Pet Owner to respond
 - Platform promotion
 
 ---
@@ -300,7 +323,7 @@ pet-owner/pets/[petId]/health-records
 
 Feature:
 
-features/pet-owner/health-records
+apis/pet-owner/health-records
 
 Components:
 
@@ -326,7 +349,7 @@ provider/business-profile
 
 Feature:
 
-features/provider/business-profile
+apis/provider/business-profile
 
 Components:
 
@@ -346,7 +369,7 @@ provider/services/[serviceId]/edit
 
 Feature:
 
-features/provider/services
+apis/provider/services
 
 Components:
 
@@ -372,7 +395,7 @@ provider/pricing/combos
 
 Feature:
 
-features/provider/pricing
+apis/provider/pricing
 
 Components:
 
@@ -391,7 +414,7 @@ provider/bookings/[bookingId]
 
 Feature:
 
-features/provider/bookings
+apis/provider/bookings
 
 Components:
 
@@ -399,30 +422,53 @@ Components:
 - booking-calendar
 - booking-detail
 - booking-status-actions
+- check-in-scanner
+- otp-confirm-dialog
+- no-show-report-form
+- dispute-evidence-form
 
-Workflow:
+Workflow (Cash Payment):
 
-PENDING
+BOOKED
+→ CONFIRMED (system reserves commission on provider balance)
+→ CHECKED_IN (provider scans QR or enters OTP from customer)
+→ IN_SERVICE
+→ COMPLETED (system charges reserved commission)
+
+Workflow (Online Payment):
+
+BOOKED
 → CONFIRMED
-→ IN_PROGRESS
+→ CHECKED_IN
+→ IN_SERVICE
 → COMPLETED
 
-Alternative:
+Alternative (Cancellation):
 
-PENDING
-→ CANCELLED
+BOOKED → CANCELLED_BY_PROVIDER
+CONFIRMED → CANCELLED_BY_PROVIDER
 
-CONFIRMED
-→ CANCELLED
+Alternative (No-show):
+
+CONFIRMED → NO_SHOW_REPORTED (only if customer has NOT checked in)
+
+Alternative (Dispute after check-in):
+
+CHECKED_IN → DISPUTED (provider must submit evidence; cannot self-fail)
 
 Rules:
 
-- Provider confirms a `PENDING` booking by changing it to `CONFIRMED`.
-- Provider rejects a booking by changing it to `CANCELLED`.
+- Provider confirms a `BOOKED` booking by changing it to `CONFIRMED`.
+- Provider rejects a booking by changing it to `CANCELLED_BY_PROVIDER` with `cancelReason`.
 - Do not create a separate `REJECTED` booking status.
-- Rejection/cancellation must store:
-  - `cancelledBy: "SERVICE_PROVIDER"`
-  - `cancelReason: string`
+- After `CHECKED_IN`, provider cannot change status to failed directly.
+- Provider can only report no-show if customer has NOT checked in.
+- No-show report must be submitted within the valid time window after appointment time.
+- If customer has checked in and an issue arises, provider must open a dispute with evidence.
+- Dispute actions are recorded in audit log.
+- Cash booking commission is reserved when status changes to `CONFIRMED`.
+- Cash booking commission is charged when status changes to `COMPLETED`.
+- If cash booking is cancelled or no-show is approved, reserved commission is released.
 
 ---
 
@@ -435,7 +481,7 @@ provider/customers/[customerId]
 
 Feature:
 
-features/provider/customers
+apis/provider/customers
 
 Components:
 
@@ -454,7 +500,7 @@ provider/revenue
 
 Feature:
 
-features/provider/revenue
+apis/provider/revenue
 
 Components:
 
@@ -462,11 +508,16 @@ Components:
 - revenue-chart
 - popular-service-chart
 - cancellation-rate-card
+- balance-overview-card
+- commission-history-table
 
 Rules:
 
 - Revenue dashboard should show loading, empty, and error states.
 - Show warning when cancellation rate is greater than 15%.
+- Show current Available Balance, Reserved Balance, and Debt Balance.
+- Show warning when Available Balance is below the safety threshold.
+- Show commission history from ledger.
 
 ---
 
@@ -480,7 +531,7 @@ provider/communication/reviews
 
 Feature:
 
-features/provider/communication
+apis/provider/communication
 
 Components:
 
@@ -491,9 +542,42 @@ Components:
 
 ---
 
+### SP-08 Deposit & Balance
+
+Route:
+
+provider/deposit
+
+Feature:
+
+apis/provider/deposit
+
+Components:
+
+- balance-summary-card
+- topup-form
+- ledger-transaction-table
+- balance-status-badge
+
+Balance Fields:
+
+- `availableBalance`: balance provider can use for cash booking eligibility
+- `reservedBalance`: amount temporarily held for pending cash bookings
+- `debtBalance`: amount provider owes the platform
+
+Rules:
+
+- Provider can top up their deposit balance.
+- Show warning when `availableBalance` is below the warning threshold.
+- Show error / restriction notice when `availableBalance` is below required commission for new cash booking.
+- If `debtBalance > 0`, show debt notice and explain that debt will be offset from future online payouts.
+- Ledger table shows all transactions: `TOPUP`, `RESERVE_COMMISSION`, `RELEASE_RESERVE`, `CHARGE_COMMISSION`, `DEBT_OFFSET`, `PAYOUT`.
+
+---
+
 ## ADMIN
 
-### A-01 Users
+### A-01 Users & Provider Management
 
 Routes:
 
@@ -504,18 +588,26 @@ admin/providers/[providerId]
 
 Feature:
 
-features/admin/users
+apis/admin/users
 
 Components:
 
 - user-table
 - user-detail
 - user-status-actions
+- provider-table
+- provider-detail
+- provider-trust-score-card
+- provider-balance-overview-card
+- ban-unban-dialog
 
 Rules:
 
 - Admin can ban or unban Pet Owner and Service Provider accounts.
-- Ban action must include reason and duration if temporary.
+- Ban action must include reason and duration (temporary or permanent).
+- Provider detail must show Trust Score metrics: completion rate, no-show rate, dispute rate, cash booking abnormality.
+- Provider detail must show balance overview: Available Balance, Reserved Balance, Debt Balance.
+- Admin can view violation history of each account.
 
 ---
 
@@ -528,7 +620,7 @@ admin/verification/[verificationId]
 
 Feature:
 
-features/admin/verification
+apis/admin/verification
 
 Components:
 
@@ -536,9 +628,15 @@ Components:
 - provider-document-viewer
 - verification-actions
 
+Rules:
+
+- Admin reviews business registration documents submitted by new providers.
+- Admin can approve or reject a verification request with a reason.
+- Rejected providers must resubmit documents.
+
 ---
 
-### A-03 Moderation
+### A-03 Service Moderation
 
 Routes:
 
@@ -548,13 +646,19 @@ admin/moderation/reports
 
 Feature:
 
-features/admin/moderation
+apis/admin/moderation
 
 Components:
 
 - moderation-table
 - report-table
 - report-resolution-dialog
+
+Rules:
+
+- Admin moderates service listings posted by providers.
+- Admin handles reports submitted by users about low-quality services or providers.
+- Report resolution must include action taken and reason.
 
 ---
 
@@ -564,27 +668,42 @@ Routes:
 
 admin/bookings
 admin/bookings/disputes
+admin/bookings/no-show
 
 Feature:
 
-features/admin/bookings
+apis/admin/bookings
 
 Components:
 
 - system-booking-table
 - dispute-table
 - dispute-resolution-form
+- no-show-review-table
+- no-show-resolution-dialog
+- booking-status-override-dialog
+
+Booking Status Filter:
+
+Admin can filter bookings by all statuses:
+`BOOKED` | `CONFIRMED` | `CHECKED_IN` | `IN_SERVICE` | `COMPLETED` |
+`COMMISSION_CHARGED` | `CANCELLED_BY_CUSTOMER` | `CANCELLED_BY_PROVIDER` |
+`NO_SHOW_REPORTED` | `DISPUTED` | `FAILED_APPROVED`
 
 Rules:
 
-- Admin can monitor all platform bookings.
+- Admin can monitor all platform bookings across all statuses.
 - Admin can resolve disputes between Pet Owner and Service Provider.
-- Dispute resolution can result in refund, close complaint, or manual status correction.
-- Dispute actions should be recorded in audit log.
+- Dispute resolution outcomes: refund, close complaint, or manual status override.
+- Admin reviews `NO_SHOW_REPORTED` bookings where customer has responded with contradiction.
+- Admin can approve or reject no-show report, which triggers commission release or charge accordingly.
+- Admin can override booking status manually in exceptional cases.
+- All admin dispute and no-show actions must be recorded in audit log.
+- After admin resolves dispute or no-show, system updates provider Trust Score accordingly.
 
 ---
 
-### A-05 Analytics
+### A-05 Analytics Dashboard
 
 Route:
 
@@ -592,7 +711,7 @@ admin/analytics
 
 Feature:
 
-features/admin/analytics
+apis/admin/analytics
 
 Components:
 
@@ -601,15 +720,93 @@ Components:
 - platform-revenue-chart
 - top-services-table
 - top-providers-table
+- commission-revenue-chart
+- provider-risk-overview-card
 
 Notes:
 
-- Admin Dashboard Overview does not need a separate `features/admin/dashboard` folder.
-- `app/(dashboard)/admin/page.tsx` should compose existing analytics components.
+- Admin Dashboard Overview (`app/(dashboard)/admin/page.tsx`) composes components from `apis/admin/analytics/components`.
+- Do not create a separate `apis/admin/dashboard` folder.
+- Analytics should include commission revenue trend (from cash and online bookings).
+- Include a provider risk overview: number of providers at warning / restricted / suspended level.
 
 ---
 
-### A-06 Platform Promotions
+### A-06 Provider Balance & Deposit Management
+
+Routes:
+
+admin/providers/[providerId]/balance
+admin/finance/ledger
+
+Feature:
+
+apis/admin/finance
+
+Components:
+
+- provider-balance-table
+- provider-ledger-detail
+- balance-adjustment-form
+- debt-management-table
+- ledger-transaction-table
+- trust-score-detail
+
+Balance Fields visible to Admin:
+
+- `availableBalance`
+- `reservedBalance`
+- `debtBalance`
+- `totalDeposited`
+- `totalCommissionCharged`
+- `safetyBuffer`
+
+Rules:
+
+- Admin can view balance details of all providers.
+- Admin can manually adjust balance with a reason (e.g. dispute resolution, correction).
+- Admin can view full ledger transaction history per provider.
+- Admin can manage overdue debt: mark as resolved, force offset, or escalate.
+- Admin can view and update the safety buffer threshold per provider or globally.
+- All balance adjustments by admin must be recorded in ledger with `type: ADMIN_ADJUSTMENT`.
+
+---
+
+### A-07 Commission Management
+
+Routes:
+
+admin/finance/commission
+admin/finance/commission/config
+
+Feature:
+
+apis/admin/commission
+
+Components:
+
+- commission-summary-cards
+- commission-table
+- pending-commission-table
+- commission-config-form
+- commission-rate-table
+
+Commission Types:
+
+- `PERCENTAGE`: percentage of booking value
+- `FIXED`: fixed amount per booking
+
+Rules:
+
+- Admin can view all commission records across the platform.
+- Admin can filter by status: `PENDING` (reserved), `CHARGED`, `RELEASED`, `FAILED`.
+- Admin can configure commission rate globally or per provider type.
+- Admin can view pending commission (reserved but not yet charged).
+- Commission config changes apply to new bookings only, not existing ones.
+
+---
+
+### A-08 Platform Promotions
 
 Routes:
 
@@ -619,7 +816,7 @@ admin/promotions/coupons
 
 Feature:
 
-features/admin/promotions
+apis/admin/promotions
 
 Components:
 
@@ -639,34 +836,129 @@ Scope Rule:
 
 Use only these booking statuses:
 
-- `PENDING`
-- `CONFIRMED`
-- `IN_PROGRESS`
-- `COMPLETED`
-- `CANCELLED`
-
-Do not use `REJECTED` as a booking status.
-
-If a provider rejects a booking, save it as:
-
 ```ts
-status: "CANCELLED"
-cancelledBy: "SERVICE_PROVIDER"
-cancelReason: string
+type BookingStatus =
+  | "BOOKED"                  // Customer just created the booking
+  | "CONFIRMED"               // Provider accepted; commission reserved if cash
+  | "CHECKED_IN"              // Customer verified via QR or OTP at provider location
+  | "IN_SERVICE"              // Service is in progress (can be merged with CHECKED_IN in MVP)
+  | "COMPLETED"               // Service completed; commission charged if cash
+  | "COMMISSION_CHARGED"      // Commission deducted from provider balance (ledger recorded)
+  | "CANCELLED_BY_CUSTOMER"   // Customer cancelled before service
+  | "CANCELLED_BY_PROVIDER"   // Provider rejected or cancelled
+  | "NO_SHOW_REPORTED"        // Provider reported customer did not arrive (only before CHECKED_IN)
+  | "DISPUTED"                // Active dispute; funds and status held pending admin resolution
+  | "FAILED_APPROVED"         // Admin approved the failure after review
 ```
 
-If a pet owner cancels a booking, save it as:
+Do not use `PENDING` as a booking status. Use `BOOKED` instead.
+Do not use `IN_PROGRESS` as a booking status. Use `IN_SERVICE` instead.
+Do not use `CANCELLED` as a generic status. Use `CANCELLED_BY_CUSTOMER` or `CANCELLED_BY_PROVIDER` instead.
+Do not use `REJECTED` as a booking status.
+
+---
+
+## CANCELLATION RULES
+
+If a customer cancels:
 
 ```ts
-status: "CANCELLED"
+status: "CANCELLED_BY_CUSTOMER"
 cancelledBy: "PET_OWNER"
 cancelReason: string
 ```
 
-If an admin cancels or manually resolves a booking, save it as:
+If a provider rejects or cancels:
 
 ```ts
-status: "CANCELLED"
+status: "CANCELLED_BY_PROVIDER"
+cancelledBy: "SERVICE_PROVIDER"
+cancelReason: string
+```
+
+If admin cancels or manually resolves:
+
+```ts
+status: "CANCELLED_BY_PROVIDER" | "FAILED_APPROVED"
 cancelledBy: "ADMIN"
 cancelReason: string
+```
+
+---
+
+## COMMISSION FLOW RULE (CASH BOOKING)
+
+```
+BOOKED
+  → CONFIRMED        : system calls reserveCommission(provider, estimatedCommission)
+  → CHECKED_IN       : no balance change
+  → IN_SERVICE       : no balance change
+  → COMPLETED        : system calls chargeReservedCommission(provider, booking)
+  → COMMISSION_CHARGED: ledger entry recorded
+
+CANCELLED_BY_CUSTOMER / CANCELLED_BY_PROVIDER / FAILED_APPROVED / NO_SHOW approved:
+  → system calls releaseReserve(provider, booking)
+```
+
+---
+
+## PROVIDER BALANCE RULE
+
+```ts
+interface ProviderBalance {
+  availableBalance: number    // Can be used; must cover commission + safetyBuffer
+  reservedBalance: number     // Temporarily held for pending cash bookings
+  debtBalance: number         // Amount owed to platform
+  safetyBuffer: number        // Minimum buffer required (adjusted by trust score)
+}
+```
+
+Rule:
+
+```
+canAcceptCashBooking = availableBalance >= estimatedCommission + safetyBuffer
+                    && providerStatus === "ACTIVE"
+```
+
+If `canAcceptCashBooking` is false:
+- Hide `CASH` payment option in booking flow for this provider.
+- Show warning on provider's balance dashboard.
+
+---
+
+## TRUST SCORE RULE
+
+Trust score is calculated from:
+
+| Metric | Description |
+|---|---|
+| `completionRate` | Ratio of completed bookings |
+| `noShowReportRate` | Ratio of bookings provider reported as no-show |
+| `lateFailCancelRate` | Ratio of late cancellations or fails |
+| `disputeRate` | Ratio of bookings that became disputes |
+| `customerContradictionRate` | Ratio of no-show reports contradicted by customer |
+| `cashAbnormalityRate` | Cash booking completion rate vs online booking completion rate |
+
+Risk levels:
+
+| Level | Action |
+|---|---|
+| Low risk | Warning notification only |
+| Medium risk | Increase safetyBuffer, require higher minimum balance |
+| High risk | Block cash bookings, online only |
+| Critical | Suspend account, block new bookings |
+
+---
+
+## LEDGER TRANSACTION TYPES
+
+```ts
+type LedgerTransactionType =
+  | "TOPUP"                // Provider topped up deposit
+  | "RESERVE_COMMISSION"   // Commission reserved for cash booking
+  | "RELEASE_RESERVE"      // Reserve released due to cancellation or approved no-show
+  | "CHARGE_COMMISSION"    // Commission charged after booking completed
+  | "PAYOUT"               // Platform paid out earnings to provider
+  | "DEBT_OFFSET"          // Debt automatically offset from payout
+  | "ADMIN_ADJUSTMENT"     // Manual balance adjustment by admin
 ```
