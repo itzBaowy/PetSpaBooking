@@ -1,0 +1,48 @@
+import bcrypt from "bcrypt";
+import { Request } from "express";
+import { tokenService } from "./token.service.ts";
+import { BadRequestException, UnauthorizedException } from "../common/helpers/exception.helper.ts";
+import prisma from "./../../connect.prisma.ts";
+
+export const authService = {
+    async register(req: Request) {
+        const { userName, password } = req.body as { userName: string; password: string };
+        const userExist = await prisma.users.findUnique({ where: { userName } });
+        if (userExist) {
+            throw new BadRequestException("User already exists");
+        }
+        const salt = bcrypt.genSaltSync(10);
+        const hashPassword = bcrypt.hashSync(password, salt);
+        const newUser = await prisma.users.create({
+            data: { userName, password: hashPassword },
+        });
+        const newUserId = newUser.id
+        const tokens = tokenService.createTokens(newUserId);
+        return tokens
+    },
+
+    async login(req: Request) {
+        const { userName, password } = req.body as { userName: string; password: string };
+        const userExist = await prisma.users.findUnique({ where: { userName } });
+
+        if (!userExist) {
+            throw new UnauthorizedException("Incorrect username or password");
+        }
+
+        // kiểm tra password
+        const isMatch = bcrypt.compareSync(password, userExist.password);
+        if (!isMatch) {
+            throw new UnauthorizedException("Incorrect username or password");
+        }
+
+        const tokens = tokenService.createTokens(userExist.id);
+        return tokens;
+    },
+
+    async getInfo(req: Request) {
+        // req.user được gán bởi protect middleware
+        const user = (req as Request & { user?: unknown }).user;
+        delete (user as { password?: string }).password;
+        return user;
+    },
+};
