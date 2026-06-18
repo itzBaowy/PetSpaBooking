@@ -18,4 +18,10 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/bookings/${id}`,
     CANCEL: (id: string) => `/bookings/${id}/cancel`,
   },
+  VERIFICATION: {
+    LIST: "/verification",
+    DETAIL: (id: string) => `/verification/${id}`,
+    APPROVE: (id: string) => `/verification/${id}`,
+    REQUEST_INFO: (id: string) => `/verification/${id}/request-info`,
+  },
 } as const;
