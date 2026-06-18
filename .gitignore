@@ -27,7 +27,7 @@ out/
 build
 dist
 generated
-
+pnpm-lock.yaml
 
 # Debug
 npm-debug.log*
