@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function PromotionForm() {
   return (
@@ -15,7 +15,10 @@ export function PromotionForm() {
         <label className="block text-sm font-medium mb-1">Valid Until</label>
         <input type="date" className="w-full border rounded px-3 py-2" />
       </div>
-      <button type="submit" className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600">
+      <button
+        type="submit"
+        className="bg-blue-500 text-white px-6 py-2 rounded hover:bg-blue-600"
+      >
         Create Promotion
       </button>
     </form>

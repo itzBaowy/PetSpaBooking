@@ -9,7 +9,7 @@ export interface Provider {
   rating: number;
   totalReviews: number;
   isVerified: boolean;
-  verificationStatus: 'pending' | 'approved' | 'rejected';
+  verificationStatus: "pending" | "approved" | "rejected";
   createdAt: string;
   updatedAt: string;
 }

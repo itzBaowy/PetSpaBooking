@@ -1,4 +1,4 @@
-import { ComboForm } from '@/apis/provider/pricing/components/combo-form';
+import { ComboForm } from "@/apis/provider/pricing/components/combo-form";
 
 export default function Combos() {
   return (

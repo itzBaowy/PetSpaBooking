@@ -1,5 +1,5 @@
-import { CustomerDetail } from '@/apis/provider/customers/components/customer-detail';
-import { PetList } from '@/apis/provider/customers/components/pet-list';
+import { CustomerDetail } from "@/apis/provider/customers/components/customer-detail";
+import { PetList } from "@/apis/provider/customers/components/pet-list";
 
 export default function CustomerDetailPage() {
   return (

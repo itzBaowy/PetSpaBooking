@@ -1,5 +1,5 @@
-import { BookingTable } from '@/apis/provider/bookings/components/booking-table';
-import { BookingCalendar } from '@/apis/provider/bookings/components/booking-calendar';
+import { BookingTable } from "@/apis/provider/bookings/components/booking-table";
+import { BookingCalendar } from "@/apis/provider/bookings/components/booking-calendar";
 
 export default function Bookings() {
   return (

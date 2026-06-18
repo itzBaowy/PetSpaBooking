@@ -1,4 +1,4 @@
-import { ServiceForm } from '@/apis/provider/services/components/service-form';
+import { ServiceForm } from "@/apis/provider/services/components/service-form";
 
 export default function CreateService() {
   return (

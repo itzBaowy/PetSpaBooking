@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback } from "react";
 
 export function useUpload() {
   const [isLoading, setIsLoading] = useState(false);
@@ -10,11 +10,11 @@ export function useUpload() {
 
     try {
       const formData = new FormData();
-      formData.append('file', file);
+      formData.append("file", file);
       // TODO: Implement actual upload
-      return 'uploaded-url';
+      return "uploaded-url";
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Upload failed';
+      const message = err instanceof Error ? err.message : "Upload failed";
       setError(message);
       return null;
     } finally {

@@ -1,4 +1,4 @@
-import { PromotionForm } from '@/apis/provider/pricing/components/promotion-form';
+import { PromotionForm } from "@/apis/provider/pricing/components/promotion-form";
 
 export default function Promotions() {
   return (

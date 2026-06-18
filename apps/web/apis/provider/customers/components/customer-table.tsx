@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function CustomerTable() {
   return (
@@ -9,7 +9,9 @@ export function CustomerTable() {
             <th className="px-6 py-3 text-left text-sm font-medium">Name</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Email</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Phone</th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Total Bookings</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Total Bookings
+            </th>
           </tr>
         </thead>
         <tbody>

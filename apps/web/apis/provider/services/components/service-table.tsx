@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function ServiceTable() {
   return (
@@ -6,9 +6,13 @@ export function ServiceTable() {
       <table className="w-full">
         <thead className="bg-gray-100">
           <tr>
-            <th className="px-6 py-3 text-left text-sm font-medium">Service Name</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Service Name
+            </th>
             <th className="px-6 py-3 text-left text-sm font-medium">Price</th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Duration</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Duration
+            </th>
             <th className="px-6 py-3 text-left text-sm font-medium">Actions</th>
           </tr>
         </thead>

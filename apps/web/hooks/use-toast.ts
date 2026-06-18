@@ -1,6 +1,6 @@
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
-export type ToastType = 'success' | 'error' | 'warning' | 'info';
+export type ToastType = "success" | "error" | "warning" | "info";
 
 export interface Toast {
   id: string;
@@ -9,7 +9,7 @@ export interface Toast {
 }
 
 export function useToast() {
-  const showToast = useCallback((message: string, type: ToastType = 'info') => {
+  const showToast = useCallback((message: string, type: ToastType = "info") => {
     // TODO: Implement actual toast display using a state manager or context
     console.log(`[${type.toUpperCase()}] ${message}`);
   }, []);

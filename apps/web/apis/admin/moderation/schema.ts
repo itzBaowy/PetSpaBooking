@@ -1,13 +1,13 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const reportResolutionSchema = z.object({
-  action: z.enum(['dismiss', 'warning', 'suspend', 'ban']),
+  action: z.enum(["dismiss", "warning", "suspend", "ban"]),
   reason: z.string(),
 });
 
 export const reportCreateSchema = z.object({
   contentId: z.string(),
-  contentType: z.enum(['service', 'review', 'provider', 'user']),
+  contentType: z.enum(["service", "review", "provider", "user"]),
   reason: z.string().min(10),
 });
 
