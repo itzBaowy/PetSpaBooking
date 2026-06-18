@@ -1,4 +1,4 @@
-import { DisputeTable } from '@/apis/admin/bookings/components/dispute-table';
+import { DisputeTable } from "@/apis/admin/bookings/components/dispute-table";
 
 export default function Disputes() {
   return (

@@ -1,4 +1,4 @@
-import { UserDetail } from '@/apis/admin/users/components/user-detail';
+import { UserDetail } from "@/apis/admin/users/components/user-detail";
 
 export default function UserDetailPage() {
   return (

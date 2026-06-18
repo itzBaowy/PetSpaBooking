@@ -1,4 +1,4 @@
-import { CustomerTable } from '@/apis/provider/customers/components/customer-table';
+import { CustomerTable } from "@/apis/provider/customers/components/customer-table";
 
 export default function Customers() {
   return (

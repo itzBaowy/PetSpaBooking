@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function BookingTable() {
   return (
@@ -6,8 +6,12 @@ export function BookingTable() {
       <table className="w-full">
         <thead className="bg-gray-100">
           <tr>
-            <th className="px-6 py-3 text-left text-sm font-medium">Booking ID</th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Customer</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Booking ID
+            </th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Customer
+            </th>
             <th className="px-6 py-3 text-left text-sm font-medium">Date</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
           </tr>

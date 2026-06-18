@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { createCookieStorage } from "./cookie-store";
+import { User } from "@/types/auth";
 
 interface Auth {
   accessToken: string | null;

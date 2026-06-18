@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function ModerationTable() {
   return (
@@ -6,7 +6,9 @@ export function ModerationTable() {
       <table className="w-full">
         <thead className="bg-gray-100">
           <tr>
-            <th className="px-6 py-3 text-left text-sm font-medium">Content ID</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Content ID
+            </th>
             <th className="px-6 py-3 text-left text-sm font-medium">Type</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Actions</th>

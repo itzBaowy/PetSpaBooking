@@ -1,5 +1,5 @@
-import { create } from 'zustand';
-import { Provider } from '@/types/provider';
+import { create } from "zustand";
+import { Provider } from "@/types/provider";
 
 interface ProviderStore {
   provider: Provider | null;

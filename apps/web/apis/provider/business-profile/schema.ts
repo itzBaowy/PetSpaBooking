@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const businessProfileSchema = z.object({
-  businessName: z.string().min(1, 'Business name is required'),
+  businessName: z.string().min(1, "Business name is required"),
   description: z.string().optional(),
   address: z.string().optional(),
   phone: z.string().optional(),

@@ -1,4 +1,4 @@
-export type Status = 'idle' | 'loading' | 'success' | 'error';
+export type Status = "idle" | "loading" | "success" | "error";
 
 export interface Result<T> {
   status: Status;

@@ -1,4 +1,4 @@
-import { RegisterProviderForm } from '@/apis/auth/components/register-provider-form';
+import { RegisterProviderForm } from "@/apis/auth/components/register-provider-form";
 
 export default function RegisterProvider() {
   return (

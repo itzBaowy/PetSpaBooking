@@ -1,7 +1,7 @@
-import { z } from 'zod';
+import { z } from "zod";
 
 export const bookingStatusUpdateSchema = z.object({
-  status: z.enum(['confirmed', 'completed', 'cancelled']),
+  status: z.enum(["confirmed", "completed", "cancelled"]),
   notes: z.string().optional(),
 });
 

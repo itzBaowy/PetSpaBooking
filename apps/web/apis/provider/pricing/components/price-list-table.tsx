@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 export function PriceListTable() {
   return (
@@ -8,7 +8,9 @@ export function PriceListTable() {
           <tr>
             <th className="px-6 py-3 text-left text-sm font-medium">Service</th>
             <th className="px-6 py-3 text-left text-sm font-medium">Price</th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Duration</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">
+              Duration
+            </th>
             <th className="px-6 py-3 text-left text-sm font-medium">Actions</th>
           </tr>
         </thead>

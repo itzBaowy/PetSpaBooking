@@ -5,7 +5,7 @@ export interface Revenue {
   amount: number;
   fee: number;
   netAmount: number;
-  status: 'pending' | 'processed' | 'withdrawn';
+  status: "pending" | "processed" | "withdrawn";
   createdAt: string;
   updatedAt: string;
 }

@@ -6,7 +6,7 @@ export interface Booking {
   scheduledAt: string;
   duration: number;
   totalPrice: number;
-  status: 'pending' | 'confirmed' | 'completed' | 'cancelled';
+  status: "pending" | "confirmed" | "completed" | "cancelled";
   notes?: string;
   createdAt: string;
   updatedAt: string;

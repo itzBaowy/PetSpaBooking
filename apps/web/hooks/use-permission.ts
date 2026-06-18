@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback } from "react";
 
 export function usePermission() {
   const hasPermission = useCallback((permission: string): boolean => {

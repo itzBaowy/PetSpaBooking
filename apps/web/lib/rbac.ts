@@ -1,4 +1,4 @@
-import { ROLES } from '@/constants/roles';
+import { ROLES } from "@/constants/roles";
 
 export const roleHierarchy: Record<string, string[]> = {
   [ROLES.ADMIN]: [ROLES.ADMIN, ROLES.PROVIDER, ROLES.CUSTOMER],
@@ -12,5 +12,5 @@ export function hasRole(userRole: string, requiredRole: string): boolean {
 }
 
 export function hasAnyRole(userRole: string, roles: string[]): boolean {
-  return roles.some(role => hasRole(userRole, role));
+  return roles.some((role) => hasRole(userRole, role));
 }
