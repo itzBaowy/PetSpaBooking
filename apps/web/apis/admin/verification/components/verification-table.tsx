@@ -2,15 +2,23 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ActionMenu } from "@/components/ui/action-menu";
+import { CustomSelect } from "@/components/ui/custom-select";
+import { DataTable } from "@/components/ui/data-table";
+import type { DataTableColumn } from "@/components/ui/data-table";
+import { Pagination } from "@/components/ui/pagination";
+import { SearchInput } from "@/components/ui/search-input";
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import { useDebounce } from "@/hooks/use-debounce";
 import { MOCK_VERIFICATIONS } from "../queries";
 import type { MockVerificationRequest } from "../queries";
 
 const STATUS_FILTERS = [
-  { label: "All", value: "" },
-  { label: "Pending", value: "pending" },
-  { label: "Approved", value: "approved" },
-  { label: "Rejected", value: "rejected" },
-  { label: "Info Requested", value: "info_requested" },
+  { label: "Tất cả", value: "" },
+  { label: "Chờ duyệt", value: "pending" },
+  { label: "Đã duyệt", value: "approved" },
+  { label: "Đã từ chối", value: "rejected" },
+  { label: "Yêu cầu bổ sung", value: "info_requested" },
 ];
 
 const STATUS_STYLES: Record<string, string> = {
@@ -21,15 +29,15 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 const STATUS_LABELS: Record<string, string> = {
-  pending: "Pending",
-  approved: "Approved",
-  rejected: "Rejected",
-  info_requested: "Info Requested",
+  pending: "Chờ duyệt",
+  approved: "Đã duyệt",
+  rejected: "Đã từ chối",
+  info_requested: "Yêu cầu bổ sung",
 };
 
 function formatDate(iso: string): string {
   const d = new Date(iso);
-  return d.toLocaleDateString("en-US", {
+  return d.toLocaleDateString("vi-VN", {
     year: "numeric",
     month: "short",
     day: "numeric",
@@ -39,15 +47,15 @@ function formatDate(iso: string): string {
 export function VerificationTable() {
   const router = useRouter();
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(3);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
-
-  const pageSize = 10;
+  const debouncedSearch = useDebounce(search, 300);
 
   const filtered = MOCK_VERIFICATIONS.filter((r) => {
     if (statusFilter && r.status !== statusFilter) return false;
-    if (search) {
-      const q = search.toLowerCase();
+    if (debouncedSearch) {
+      const q = debouncedSearch.toLowerCase();
       if (
         !r.businessName.toLowerCase().includes(q) &&
         !r.email.toLowerCase().includes(q)
@@ -79,96 +87,174 @@ export function VerificationTable() {
   };
 
   const handleQuickApprove = (id: string) => {
-    if (confirm("Approve this provider verification?")) {
-      alert(`Provider ${id} approved (mock)`);
+    if (confirm("Duyệt hồ sơ xác thực nhà cung cấp này?")) {
+      alert(`Nhà cung cấp ${id} đã được duyệt (mock)`);
     }
   };
 
   const handleQuickReject = (id: string) => {
-    const reason = prompt("Please provide a reason for rejection:");
+    const reason = prompt("Nhập lý do từ chối:");
     if (reason) {
-      alert(`Provider ${id} rejected (mock). Reason: ${reason}`);
+      alert(`Nhà cung cấp ${id} đã bị từ chối (mock). Lý do: ${reason}`);
     }
   };
+
+  const columns: Array<DataTableColumn<MockVerificationRequest>> = [
+    {
+      key: "provider",
+      header: "Nhà cung cấp",
+      widthClassName: "w-[28%]",
+      render: (request) => (
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-amber-100 to-amber-200 text-sm font-semibold text-amber-700">
+            {request.businessName.charAt(0).toUpperCase()}
+          </div>
+          <div className="min-w-0">
+            <p className="break-words text-sm font-semibold text-gray-900">
+              {request.businessName}
+            </p>
+            <p className="text-xs text-gray-500">
+              Đã nộp {request.documentCount} tài liệu
+            </p>
+          </div>
+        </div>
+      ),
+    },
+    {
+      key: "contact",
+      header: "Liên hệ",
+      widthClassName: "w-[22%]",
+      render: (request) => (
+        <div>
+          <p className="break-words text-sm text-gray-800">{request.email}</p>
+          <p className="text-xs text-gray-500">{request.phone}</p>
+        </div>
+      ),
+    },
+    {
+      key: "status",
+      header: "Trạng thái",
+      widthClassName: "w-[15%]",
+      render: (request) => (
+        <span
+          className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold ${
+            STATUS_STYLES[request.status] ??
+            "bg-gray-100 text-gray-700 border-gray-200"
+          }`}
+        >
+          {STATUS_LABELS[request.status] ?? request.status}
+        </span>
+      ),
+    },
+    {
+      key: "submitted",
+      header: "Ngày nộp",
+      widthClassName: "w-[14%]",
+      render: (request) => (
+        <span className="text-sm text-gray-700">
+          {formatDate(request.createdAt)}
+        </span>
+      ),
+    },
+    {
+      key: "actions",
+      header: "Thao tác",
+      align: "right",
+      isAction: true,
+      widthClassName: "w-[10%]",
+      render: (request) => (
+        <ActionMenu
+          items={[
+            { label: "Xem hồ sơ", onClick: () => handleView(request.id) },
+            ...(request.status === "pending"
+              ? [
+                  {
+                    label: "Duyệt nhà cung cấp",
+                    onClick: () => handleQuickApprove(request.id),
+                  },
+                  {
+                    label: "Từ chối nhà cung cấp",
+                    onClick: () => handleQuickReject(request.id),
+                    variant: "danger" as const,
+                  },
+                ]
+              : []),
+          ]}
+        />
+      ),
+    },
+  ];
 
   return (
     <div className="space-y-4">
       {/* Header with Stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <StatisticCardGrid columns={4}>
         {[
-          { label: "Pending", value: "pending", count: pendingCount },
-          { label: "Approved", value: "approved", count: approvedCount },
-          { label: "Rejected", value: "rejected", count: rejectedCount },
-          { label: "Info Requested", value: "info_requested", count: infoCount },
-        ].map((filter) => (
-          <button
-            key={filter.value}
-            onClick={() => {
-              setStatusFilter(filter.value);
-              setPage(1);
-            }}
-            className={`px-3 py-2 rounded-lg border text-sm font-medium transition-colors text-left ${
-              statusFilter === filter.value
-                ? STATUS_STYLES[filter.value]
-                : "bg-white border-gray-200 text-gray-700 hover:border-gray-300"
-            }`}
-          >
-            <span className="text-xs text-gray-600 block">
-              {filter.label}
-            </span>
-            <span className="text-lg font-bold text-gray-900">{filter.count}</span>
-          </button>
+          {
+            label: "Chờ duyệt",
+            count: pendingCount,
+            tone: "amber" as const,
+          },
+          {
+            label: "Đã duyệt",
+            count: approvedCount,
+            tone: "green" as const,
+          },
+          {
+            label: "Đã từ chối",
+            count: rejectedCount,
+            tone: "red" as const,
+          },
+          {
+            label: "Yêu cầu bổ sung",
+            count: infoCount,
+            tone: "blue" as const,
+          },
+        ].map((stat) => (
+          <StatisticCard
+            key={stat.label}
+            title={stat.label}
+            value={stat.count}
+            tone={stat.tone}
+          />
         ))}
-      </div>
+      </StatisticCardGrid>
 
-      {/* Search & Filter Bar */}
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <div className="flex items-center gap-2 w-full sm:w-auto">
-          <div className="relative flex-1 sm:w-72">
-            <svg
-              className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            <input
-              type="text"
-              placeholder="Search by provider or email..."
-              value={search}
-              onChange={(e) => {
-                setSearch(e.target.value);
-                setPage(1);
-              }}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => {
-              setStatusFilter(e.target.value);
+      {/* Thanh tìm kiếm và bộ lọc */}
+      <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+          <SearchInput
+            className="w-full lg:max-w-md"
+            value={search}
+            placeholder="Tìm tên nhà cung cấp hoặc email"
+            onChange={(value) => {
+              setSearch(value);
               setPage(1);
             }}
-            className="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-800 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {STATUS_FILTERS.map((filter) => (
-              <option key={filter.value} value={filter.value}>
-                {filter.label}
-              </option>
-            ))}
-          </select>
+          />
+          <CustomSelect
+            className="w-full lg:w-52"
+            defaultValue={statusFilter}
+            options={STATUS_FILTERS}
+            onValueChange={(value) => {
+              setStatusFilter(value);
+              setPage(1);
+            }}
+          />
+          <div className="text-sm font-medium text-gray-500 lg:ml-auto">
+            {debouncedSearch || statusFilter
+              ? `${total} yêu cầu phù hợp`
+              : `${total} tổng yêu cầu`}
+          </div>
         </div>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        {records.length === 0 ? (
+      <DataTable
+        columns={columns}
+        data={records}
+        getRowKey={(request) => request.id}
+        minWidthClassName="min-w-[1120px]"
+        emptyState={
           <div className="p-8 text-center">
             <svg
               className="w-12 h-12 mx-auto mb-3 text-gray-300"
@@ -183,134 +269,28 @@ export function VerificationTable() {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            <p className="font-medium text-gray-700">No verification requests found</p>
+            <p className="font-medium text-gray-700">Không tìm thấy yêu cầu xác thực</p>
             <p className="text-xs text-gray-500 mt-1">
               {statusFilter
-                ? `No ${STATUS_LABELS[statusFilter]?.toLowerCase()} requests`
-                : "New provider registrations will appear here"}
+                ? `Không có yêu cầu trạng thái ${STATUS_LABELS[statusFilter]?.toLowerCase()}`
+                : "Đăng ký nhà cung cấp mới sẽ xuất hiện tại đây"}
             </p>
           </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-gray-50 border-b border-gray-200">
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Provider
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Contact
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Submitted
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-100">
-                {records.map((request: MockVerificationRequest) => (
-                  <tr
-                    key={request.id}
-                    className="hover:bg-gray-50 transition-colors"
-                  >
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center text-amber-700 font-semibold text-sm">
-                          {request.businessName.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="text-sm font-semibold text-gray-900">
-                            {request.businessName}
-                          </p>
-                          <p className="text-xs text-gray-500">
-                            {request.documentCount} document
-                            {request.documentCount !== 1 ? "s" : ""} submitted
-                          </p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <p className="text-sm text-gray-800">{request.email}</p>
-                      <p className="text-xs text-gray-500">{request.phone}</p>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-                          STATUS_STYLES[request.status] ??
-                          "bg-gray-100 text-gray-700 border-gray-200"
-                        }`}
-                      >
-                        {STATUS_LABELS[request.status] ?? request.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-sm text-gray-700">
-                        {formatDate(request.createdAt)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleView(request.id)}
-                          className="px-3 py-1.5 text-xs font-semibold text-blue-700 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-                        >
-                          Review
-                        </button>
-                        {request.status === "pending" && (
-                          <>
-                            <button
-                              onClick={() => handleQuickApprove(request.id)}
-                              className="px-3 py-1.5 text-xs font-semibold text-green-700 bg-green-50 rounded-lg hover:bg-green-100 transition-colors"
-                            >
-                              Approve
-                            </button>
-                            <button
-                              onClick={() => handleQuickReject(request.id)}
-                              className="px-3 py-1.5 text-xs font-semibold text-red-700 bg-red-50 rounded-lg hover:bg-red-100 transition-colors"
-                            >
-                              Reject
-                            </button>
-                          </>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+        }
+      />
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between px-2">
-          <p className="text-sm text-gray-700">
-            Page {page} of {totalPages} ({total} total)
-          </p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page <= 1}
-              className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page >= totalPages}
-              className="px-3 py-1.5 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      )}
+      <div className="px-2">
+        <Pagination
+          page={page}
+          totalPages={totalPages}
+          onPageChange={setPage}
+          pageSize={pageSize}
+          onPageSizeChange={(value) => {
+            setPageSize(value);
+            setPage(1);
+          }}
+        />
+      </div>
     </div>
   );
 }

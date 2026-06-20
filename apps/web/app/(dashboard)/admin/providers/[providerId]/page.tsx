@@ -1,10 +1,11 @@
-export default function AdminProviderDetailPage() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Provider Details</h1>
-      <div className="bg-white p-4 rounded-lg shadow">
-        <p>Provider information and management</p>
-      </div>
-    </div>
-  );
+import { ProviderDetail } from "@/apis/admin/users/components/provider-detail";
+
+interface PageProps {
+  params: Promise<{ providerId: string }>;
+}
+
+export default async function AdminProviderDetailPage({ params }: PageProps) {
+  const { providerId } = await params;
+
+  return <ProviderDetail providerId={providerId} />;
 }

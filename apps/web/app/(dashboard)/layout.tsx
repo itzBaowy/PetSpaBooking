@@ -1,6 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
+import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
 import { cn } from "@/lib/utils";
 
 interface NavItem {
@@ -15,12 +18,13 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname() || "";
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const isAdmin = pathname.startsWith("/admin");
   const isProvider = pathname.startsWith("/provider");
 
   const adminNavItems: NavItem[] = [
     {
-      label: "Dashboard",
+      label: "Tổng quan",
       href: "/admin",
       icon: (
         <svg
@@ -39,7 +43,7 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Users",
+      label: "Người dùng",
       href: "/admin/users",
       icon: (
         <svg
@@ -58,7 +62,7 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Providers",
+      label: "Nhà cung cấp",
       href: "/admin/providers",
       icon: (
         <svg
@@ -77,7 +81,45 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Verification",
+      label: "Đặt lịch",
+      href: "/admin/bookings",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+          />
+        </svg>
+      ),
+    },
+    // {
+    //   label: "Disputes",
+    //   href: "/admin/bookings/disputes",
+    //   icon: (
+    //     <svg
+    //       className="w-5 h-5"
+    //       fill="none"
+    //       viewBox="0 0 24 24"
+    //       stroke="currentColor"
+    //     >
+    //       <path
+    //         strokeLinecap="round"
+    //         strokeLinejoin="round"
+    //         strokeWidth={2}
+    //         d="M12 8v4m0 4h.01M5.07 19h13.86c1.54 0 2.5-1.67 1.73-3L13.73 4c-.77-1.33-2.69-1.33-3.46 0L3.34 16c-.77 1.33.19 3 1.73 3z"
+    //       />
+    //     </svg>
+    //   ),
+    // },
+    {
+      label: "Xác thực",
       href: "/admin/verification",
       icon: (
         <svg
@@ -96,7 +138,7 @@ export default function DashboardLayout({
       ),
     },
     {
-      label: "Moderation",
+      label: "Kiểm duyệt",
       href: "/admin/moderation",
       icon: (
         <svg
@@ -110,6 +152,101 @@ export default function DashboardLayout({
             strokeLinejoin="round"
             strokeWidth={2}
             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+          />
+        </svg>
+      ),
+    },
+    // {
+    //   label: "Service Review",
+    //   href: "/admin/moderation/services",
+    //   icon: (
+    //     <svg
+    //       className="w-5 h-5"
+    //       fill="none"
+    //       viewBox="0 0 24 24"
+    //       stroke="currentColor"
+    //     >
+    //       <path
+    //         strokeLinecap="round"
+    //         strokeLinejoin="round"
+    //         strokeWidth={2}
+    //         d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
+    //       />
+    //     </svg>
+    //   ),
+    // },
+    {
+      label: "Marketing",
+      href: "/admin/marketing",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M11 5.882V19.24a1.76 1.76 0 01-2.64 1.526l-3.016-1.742A2.5 2.5 0 014 16.86V8.118a2.5 2.5 0 011.344-2.164L8.36 4.212A1.76 1.76 0 0111 5.882zm0 0l7.5-2.5A1.5 1.5 0 0120 4.805v14.39a1.5 1.5 0 01-1.5 1.423L11 18.118"
+          />
+        </svg>
+      ),
+    },
+    {
+      label: "Tài chính",
+      href: "/admin/finance/ledger",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8V6m0 10v2M5 5h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      label: "Hoa hồng",
+      href: "/admin/finance/commission",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 14l2 2 4-4M7 4h10a2 2 0 012 2v14l-3-2-3 2-3-2-3 2V6a2 2 0 012-2z"
+          />
+        </svg>
+      ),
+    },
+    {
+      label: "Nhật ký",
+      href: "/admin/audit-logs",
+      icon: (
+        <svg
+          className="w-5 h-5"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5h6m-8 4h10M7 13h10M7 17h6M5 3h14a1 1 0 011 1v16a1 1 0 01-1 1H5a1 1 0 01-1-1V4a1 1 0 011-1z"
           />
         </svg>
       ),
@@ -202,47 +339,118 @@ export default function DashboardLayout({
       : [];
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen w-full overflow-hidden bg-background">
       {/* Sidebar navigation */}
-      <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col border-r border-slate-800">
-        <div className="h-16 flex items-center px-6 border-b border-slate-800 bg-slate-950">
-          <span className="font-extrabold text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-            {isAdmin
-              ? "PetLink Admin"
-              : isProvider
-                ? "Provider Hub"
-                : "PetLink Dashboard"}
-          </span>
+      <aside
+        className={cn(
+          "sticky top-0 flex h-screen shrink-0 flex-col border-r border-shell-border bg-shell text-brand-foreground transition-all duration-200",
+          isSidebarCollapsed ? "w-20" : "w-64",
+        )}
+      >
+        <div
+          className={cn(
+            "flex h-16 items-center gap-3 border-b border-shell-border bg-shell-strong",
+            isSidebarCollapsed ? "justify-center px-3" : "justify-between px-6",
+          )}
+        >
+          {!isSidebarCollapsed && (
+            <span className="font-extrabold text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
+              {isAdmin
+                ? "Quản trị PetLink"
+                : isProvider
+                  ? "Trung tâm Nhà cung cấp"
+                  : "Bảng điều khiển PetLink"}
+            </span>
+          )}
+          <button
+            type="button"
+            aria-label={
+              isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"
+            }
+            title={isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
+            onClick={() => setIsSidebarCollapsed((current) => !current)}
+            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-shell-border bg-shell-strong/40 text-shell-muted transition-colors hover:bg-shell-border hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              {isSidebarCollapsed ? (
+                <>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 5v14"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 8l4 4-4 4"
+                  />
+                </>
+              ) : (
+                <>
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M16 5v14"
+                  />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M13 8l-4 4 4 4"
+                  />
+                </>
+              )}
+            </svg>
+          </button>
         </div>
-        <nav className="flex-1 p-4">
+        <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-1.5">
             {currentNav.map((item) => {
-              // Exact active matching: for dashboard /admin, only match exact. For others, check prefix
+              const hasMoreSpecificActiveItem = currentNav.some(
+                (navItem) =>
+                  navItem.href !== item.href &&
+                  navItem.href.startsWith(`${item.href}/`) &&
+                  pathname.startsWith(navItem.href),
+              );
               const isActive =
                 item.href === "/admin" || item.href === "/provider"
                   ? pathname === item.href
-                  : pathname.startsWith(item.href);
+                  : (pathname === item.href ||
+                      pathname.startsWith(`${item.href}/`)) &&
+                    !hasMoreSpecificActiveItem;
 
               return (
                 <li key={item.label}>
-                  <a
+                  <Link
                     href={item.href}
+                    title={isSidebarCollapsed ? item.label : undefined}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-semibold transition-all duration-150",
+                      "flex items-center gap-3 rounded-lg py-3 text-sm font-semibold transition-all duration-150",
+                      isSidebarCollapsed
+                        ? "justify-center px-3"
+                        : "justify-start px-4",
                       isActive
-                        ? "bg-blue-600 text-white shadow-md shadow-blue-900/20"
-                        : "text-slate-400 hover:bg-slate-800/60 hover:text-slate-200",
+                        ? "bg-brand text-brand-foreground shadow-md shadow-blue-900/20"
+                        : "text-shell-muted hover:bg-shell-border/60 hover:text-brand-foreground",
                     )}
                   >
                     {item.icon}
-                    <span>{item.label}</span>
-                  </a>
+                    {!isSidebarCollapsed && <span>{item.label}</span>}
+                  </Link>
                 </li>
               );
             })}
-            {currentNav.length === 0 && (
-              <li className="text-sm text-slate-500 text-center py-4">
-                No navigation items
+            {currentNav.length === 0 && !isSidebarCollapsed && (
+              <li className="py-4 text-center text-sm text-shell-muted">
+                Chưa có mục điều hướng
               </li>
             )}
           </ul>
@@ -250,8 +458,11 @@ export default function DashboardLayout({
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 bg-gray-50/50 flex flex-col min-w-0">
-        {children}
+      <main className="flex min-w-0 flex-1 flex-col overflow-y-auto overflow-x-hidden bg-background">
+        {(isAdmin || isProvider) && (
+          <DashboardTopbar role={isAdmin ? "admin" : "provider"} />
+        )}
+        <div className="min-w-0 flex-1">{children}</div>
       </main>
     </div>
   );

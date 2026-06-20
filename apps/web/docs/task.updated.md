@@ -6,10 +6,10 @@
 
 ## 1. HƯỚNG DẪN TỔNG QUAN VỀ HỆ THỐNG
 
-Tài liệu này chuẩn hóa và phân rã chi tiết toàn bộ các tính năng nghiệp vụ của dự án **PetLink** từ tài liệu SRS.
+T�i liệu này chuẩn hóa và phân rã chi tiết toàn bộ các tính năng nghiệp vụ của dự án **PetLink** từ tài liệu SRS, bao gồm luồng thanh toán tiền mặt, ký quỹ provider, QR/OTP check-in và thu hoa hồng.
 
-- **Mục tiêu:** Cung cấp thông tin chi tiết về mặt nghiệp vụ, điều kiện logic, và mô tả trải nghiệm người dùng giúp Agent/Developer hiểu rõ cách thức hoạt động của từng màn hình dựa trên khung UI/UX sẵn có.
-- **Phạm vi:** Tập trung vào 4 vai trò vận hành trên hệ thống: **Guest**, **Pet Owner**, **Service Provider**, và **Admin**.
+- **Mục tiêu:** Cung cấp thông tin chi tiết về mặt nghiệp vụ, điều kiện logic, và mô tả trải nghiệm người dùng.
+- **Phạm vi:** 4 vai trò: **Guest**, **Pet Owner**, **Service Provider**, **Admin**.
 
 ---
 
@@ -17,22 +17,15 @@ Tài liệu này chuẩn hóa và phân rã chi tiết toàn bộ các tính nă
 
 ### 2.1. Danh sách role chính
 
-Hệ thống sử dụng 4 role nghiệp vụ:
-
-- `GUEST`: Người dùng chưa đăng nhập. Đây là trạng thái truy cập công khai, không nhất thiết lưu trong database.
-- `PET_OWNER`: Chủ thú cưng đã đăng nhập, có quyền quản lý thú cưng, đặt lịch, thanh toán, đánh giá, xem thông báo và quản lý sổ sức khỏe.
-- `SERVICE_PROVIDER`: Nhà cung cấp dịch vụ đã đăng nhập, có quyền quản lý hồ sơ doanh nghiệp, dịch vụ, giá, lịch hẹn, khách hàng, doanh thu và giao tiếp với khách hàng.
-- `ADMIN`: Quản trị viên hệ thống, có quyền quản lý người dùng, xác thực provider, kiểm duyệt nội dung, giám sát booking, xử lý tranh chấp, xem analytics và quản lý khuyến mãi toàn sàn.
+- `GUEST`: Người dùng chưa đăng nhập.
+- `PET_OWNER`: Chủ thú cưng đã đăng nhập.
+- `SERVICE_PROVIDER`: Nhà cung cấp dịch vụ đã đăng nhập.
+- `ADMIN`: Quản trị viên hệ thống.
 
 ### 2.2. Quy tắc đặt tên role
 
-- Không dùng `USER` như một role nghiệp vụ chính vì quá chung chung.
-- Nếu cần nói về chủ thú cưng, dùng `PET_OWNER`.
-- `Guest` là người chưa đăng nhập.
-- `Pet Owner`, `Service Provider`, và `Admin` là các tài khoản đã đăng nhập.
-- Các loại hình như Clinic, Spa, Grooming, Pet Hotel là **provider type/category**, không phải role.
-
-Ví dụ:
+- Không dùng `USER` như một role nghiệp vụ chính. Dùng `PET_OWNER`.
+- Các loại hình Clinic, Spa, Grooming, Pet Hotel là **provider type**, không phải role.
 
 ```ts
 role: "SERVICE_PROVIDER"
@@ -43,336 +36,416 @@ providerType: "CLINIC" | "SPA" | "GROOMING" | "PET_HOTEL"
 
 ## 3. QUY ĐỊNH CHUNG VỀ TRẠNG THÁI NGHIỆP VỤ
 
-### 3.1. Vòng đời của một lịch hẹn (Booking Status)
+### 3.1. Vòng đời Booking (Booking Status)
 
-Chỉ sử dụng các trạng thái booking sau:
+Chỉ sử dụng các trạng thái sau:
 
-- `PENDING` (Chờ duyệt): Lịch hẹn vừa được Pet Owner đặt, chờ phía cơ sở xác nhận tiếp nhận.
-- `CONFIRMED` (Đã xác nhận): Cơ sở dịch vụ chấp nhận lịch hẹn và giữ chỗ cho khách.
-- `IN_PROGRESS` (Đang thực hiện): Thú cưng đã đến cơ sở và đang trong quá trình làm dịch vụ/khám bệnh.
-- `COMPLETED` (Hoàn thành): Dịch vụ kết thúc, thanh toán thành công, mở quyền đánh giá và cập nhật sổ sức khỏe.
-- `CANCELLED` (Đã hủy): Lịch hẹn bị hủy bởi Pet Owner, Service Provider hoặc Admin. Bắt buộc lưu người hủy và lý do hủy.
+| Status | Ý nghĩa |
+|---|---|
+| `BOOKED` | Khách vừa tạo lịch, chờ provider xác nhận |
+| `CONFIRMED` | Provider đã nhận lịch; commission reserve nếu là CASH |
+| `CHECKED_IN` | Khách đã đến và xác thực bằng QR/OTP |
+| `IN_SERVICE` | Dịch vụ đang diễn ra |
+| `COMPLETED` | Dịch vụ hoàn tất; commission charged nếu là CASH |
+| `COMMISSION_CHARGED` | Hoa hồng đã trừ khỏi balance, ghi ledger |
+| `CANCELLED_BY_CUSTOMER` | Khách hủy lịch |
+| `CANCELLED_BY_PROVIDER` | Provider từ chối hoặc hủy lịch |
+| `NO_SHOW_REPORTED` | Provider báo khách không đến (chỉ khi chưa check-in) |
+| `DISPUTED` | Có tranh chấp; admin cần xử lý |
+| `FAILED_APPROVED` | Admin duyệt thất bại sau khi xem xét |
 
-Không sử dụng `REJECTED` như một booking status riêng.
+**Nghiêm cấm dùng:** `PENDING`, `IN_PROGRESS`, `CANCELLED`, `REJECTED`.
 
-Nếu Provider từ chối lịch, hệ thống lưu là:
+### 3.2. Workflow booking
 
-```ts
-status: "CANCELLED"
-cancelledBy: "SERVICE_PROVIDER"
-cancelReason: string
+Luồng CASH:
+```
+BOOKED → CONFIRMED → CHECKED_IN → IN_SERVICE → COMPLETED → COMMISSION_CHARGED
 ```
 
-Nếu Pet Owner hủy lịch, hệ thống lưu là:
-
-```ts
-status: "CANCELLED"
-cancelledBy: "PET_OWNER"
-cancelReason: string
+Luồng Online:
 ```
-
-Nếu Admin can thiệp hủy lịch, hệ thống lưu là:
-
-```ts
-status: "CANCELLED"
-cancelledBy: "ADMIN"
-cancelReason: string
-```
-
-### 3.2. Workflow booking chuẩn
-
-Luồng chính:
-
-```txt
-PENDING
-→ CONFIRMED
-→ IN_PROGRESS
-→ COMPLETED
+BOOKED → CONFIRMED → CHECKED_IN → IN_SERVICE → COMPLETED
 ```
 
 Luồng hủy:
-
-```txt
-PENDING → CANCELLED
-CONFIRMED → CANCELLED
+```
+BOOKED / CONFIRMED → CANCELLED_BY_CUSTOMER
+BOOKED / CONFIRMED → CANCELLED_BY_PROVIDER
 ```
 
-### 3.3. Phương thức thanh toán áp dụng
+Luồng no-show / dispute:
+```
+CONFIRMED → NO_SHOW_REPORTED → DISPUTED → FAILED_APPROVED
+CHECKED_IN → DISPUTED (không được tự đánh fail sau check-in)
+```
 
-- Thanh toán trực tiếp (`CASH`): Khách hàng thanh toán tiền mặt/chuyển khoản tại quầy khi hoàn thành.
-- Thanh toán trực tuyến (`ONLINE_MOMO`): Khách hàng thanh toán qua cổng điện tử MoMo ngay khi đặt lịch.
+### 3.3. Dữ liệu hủy lịch
 
-### 3.4. Trạng thái thanh toán đề xuất
+```ts
+// Khách hủy
+{ status: "CANCELLED_BY_CUSTOMER", cancelledBy: "PET_OWNER", cancelReason: string }
 
-- `UNPAID`: Chưa thanh toán.
-- `PAID`: Đã thanh toán.
-- `FAILED`: Thanh toán online thất bại.
-- `REFUNDED`: Đã hoàn tiền.
+// Provider hủy/từ chối
+{ status: "CANCELLED_BY_PROVIDER", cancelledBy: "SERVICE_PROVIDER", cancelReason: string }
+
+// Admin can thiệp
+{ status: "CANCELLED_BY_PROVIDER" | "FAILED_APPROVED", cancelledBy: "ADMIN", cancelReason: string }
+```
+
+### 3.4. Phương thức thanh toán
+
+```ts
+type PaymentMethod = "CASH" | "ONLINE_MOMO"
+type PaymentStatus = "UNPAID" | "PAID" | "FAILED" | "REFUNDED"
+```
+
+Điều kiện để provider nhận booking CASH:
+```
+provider.availableBalance >= estimatedCommission + provider.safetyBuffer
+&& provider.status === "ACTIVE"
+```
+
+Nếu không đủ điều kiện → **ẩn option CASH** cho provider đó trong flow đặt lịch.
 
 ---
 
 ## 4. CHI TIẾT TÍNH NĂNG THEO TỪNG VAI TRÒ
 
-### 4.1. PHÂN HỆ GUEST (KHÁCH VÃNG LAI)
+### 4.1. PHÂN HỆ GUEST
 
-#### Tính năng G-01: Khám phá Công khai & Giới hạn Quyền hạn
+#### G-01: Khám phá Công khai & Giới hạn Quyền hạn
 
-- **Mô tả chức năng:** Cho phép người dùng chưa đăng nhập tham quan hệ thống và tìm kiếm thông tin cơ bản.
-- **Quy tắc nghiệp vụ & Logic xử lý:**
-  - Guest được phép xem: Trang chủ, danh sách các cơ sở, bảng giá công khai, các bài viết blog/chia sẻ kiến thức nuôi thú cưng và các đánh giá từ khách hàng khác.
-  - Guest được phép tìm kiếm cơ bản theo tên cơ sở hoặc tên dịch vụ.
-  - Guest không được đặt lịch, chat với cửa hàng, thêm thú cưng hoặc viết đánh giá.
-  - Khi Guest bấm vào các hành động cần đăng nhập như "Đặt lịch", "Chat với cửa hàng", "Thêm thú cưng", hoặc "Viết đánh giá", hệ thống hiển thị Modal yêu cầu Đăng ký/Đăng nhập.
-- **Yêu cầu Giao diện:**
-  1. Hiển thị Banner mời gọi đăng ký tài khoản ở cuối bài blog hoặc trang chi tiết dịch vụ.
-  2. Trang public cần ưu tiên CTA rõ ràng: Đăng nhập, Đăng ký, Đăng ký làm Provider.
+- Guest xem được: trang chủ, danh sách cơ sở, bảng giá công khai, blog, đánh giá.
+- Guest tìm kiếm cơ bản theo tên cơ sở hoặc tên dịch vụ.
+- Guest không đặt lịch, chat, thêm thú cưng hoặc viết đánh giá.
+- Khi guest thực hiện hành động cần đăng nhập → hiển thị Modal Đăng ký/Đăng nhập.
+- Không hiển thị option CASH nếu provider không đủ balance.
 
 ---
 
-### 4.2. PHÂN HỆ PET OWNER (CHỦ THÚ CƯNG)
+### 4.2. PHÂN HỆ PET OWNER
 
-#### Tính năng PO-01: Quản lý Tài khoản cá nhân
+#### PO-01: Quản lý Tài khoản Cá nhân
 
-- **Mô tả chức năng:** Giúp Pet Owner đăng ký, đăng nhập và cá nhân hóa tài khoản cá nhân.
-- **Quy tắc nghiệp vụ:**
-  - Hỗ trợ Đăng ký, Đăng nhập, Đổi mật khẩu, Quên mật khẩu qua Email.
-  - Cho phép cập nhật thông tin liên hệ, số điện thoại, địa chỉ và avatar.
+- Đăng ký, đăng nhập, đổi mật khẩu, quên mật khẩu qua Email.
+- Cập nhật thông tin liên hệ, số điện thoại, địa chỉ và avatar.
 
-#### Tính năng PO-02: Quản lý Hồ sơ Thú cưng (Pet Portfolio)
+#### PO-02: Quản lý Hồ sơ Thú cưng
 
-- **Mô tả chức năng:** Cho phép chủ nuôi tạo, sửa, xóa và lưu trữ thông tin của nhiều thú cưng để chọn nhanh khi đặt lịch hẹn.
-- **Quy tắc nghiệp vụ:**
-  - Nhập các trường: Tên, Loài, Giống, Giới tính, Ngày sinh, Cân nặng, Ảnh và Tình trạng sức khỏe hiện tại.
-  - Ngày sinh không được là ngày tương lai.
-  - Cân nặng bắt buộc phải lớn hơn 0.
-  - Thú cưng có ghi chú y tế như dị ứng hoặc bệnh nền phải hiển thị nhãn cảnh báo.
-- **Yêu cầu Giao diện:** Thiết kế dạng Grid Cards để hiển thị danh sách thú cưng.
+- Tạo, sửa, xóa hồ sơ nhiều thú cưng.
+- Fields: Tên, Loài, Giống, Giới tính, Ngày sinh, Cân nặng, Ảnh, Tình trạng sức khỏe.
+- Ngày sinh không được là ngày tương lai.
+- Cân nặng phải lớn hơn 0.
+- Thú cưng có dị ứng hoặc bệnh nền → hiển thị nhãn cảnh báo.
+- Giao diện: Grid Cards.
 
-#### Tính năng PO-03: Khám phá & Tìm kiếm Dịch vụ
+#### PO-03: Khám phá & Tìm kiếm Dịch vụ
 
-- **Mô tả chức năng:** Cho phép Pet Owner tìm kiếm dịch vụ và nhà cung cấp phù hợp.
-- **Quy tắc nghiệp vụ:**
-  - Hỗ trợ lọc theo vị trí, khoảng cách, loại dịch vụ, giá cả và điểm đánh giá.
-  - Phân loại rõ ràng theo 7 nhóm dịch vụ: Khám bệnh, Tiêm phòng, Spa, Grooming, Khách sạn thú cưng, Huấn luyện, Chăm sóc tại nhà.
+- Lọc theo vị trí, khoảng cách, loại dịch vụ, giá, điểm đánh giá.
+- 7 nhóm dịch vụ: Khám bệnh, Tiêm phòng, Spa, Grooming, Khách sạn thú cưng, Huấn luyện, Chăm sóc tại nhà.
+- Nếu provider không đủ balance → **không hiển thị option CASH** trong bước chọn thanh toán.
 
-#### Tính năng PO-04: Luồng Đặt lịch & Quản lý Lịch hẹn
+#### PO-04: Luồng Đặt lịch & Quản lý Lịch hẹn
 
-- **Mô tả chức năng:** Quy trình các bước để Pet Owner chọn thú cưng, chọn dịch vụ, chọn thời gian và quản lý trạng thái lịch hẹn.
-- **Quy tắc nghiệp vụ & Logic xử lý:**
-  - Hiển thị thời gian thực các khung giờ còn trống.
-  - Khung giờ đã kín hoặc quá tải phải bị khóa.
-  - Pet Owner chỉ được hủy khi booking ở trạng thái `PENDING` hoặc `CONFIRMED`.
-  - Hủy lịch phải trước giờ hẹn tối thiểu 2 tiếng và bắt buộc nhập lý do.
-  - Đổi lịch phải trước giờ hẹn tối thiểu 2 tiếng.
-  - Sau khi đổi lịch, booking quay về `PENDING` để Provider duyệt lại.
-- **Yêu cầu Giao diện:** Sử dụng Wizard/Stepper UI. Màn hình hoàn tất có thể hiển thị mã QR để check-in tại cửa hàng.
+- Wizard/Stepper: Chọn thú cưng → Chọn dịch vụ → Chọn thời gian → Xác nhận.
+- Chỉ hiển thị khung giờ còn trống.
+- Pet Owner chỉ được hủy khi booking ở `BOOKED` hoặc `CONFIRMED`.
+- Hủy lịch phải trước giờ hẹn tối thiểu 2 tiếng, bắt buộc nhập lý do.
+- Đổi lịch trước giờ hẹn tối thiểu 2 tiếng → booking quay về `BOOKED`.
+- Nếu chọn CASH → sau khi booking `CONFIRMED`, app hiển thị **QR Code / OTP** để check-in tại cơ sở.
+- Pet Owner có thể phản hồi `NO_SHOW_REPORTED` trong khoảng thời gian X giờ.
+- Nếu không phản hồi no-show report → hệ thống tự duyệt sau thời gian chờ.
 
-#### Tính năng PO-05: Thanh toán & Quản lý Hóa đơn
+#### PO-05: Thanh toán & Quản lý Hóa đơn
 
-- **Mô tả chức năng:** Hỗ trợ thanh toán qua MoMo hoặc thanh toán trực tiếp tại cửa hàng. Cho phép xem chi tiết hóa đơn và lịch sử giao dịch.
-- **Quy tắc nghiệp vụ:**
-  - `CASH` có thể thanh toán tại quầy khi dịch vụ hoàn thành.
-  - `ONLINE_MOMO` xử lý qua cổng thanh toán online.
-  - Nếu thanh toán online thất bại, booking không được đánh dấu `PAID`.
+- `CASH`: thanh toán tại quầy khi dịch vụ hoàn thành.
+- `ONLINE_MOMO`: xử lý qua cổng thanh toán online.
+- Nếu thanh toán online thất bại → booking không được đánh dấu `PAID`.
+- Khi chọn CASH → hiển thị thông báo giải thích quy trình check-in (QR/OTP bắt buộc).
+- Option CASH bị ẩn nếu provider không đủ balance.
 
-#### Tính năng PO-06: Đánh giá & Phản hồi
+#### PO-06: Đánh giá & Phản hồi
 
-- **Mô tả chức năng:** Cho phép Pet Owner đánh giá và viết bình luận sau khi sử dụng dịch vụ.
-- **Quy tắc nghiệp vụ:**
-  - Chỉ được đánh giá khi booking đạt trạng thái `COMPLETED`.
-  - Mỗi booking chỉ được đánh giá 1 lần.
-  - Rating từ 1 đến 5 sao.
-  - Cho phép upload tối đa 3 hình ảnh thực tế.
+- Chỉ đánh giá khi booking đạt `COMPLETED`.
+- Mỗi booking đánh giá 1 lần duy nhất.
+- Rating 1–5 sao. Upload tối đa 3 ảnh.
 
-#### Tính năng PO-07: Trung tâm Thông báo
+#### PO-07: Trung tâm Thông báo
 
-- **Mô tả chức năng:** Nhận thông báo về lịch hẹn, thay đổi trạng thái booking và chương trình khuyến mãi.
-- **Loại thông báo:**
-  - Nhắc lịch hẹn sắp tới.
-  - Lịch được xác nhận, thay đổi hoặc hủy.
-  - Chương trình khuyến mãi toàn sàn.
+- Nhắc lịch hẹn sắp tới.
+- Booking confirmed / changed / cancelled.
+- `NO_SHOW_REPORTED` → nhắc Pet Owner phản hồi trong thời hạn.
+- Chương trình khuyến mãi toàn sàn.
 
-#### Tính năng PO-08: Sổ sức khỏe điện tử
+#### PO-08: Sổ Sức khỏe Điện tử
 
-- **Mô tả chức năng:** Lưu trữ dòng thời gian y tế của thú cưng.
-- **Quy tắc nghiệp vụ:**
-  - Bao gồm lịch sử khám bệnh, lịch sử tiêm phòng, đơn thuốc và ghi chú y tế.
-  - Có thể được Pet Owner nhập thủ công.
-  - Có thể được đồng bộ tự động khi booking đạt trạng thái `COMPLETED`.
+- Timeline y tế: lịch sử khám, tiêm phòng, đơn thuốc, ghi chú.
+- Pet Owner nhập thủ công hoặc đồng bộ tự động khi booking `COMPLETED`.
 
 ---
 
-### 4.3. PHÂN HỆ SERVICE PROVIDER (NHÀ CUNG CẤP)
+### 4.3. PHÂN HỆ SERVICE PROVIDER
 
-#### Tính năng SP-01: Quản lý Hồ sơ Doanh nghiệp
+#### SP-01: Quản lý Hồ sơ Doanh nghiệp
 
-- **Mô tả chức năng:** Thiết lập thông tin hiển thị của cửa hàng bao gồm thông tin liên hệ, địa chỉ bản đồ, hình ảnh cơ sở vật chất và khung giờ hoạt động.
+- Thông tin liên hệ, địa chỉ bản đồ, hình ảnh cơ sở, khung giờ hoạt động.
 
-#### Tính năng SP-02: Quản lý Dịch vụ
+#### SP-02: Quản lý Dịch vụ
 
-- **Mô tả chức năng:** Quản lý danh sách dịch vụ của cơ sở.
-- **Quy tắc nghiệp vụ:**
-  - Hỗ trợ thêm, sửa, xóa, bật hoặc tắt dịch vụ.
-  - Hỗ trợ phân loại linh hoạt theo nhóm dịch vụ.
-  - Danh mục dịch vụ là metadata của dịch vụ, không phải role.
+- Thêm, sửa, xóa, bật/tắt dịch vụ.
+- Phân loại theo nhóm dịch vụ (là metadata, không phải role).
 
-#### Tính năng SP-03: Quản lý Giá & Gói Combo
+#### SP-03: Quản lý Giá & Gói Combo
 
-- **Mô tả chức năng:** Thiết lập bảng giá riêng cho từng dịch vụ, tạo khuyến mãi hoặc gói combo với thời hạn áp dụng.
+- Thiết lập bảng giá, tạo khuyến mãi và gói combo theo thời hạn.
 
-#### Tính năng SP-04: Quản lý Đặt lịch
+#### SP-04: Quản lý Đặt lịch
 
-- **Mô tả chức năng:** Provider quản lý lịch hẹn của khách hàng.
-- **Quy tắc nghiệp vụ:**
-  - Provider xác nhận booking bằng cách chuyển `PENDING` sang `CONFIRMED`.
-  - Provider từ chối booking bằng cách chuyển `PENDING` sang `CANCELLED` với `cancelledBy = "SERVICE_PROVIDER"` và `cancelReason`.
-  - Provider chuyển `CONFIRMED` sang `IN_PROGRESS` khi thú cưng đã đến và bắt đầu sử dụng dịch vụ.
-  - Provider chuyển `IN_PROGRESS` sang `COMPLETED` khi dịch vụ hoàn tất.
-- **Yêu cầu Giao diện:** Có thể dùng bảng, lịch hoặc Kanban Board. Nếu dùng Kanban, các cột nên là Chờ duyệt, Đã xác nhận, Đang thực hiện, Hoàn thành.
+- Provider xác nhận: `BOOKED` → `CONFIRMED`.
+  - Nếu CASH → hệ thống **tự động reserve commission** từ Available Balance.
+  - Nếu Available Balance không đủ → hệ thống chặn xác nhận CASH booking.
+- Provider từ chối: `BOOKED` → `CANCELLED_BY_PROVIDER` (kèm cancelReason).
+- Provider scan QR / nhập OTP khi khách đến → booking → `CHECKED_IN`.
+- Provider chuyển `CHECKED_IN` / `IN_SERVICE` → `IN_SERVICE` / `COMPLETED`.
+  - Khi `COMPLETED` (CASH) → hệ thống **tự động charge commission**.
+- **Sau CHECKED_IN: Provider không được tự chuyển sang FAILED.**
+- Provider chỉ báo no-show nếu khách **chưa check-in**.
+- Nếu có vấn đề sau check-in → Provider phải tạo dispute kèm bằng chứng.
+- Giao diện: bảng, lịch hoặc Kanban (cột: Chờ duyệt → Đã xác nhận → Đang thực hiện → Hoàn thành).
 
-#### Tính năng SP-05: Quản lý Khách hàng & Lịch sử Dịch vụ
+#### SP-05: Quản lý Khách hàng & Lịch sử Dịch vụ
 
-- **Mô tả chức năng:** Xem danh sách khách hàng và thú cưng đã từng sử dụng dịch vụ tại cơ sở.
-- **Quy tắc nghiệp vụ:**
-  - Provider chỉ xem được khách hàng có lịch sử sử dụng dịch vụ tại cơ sở của mình.
-  - Provider có thể xem lịch sử dịch vụ và ghi chú y tế liên quan đến booking của cơ sở.
+- Xem danh sách khách hàng và thú cưng đã từng dùng dịch vụ tại cơ sở.
+- Xem lịch sử dịch vụ và ghi chú y tế liên quan.
 
-#### Tính năng SP-06: Báo cáo Doanh thu
+#### SP-06: Báo cáo Doanh thu
 
-- **Mô tả chức năng:** Thống kê doanh thu theo ngày/tháng và phân tích dịch vụ phổ biến, tỷ lệ hủy lịch.
-- **Quy tắc nghiệp vụ:**
-  - Cảnh báo nếu cancellation rate lớn hơn 15%.
-  - Dashboard phải có Loading State, Empty State và Error State.
+- Thống kê doanh thu theo ngày/tháng.
+- Cảnh báo nếu cancellation rate > 15%.
+- Hiển thị: Available Balance, Reserved Balance, Debt Balance.
+- Cảnh báo khi Available Balance dưới ngưỡng tối thiểu.
+- Lịch sử commission.
+- Dashboard cần Loading State, Empty State, Error State.
 
-#### Tính năng SP-07: Giao tiếp & Tương tác Khách hàng
+#### SP-07: Giao tiếp & Tương tác Khách hàng
 
-- **Mô tả chức năng:** Cho phép Provider chat với khách hàng, gửi thông báo và phản hồi review.
-- **Quy tắc nghiệp vụ:**
-  - Provider có thể chat để tư vấn trước lịch hẹn hoặc trao đổi tình hình thú cưng.
-  - Provider có thể reply dưới đánh giá của khách hàng.
+- Chat với khách trước/sau lịch hẹn.
+- Gửi thông báo nội bộ.
+- Reply dưới đánh giá của khách.
 
----
+#### SP-08: Quản lý Ký quỹ & Số dư (MỚI)
 
-### 4.4. PHÂN HỆ ADMIN (QUẢN TRỊ VIÊN HỆ THỐNG)
-
-#### Tính năng A-01: Quản lý Người dùng
-
-- **Mô tả chức năng:** Quản lý danh sách Pet Owner và Service Provider.
-- **Quy tắc nghiệp vụ:**
-  - Admin có thể khóa hoặc mở khóa tài khoản.
-  - Lệnh khóa tài khoản phải có lý do.
-  - Có thể hỗ trợ khóa có thời hạn hoặc khóa vĩnh viễn.
-
-#### Tính năng A-02: Xác thực Nhà cung cấp
-
-- **Mô tả chức năng:** Kiểm duyệt hồ sơ đăng ký kinh doanh của Provider mới.
-- **Yêu cầu Giao diện:** Màn hình chia đôi để xem thông tin Provider và tài liệu pháp lý như giấy phép kinh doanh, chứng chỉ thú y.
-
-#### Tính năng A-03: Kiểm duyệt Nội dung & Xử lý Báo cáo
-
-- **Mô tả chức năng:** Kiểm duyệt thông tin dịch vụ, hình ảnh, bảng giá và xử lý report từ người dùng.
-- **Quy tắc nghiệp vụ:**
-  - Admin có thể duyệt, ẩn hoặc yêu cầu chỉnh sửa nội dung dịch vụ.
-  - Admin có thể xử lý report về Provider hoặc dịch vụ kém chất lượng.
-
-#### Tính năng A-04: Giám sát Booking & Giải quyết Tranh chấp
-
-- **Mô tả chức năng:** Theo dõi booking toàn hệ thống và can thiệp khi có tranh chấp.
-- **Quy tắc nghiệp vụ:**
-  - Admin có thể xem toàn bộ booking trên nền tảng.
-  - Admin có thể xử lý tranh chấp giữa Pet Owner và Service Provider.
-  - Kết quả xử lý có thể là hoàn tiền, đóng khiếu nại hoặc chỉnh trạng thái booking.
-  - Hành động xử lý tranh chấp phải lưu audit log.
-
-#### Tính năng A-05: Bảng điều khiển Phân tích Toàn sàn
-
-- **Mô tả chức năng:** Thống kê tổng số user, tổng số booking, doanh thu nền tảng và bảng xếp hạng provider/dịch vụ.
-- **Quy tắc nghiệp vụ:**
-  - Admin dashboard overview không cần feature folder riêng.
-  - Trang admin overview có thể compose lại component từ analytics.
-
-#### Tính năng A-06: Quản trị Banner & Mã giảm giá Toàn sàn
-
-- **Mô tả chức năng:** Quản lý banner, coupon, flash sale và chiến dịch marketing chung của hệ thống.
-- **Quy tắc phạm vi:**
-  - Nếu chưa làm trong phase hiện tại, đánh dấu là `OUT_OF_SCOPE_NOW`.
-  - Không tạo file/component rỗng nếu chưa implement.
+- Xem Available Balance, Reserved Balance, Debt Balance.
+- Nạp tiền ký quỹ (top-up).
+- Xem lịch sử giao dịch ledger: `TOPUP`, `RESERVE_COMMISSION`, `RELEASE_RESERVE`, `CHARGE_COMMISSION`, `DEBT_OFFSET`, `PAYOUT`.
+- Cảnh báo khi balance dưới ngưỡng warning.
+- Thông báo khi bị chặn nhận CASH booking do không đủ balance.
+- Hiển thị thông tin nợ và giải thích cơ chế bù nợ từ payout online.
 
 ---
 
-## 5. GỢI Ý MAPPING FEATURE THEO FRONTEND
+### 4.4. PHÂN HỆ ADMIN
 
-### 5.1. Auth
+#### A-01: Quản lý Người dùng & Provider (MỞ RỘNG)
 
-```txt
-features/auth
-```
+**Route:** `admin/users`, `admin/users/[userId]`, `admin/providers`, `admin/providers/[providerId]`
 
-Bao gồm:
+- Danh sách Pet Owner và Service Provider.
+- Khóa (Ban) / Mở khóa (Unban) tài khoản → bắt buộc có lý do và thời hạn (tạm thời/vĩnh viễn).
+- **Provider detail mở rộng:**
+  - Hiển thị Trust Score: completion rate, no-show rate, dispute rate, cash abnormality rate.
+  - Hiển thị Balance overview: Available, Reserved, Debt Balance.
+  - Xem lịch sử vi phạm.
 
-- Login
-- Forgot Password
-- Reset Password
-- Register Provider
+**Status:** ✅ COMPLETED (cần mở rộng provider detail với trust score + balance)
 
-### 5.2. Public / Guest
+#### A-02: Xác thực Nhà cung cấp
 
-```txt
-features/public
-```
+**Route:** `admin/verification`, `admin/verification/[verificationId]`
 
-Bao gồm:
+- Duyệt hồ sơ đăng ký kinh doanh của Provider mới.
+- Xem tài liệu đính kèm: giấy phép kinh doanh, chứng chỉ thú y.
+- Approve / Reject với lý do.
 
-- Home
-- Public Provider List
-- Public Service List
-- Public Search
-- Login Required Dialog
+**Status:** ✅ COMPLETED
 
-### 5.3. Pet Owner
+#### A-03: Kiểm duyệt Nội dung (Moderation + Reports — CÙNG FEATURE)
 
-```txt
-features/pet-owner/profile
-features/pet-owner/pets
-features/pet-owner/discovery
-features/pet-owner/bookings
-features/pet-owner/payments
-features/pet-owner/reviews
-features/pet-owner/notifications
-features/pet-owner/health-records
-```
+**Routes:**
+- `admin/moderation` → Service content queue (kiểm duyệt nội dung dịch vụ)
+- `admin/moderation/reports` → Content Reports (xử lý báo cáo từ người dùng)
 
-### 5.4. Service Provider
+**Lưu ý:** Moderation và Reports là 2 sub-view của cùng 1 feature `apis/admin/moderation/`. Không tạo feature riêng cho Reports.
 
-```txt
-features/provider/business-profile
-features/provider/services
-features/provider/pricing
-features/provider/bookings
-features/provider/customers
-features/provider/revenue
-features/provider/communication
-```
+- Moderation: duyệt, ẩn, yêu cầu chỉnh sửa nội dung dịch vụ/hình ảnh/bảng giá.
+- Reports: xử lý báo cáo về Provider hoặc dịch vụ kém chất lượng.
+- Cả 2 view dùng chung `moderation-table.tsx`, `report-table.tsx`, `report-resolution-dialog.tsx`.
 
-### 5.5. Admin
+**Status:** ✅ COMPLETED
 
-```txt
-features/admin/users
-features/admin/verification
-features/admin/moderation
-features/admin/bookings
-features/admin/analytics
-features/admin/promotions
-```
+#### A-04: Giám sát Booking & Giải quyết Tranh chấp (MỞ RỘNG)
 
-Nếu `admin/promotions` chưa thuộc scope hiện tại, không tạo folder vội.
+**Routes:** `admin/bookings`, `admin/bookings/disputes`, `admin/bookings/no-show`
+
+- Theo dõi toàn bộ booking trên nền tảng.
+- Lọc booking theo tất cả status mới: `BOOKED`, `CONFIRMED`, `CHECKED_IN`, `IN_SERVICE`, `COMPLETED`, `COMMISSION_CHARGED`, `CANCELLED_BY_CUSTOMER`, `CANCELLED_BY_PROVIDER`, `NO_SHOW_REPORTED`, `DISPUTED`, `FAILED_APPROVED`.
+- **Xử lý NO_SHOW_REPORTED:**
+  - Admin xem bằng chứng từ cả 2 phía.
+  - Approve no-show → release reserve commission.
+  - Reject no-show → chuyển DISPUTED hoặc COMPLETED.
+- **Xử lý DISPUTED:**
+  - Admin phán quyết: refund / close complaint / override status.
+  - Kết quả ảnh hưởng Trust Score của provider.
+- Admin có thể override booking status thủ công trong trường hợp đặc biệt.
+- Tất cả hành động admin → ghi audit log.
+
+**Status:** ✅ COMPLETED (cần mở rộng no-show flow + status filter mới)
+
+#### A-05: Bảng điều khiển Phân tích Toàn sàn (MỞ RỘNG)
+
+**Route:** `admin/analytics`
+
+- Thống kê: tổng user, tổng booking, doanh thu nền tảng.
+- Bảng xếp hạng: Top dịch vụ, Top Provider.
+- **Thêm mới:** Commission revenue trend (từ CASH và online booking).
+- **Thêm mới:** Provider risk overview: số provider ở mức warning / restricted / suspended.
+- Admin dashboard (`admin/page.tsx`) compose lại component từ `apis/admin/analytics/components`.
+- Không tạo `apis/admin/dashboard/`.
+
+**Status:** ✅ COMPLETED (cần bổ sung commission chart + risk overview)
+
+#### A-06: Quản lý Balance & Ký quỹ Provider (MỚI)
+
+**Routes:** `admin/providers/[providerId]/balance`, `admin/finance/ledger`
+
+**Feature folder:** `apis/admin/finance/`
+
+- Xem Available / Reserved / Debt Balance của từng provider.
+- Xem Trust Score chi tiết và lịch sử chỉ số.
+- Điều chỉnh balance thủ công (kèm lý do) → ghi ledger type `ADMIN_ADJUSTMENT`.
+- Xem toàn bộ ledger transaction của hệ thống.
+- Quản lý nợ quá hạn: mark resolved / force offset / escalate.
+- Cài đặt safety buffer theo từng provider hoặc toàn hệ thống.
+
+**Components:**
+- `provider-balance-table.tsx`
+- `provider-ledger-detail.tsx`
+- `balance-adjustment-form.tsx`
+- `debt-management-table.tsx`
+- `ledger-transaction-table.tsx`
+- `trust-score-detail.tsx`
+
+**Status:** ❌ NOT STARTED
+
+#### A-07: Quản lý Hoa hồng (Commission Management) (MỚI)
+
+**Routes:** `admin/finance/commission`, `admin/finance/commission/config`
+
+**Feature folder:** `apis/admin/commission/`
+
+- Xem tất cả commission records trên nền tảng.
+- Lọc theo status: `PENDING` (reserved), `CHARGED`, `RELEASED`, `FAILED`.
+- Xem pending commission (đã reserve, chưa charge).
+- Cấu hình commission rate: theo % hoặc fixed fee, theo loại dịch vụ hoặc provider type.
+- Thay đổi config chỉ áp dụng cho booking mới.
+
+**Components:**
+- `commission-summary-cards.tsx`
+- `commission-table.tsx`
+- `pending-commission-table.tsx`
+- `commission-config-form.tsx`
+- `commission-rate-table.tsx`
+
+**Status:** ❌ NOT STARTED
+
+#### A-08: Quản lý Marketing & Banner (đổi số từ A-06)
+
+**Routes:** `admin/promotions`, `admin/promotions/banners`, `admin/promotions/coupons`
+
+**Feature folder:** `apis/admin/promotions/`
+
+- Quản lý banner slots trên homepage.
+- Quản lý coupon và discount rules.
+- Quản lý flash sale campaigns.
+- Xem campaign performance: views/actions, conversion rate.
+
+**Components:**
+- `banner-table.tsx`, `banner-form.tsx`
+- `coupon-table.tsx`, `coupon-form.tsx`
+- `flash-sale-form.tsx`
+- `campaign-overview.tsx`
+
+**Lưu ý:** Marketing **không** liên quan đến commission flow. Commission xử lý riêng ở A-07.
+
+**Status:** ✅ COMPLETED
 
 ---
 
-## 6. GHI CHÚ TRIỂN KHAI
+## 5. MAPPING FEATURE → FOLDER
 
-- Business form, table, schema, query/mutation nên nằm trong feature folder tương ứng.
-- UI component thuần như Button, Input, Select, Dialog, Card, Table nên nằm trong `components/ui`.
-- Component dùng chung có nghiệp vụ nhẹ như PageHeader, ConfirmDialog, StatusBadge, EmptyState, ErrorState nên nằm trong `components/common`.
-- Không đặt feature component trong `components/ui`.
-- Không tạo duplicate dashboard component nếu analytics component đã có thể reuse.
+```txt
+apis/auth/
+apis/public/
+apis/pet-owner/profile/
+apis/pet-owner/pets/
+apis/pet-owner/discovery/
+apis/pet-owner/bookings/
+apis/pet-owner/payments/
+apis/pet-owner/reviews/
+apis/pet-owner/notifications/
+apis/pet-owner/health-records/
+apis/provider/business-profile/
+apis/provider/services/
+apis/provider/pricing/
+apis/provider/bookings/
+apis/provider/customers/
+apis/provider/revenue/
+apis/provider/communication/
+apis/provider/deposit/           ← SP-08 MỚI
+apis/admin/users/
+apis/admin/verification/
+apis/admin/moderation/           ← bao gồm cả Reports (A-03)
+apis/admin/bookings/
+apis/admin/analytics/
+apis/admin/finance/              ← A-06 MỚI (provider balance & ledger)
+apis/admin/commission/           ← A-07 MỚI (commission management)
+apis/admin/promotions/           ← A-08 (đổi số từ A-06)
+```
+
+---
+
+## 6. SHARED TYPES CẦN CẬP NHẬT / TẠO MỚI
+
+```txt
+types/booking.ts       → cập nhật BookingStatus với các giá trị mới
+types/provider.ts      → thêm ProviderBalance, ProviderTrustScore
+types/ledger.ts        → tạo mới: LedgerTransaction, LedgerTransactionType
+types/commission.ts    → tạo mới: Commission, CommissionConfig, CommissionType
+types/payment.ts       → PaymentMethod, PaymentStatus
+```
+
+---
+
+## 7. SHARED CONSTANTS CẦN CẬP NHẬT / TẠO MỚI
+
+```txt
+constants/booking-status.ts    → cập nhật với BookingStatus mới
+constants/payment-method.ts    → CASH, ONLINE_MOMO
+constants/ledger-types.ts      → tạo mới: LedgerTransactionType values
+constants/trust-score.ts       → tạo mới: risk level thresholds
+constants/query-keys.ts        → thêm keys mới: finance, commission, ledger, trust-score
+constants/api-endpoints.ts     → thêm endpoints: balance, commission, ledger
+```
+
+---
+
+## 8. GHI CHÚ TRIỂN KHAI
+
+- Business form, table, schema, query/mutation nằm trong `apis/[role]/[feature]/`.
+- UI component thuần (Button, Input, Select, Dialog, Card, Table) nằm trong `components/ui`.
+- Component dùng chung (PageHeader, ConfirmDialog, StatusBadge, EmptyState) nằm trong `components/common`.
+- Moderation và Reports là **cùng một feature** `apis/admin/moderation/` — không tách riêng.
+- Marketing (A-08) và Commission (A-07) là **2 feature riêng biệt** — không gộp chung.
+- Mock UI dùng `initialData` và `enabled: false` để không cần backend thực.
+- Luôn cập nhật `CURRENT_STATE.md` sau mỗi feature hoàn thành.
