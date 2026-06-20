@@ -81,7 +81,7 @@ function SortButton({
       <span className="flex flex-col items-center gap-0.5" aria-hidden="true">
         <span
           className={cn(
-            "h-0 w-0 border-x-[4px] border-b-[5px] border-x-transparent",
+            "h-0 w-0 border-x-4 border-b-5 border-x-transparent",
             active && direction === "asc"
               ? "border-b-gray-950"
               : "border-b-gray-300",
@@ -89,7 +89,7 @@ function SortButton({
         />
         <span
           className={cn(
-            "h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent",
+            "h-0 w-0 border-x-[4p border-t-[5px] border-x-transparent",
             active && direction === "desc"
               ? "border-t-gray-950"
               : "border-t-gray-300",
@@ -153,7 +153,7 @@ export function TopServicesTable() {
         </thead>
       </table>
 
-      <div className="max-h-[260px] overflow-y-auto">
+      <div className="max-h-80 overflow-y-auto">
         <table className="w-full table-fixed border-collapse text-left">
           <tbody className="divide-y divide-gray-100">
             {records.map((service) => {

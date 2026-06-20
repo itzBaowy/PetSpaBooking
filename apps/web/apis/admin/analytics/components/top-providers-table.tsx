@@ -166,7 +166,7 @@ export function TopProvidersTable() {
         </thead>
       </table>
 
-      <div className="max-h-260 overflow-y-auto">
+      <div className="max-h-250 overflow-y-auto">
         <table className="w-full table-fixed border-collapse text-left">
           <tbody className="divide-y divide-gray-100">
             {records.map((provider, index) => {

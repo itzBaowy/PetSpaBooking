@@ -1,37 +1,40 @@
 "use client";
 
+const inputClassName =
+  "h-11 w-full rounded-xl border border-border-subtle bg-surface px-3 text-sm text-foreground outline-none transition placeholder:text-subtle focus:border-brand focus:ring-4 focus:ring-brand-soft";
+
 export function RegisterProviderForm() {
   return (
     <form className="space-y-4">
-      <div>
-        <label className="block text-sm font-medium mb-1">Business Name</label>
+      <label className="block space-y-1.5">
+        <span className="text-sm font-semibold text-foreground">Tên cơ sở</span>
         <input
           type="text"
-          className="w-full border rounded px-3 py-2"
-          placeholder="Your Business Name"
+          className={inputClassName}
+          placeholder="Nhập tên cơ sở của bạn"
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Email</label>
+      </label>
+      <label className="block space-y-1.5">
+        <span className="text-sm font-semibold text-foreground">Email</span>
         <input
           type="email"
-          className="w-full border rounded px-3 py-2"
+          className={inputClassName}
           placeholder="business@email.com"
         />
-      </div>
-      <div>
-        <label className="block text-sm font-medium mb-1">Password</label>
+      </label>
+      <label className="block space-y-1.5">
+        <span className="text-sm font-semibold text-foreground">Mật khẩu</span>
         <input
           type="password"
-          className="w-full border rounded px-3 py-2"
-          placeholder="••••••"
+          className={inputClassName}
+          placeholder="••••••••"
         />
-      </div>
+      </label>
       <button
         type="submit"
-        className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600"
+        className="inline-flex h-11 w-full items-center justify-center rounded-xl bg-brand px-4 text-sm font-bold text-brand-foreground shadow-sm transition-colors hover:bg-brand-hover focus:outline-none focus:ring-4 focus:ring-brand-soft"
       >
-        Register as Provider
+        Đăng ký nhà cung cấp
       </button>
     </form>
   );

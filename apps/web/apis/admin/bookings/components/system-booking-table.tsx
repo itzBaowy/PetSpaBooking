@@ -9,7 +9,10 @@ import type { DataTableColumn } from "@/components/ui/data-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
-import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import {
+  StatisticCard,
+  StatisticCardGrid,
+} from "@/components/ui/statistic-card";
 import {
   BOOKING_STATUS_LABELS,
   BOOKING_STATUS_OPTIONS,
@@ -70,7 +73,10 @@ export function SystemBookingTable() {
   });
   const total = filteredBookings.length;
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
-  const records = filteredBookings.slice((page - 1) * pageSize, page * pageSize);
+  const records = filteredBookings.slice(
+    (page - 1) * pageSize,
+    page * pageSize,
+  );
   const disputedBookings = bookings.data.filter(
     (booking) => booking.disputeStatus === "OPEN",
   ).length;
@@ -144,7 +150,10 @@ export function SystemBookingTable() {
         <ActionMenu
           items={[
             { label: "Xem đặt lịch" },
-            { label: "Điều chỉnh trạng thái", onClick: () => setOverrideBooking(booking) },
+            {
+              label: "Điều chỉnh trạng thái",
+              onClick: () => setOverrideBooking(booking),
+            },
             { label: "Mở tranh chấp" },
             ...(booking.status === "NO_SHOW_REPORTED"
               ? [
@@ -195,8 +204,8 @@ export function SystemBookingTable() {
         />
       </StatisticCardGrid>
 
-      <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-gray-100 p-5 xl:flex-row xl:items-center xl:justify-between">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col gap-2 md:flex-row">
             <SearchInput
               value={search}
@@ -210,7 +219,10 @@ export function SystemBookingTable() {
             <CustomSelect
               className="md:w-56"
               defaultValue="ALL"
-              options={[{ label: "Tất cả trạng thái", value: "ALL" }, ...BOOKING_STATUS_OPTIONS]}
+              options={[
+                { label: "Tất cả trạng thái", value: "ALL" },
+                ...BOOKING_STATUS_OPTIONS,
+              ]}
               onValueChange={(value) => {
                 setStatus(value);
                 setPage(1);
@@ -230,7 +242,7 @@ export function SystemBookingTable() {
           getRowKey={(booking) => booking.id}
           minWidthClassName="min-w-[1120px]"
         />
-        <div className="border-t border-gray-100 px-5 py-4">
+        <div className="px-2 py-1">
           <Pagination
             page={page}
             totalPages={totalPages}

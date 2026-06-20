@@ -40,7 +40,9 @@ export function AuditLogTable() {
       key: "id",
       header: "Mã log",
       widthClassName: "w-[12%]",
-      render: (log) => <span className="font-semibold text-gray-900">{log.id}</span>,
+      render: (log) => (
+        <span className="font-semibold text-gray-900">{log.id}</span>
+      ),
     },
     {
       key: "actor",
@@ -98,8 +100,8 @@ export function AuditLogTable() {
         }
       />
 
-      <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-gray-100 p-5 xl:flex-row xl:items-center xl:justify-between">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col gap-2 md:flex-row">
             <SearchInput
               value=""
@@ -135,7 +137,7 @@ export function AuditLogTable() {
           getRowKey={(log) => log.id}
           minWidthClassName="min-w-[1120px]"
         />
-        <div className="border-t border-gray-100 px-5 py-4">
+        <div className="px-2 py-1">
           <Pagination
             page={page}
             totalPages={totalPages}
