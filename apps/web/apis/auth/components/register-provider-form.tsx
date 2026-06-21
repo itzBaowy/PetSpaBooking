@@ -10,6 +10,7 @@ export function RegisterProviderForm() {
         <span className="text-sm font-semibold text-foreground">Tên cơ sở</span>
         <input
           type="text"
+          name="businessName"
           className={inputClassName}
           placeholder="Nhập tên cơ sở của bạn"
         />
@@ -18,6 +19,7 @@ export function RegisterProviderForm() {
         <span className="text-sm font-semibold text-foreground">Email</span>
         <input
           type="email"
+          name="email"
           className={inputClassName}
           placeholder="business@email.com"
         />
@@ -26,6 +28,7 @@ export function RegisterProviderForm() {
         <span className="text-sm font-semibold text-foreground">Mật khẩu</span>
         <input
           type="password"
+          name="password"
           className={inputClassName}
           placeholder="••••••••"
         />
