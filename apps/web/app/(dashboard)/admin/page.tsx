@@ -10,7 +10,7 @@ import { ProviderRiskOverviewCard } from "@/apis/admin/analytics/components/prov
 
 export default function AdminDashboard() {
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-8">
+    <div className="p-6 max-w-400 mx-auto space-y-8">
       <PageHeader
         eyebrow="Quản trị / Tổng quan"
         title="Tổng quan hệ thống"

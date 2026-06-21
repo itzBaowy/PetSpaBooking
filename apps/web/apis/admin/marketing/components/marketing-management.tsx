@@ -7,7 +7,10 @@ import { DataTable } from "@/components/ui/data-table";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { SearchInput } from "@/components/ui/search-input";
-import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import {
+  StatisticCard,
+  StatisticCardGrid,
+} from "@/components/ui/statistic-card";
 import { formatCurrency } from "@/lib/currency";
 import { cn } from "@/lib/utils";
 import {
@@ -359,8 +362,8 @@ export function MarketingManagement() {
         </div>
       </div>
 
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-gray-100 p-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-bold text-gray-900">
               Chiến dịch toàn sàn
@@ -399,8 +402,8 @@ export function MarketingManagement() {
         />
       </div>
 
-      <div className="rounded-xl border border-gray-100 bg-white shadow-sm">
-        <div className="border-b border-gray-100 p-5">
+      <div className="space-y-4">
+        <div className="rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
           <h2 className="text-lg font-bold text-gray-900">
             Quy tắc mã giảm giá toàn sàn
           </h2>

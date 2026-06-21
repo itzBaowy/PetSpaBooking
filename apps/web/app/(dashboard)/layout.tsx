@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
@@ -156,25 +157,7 @@ export default function DashboardLayout({
         </svg>
       ),
     },
-    // {
-    //   label: "Service Review",
-    //   href: "/admin/moderation/services",
-    //   icon: (
-    //     <svg
-    //       className="w-5 h-5"
-    //       fill="none"
-    //       viewBox="0 0 24 24"
-    //       stroke="currentColor"
-    //     >
-    //       <path
-    //         strokeLinecap="round"
-    //         strokeLinejoin="round"
-    //         strokeWidth={2}
-    //         d="M9 12l2 2 4-4M7 4h10a2 2 0 012 2v12a2 2 0 01-2 2H7a2 2 0 01-2-2V6a2 2 0 012-2z"
-    //       />
-    //     </svg>
-    //   ),
-    // },
+  
     {
       label: "Marketing",
       href: "/admin/marketing",
@@ -343,33 +326,60 @@ export default function DashboardLayout({
       {/* Sidebar navigation */}
       <aside
         className={cn(
-          "sticky top-0 flex h-screen shrink-0 flex-col border-r border-shell-border bg-shell text-brand-foreground transition-all duration-200",
-          isSidebarCollapsed ? "w-20" : "w-64",
+          "sticky top-0 flex h-screen shrink-0 flex-col bg-shell text-brand-foreground transition-all duration-200",
+          isSidebarCollapsed ? "w-20" : "w-60",
         )}
       >
         <div
           className={cn(
             "flex h-16 items-center gap-3 border-b border-shell-border bg-shell-strong",
-            isSidebarCollapsed ? "justify-center px-3" : "justify-between px-6",
+            isSidebarCollapsed ? "justify-center px-3" : "justify-between px-4",
           )}
         >
           {!isSidebarCollapsed && (
-            <span className="font-extrabold text-lg text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">
-              {isAdmin
-                ? "Quản trị PetLink"
-                : isProvider
-                  ? "Trung tâm Nhà cung cấp"
-                  : "Bảng điều khiển PetLink"}
-            </span>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="relative h-9 w-9 shrink-0">
+                <Image
+                  src="/brand/petlink-logo.png"
+                  alt="PetLink"
+                  fill
+                  sizes="36px"
+                  className="object-contain dark:hidden"
+                  priority
+                />
+                <Image
+                  src="/brand/petlink-logo-dark.png"
+                  alt=""
+                  fill
+                  sizes="36px"
+                  className="hidden object-contain dark:block"
+                  priority
+                />
+              </div>
+              <div className="min-w-0 leading-tight">
+                <p className="truncate text-sm font-semibold text-brand dark:text-white">
+                  {isAdmin
+                    ? "Quản trị PetLink"
+                    : isProvider
+                      ? "Trung tâm Nhà cung cấp"
+                      : "Bảng điều khiển PetLink"}
+                </p>
+                <p className="mt-0.5 truncate text-[11px] font-medium text-muted dark:text-shell-muted">
+                  {isAdmin
+                    ? "Cổng quản trị"
+                    : isProvider
+                      ? "Cổng nhà cung cấp"
+                      : "Cổng quản lý"}
+                </p>
+              </div>
+            </div>
           )}
           <button
             type="button"
-            aria-label={
-              isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"
-            }
+            aria-label={isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
             title={isSidebarCollapsed ? "Mở rộng menu" : "Thu gọn menu"}
             onClick={() => setIsSidebarCollapsed((current) => !current)}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md border border-shell-border bg-shell-strong/40 text-shell-muted transition-colors hover:bg-shell-border hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+            className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md border border-shell-border bg-surface text-muted transition-colors hover:border-brand hover:bg-brand-soft hover:text-brand focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand dark:bg-shell-strong dark:text-shell-muted dark:hover:bg-shell-border dark:hover:text-white"
           >
             <svg
               className="h-4 w-4"
@@ -433,13 +443,13 @@ export default function DashboardLayout({
                     href={item.href}
                     title={isSidebarCollapsed ? item.label : undefined}
                     className={cn(
-                      "flex items-center gap-3 rounded-lg py-3 text-sm font-semibold transition-all duration-150",
+                      "flex min-h-10 items-center gap-3 rounded-md border-l-[3px] py-2.5 text-sm font-medium transition-all duration-150",
                       isSidebarCollapsed
                         ? "justify-center px-3"
                         : "justify-start px-4",
                       isActive
-                        ? "bg-brand text-brand-foreground shadow-md shadow-blue-900/20"
-                        : "text-shell-muted hover:bg-shell-border/60 hover:text-brand-foreground",
+                        ? "border-brand bg-brand-soft text-green-700 dark:bg-brand dark:text-brand-foreground"
+                        : "border-transparent text-shell-muted hover:bg-surface-muted hover:text-foreground dark:hover:bg-shell-border/60 dark:hover:text-brand-foreground",
                     )}
                   >
                     {item.icon}

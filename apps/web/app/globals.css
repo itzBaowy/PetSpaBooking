@@ -1,9 +1,11 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #020617;
+@custom-variant dark (&:where(.dark, .dark *));
 
+:root {
+  color-scheme: light;
+  --background: #f8fafc;
+  --foreground: #0f172a;
   --surface: #ffffff;
   --surface-muted: #f8fafc;
   --surface-soft: #f1f5f9;
@@ -11,25 +13,24 @@
   --foreground-subtle: #94a3b8;
   --border-subtle: #e5e7eb;
   --border-muted: #cbd5e1;
-
-  --brand: #2563eb;
-  --brand-hover: #1d4ed8;
-  --brand-soft: #eff6ff;
+  --brand: #22c55e;
+  --brand-hover: #16a34a;
+  --brand-soft: #ecfdf5;
   --brand-foreground: #ffffff;
-
-  --shell: #0f172a;
-  --shell-strong: #020617;
-  --shell-border: #1e293b;
-  --shell-muted: #94a3b8;
-
+  --secondary: #2d9cdb;
+  --secondary-soft: #eef8fe;
+  --shell: #ffffff;
+  --shell-strong: rgba(255, 255, 255, 0.9);
+  --shell-border: #e5e7eb;
+  --shell-muted: #64748b;
   --success: #16a34a;
   --success-soft: #f0fdf4;
   --warning: #d97706;
   --warning-soft: #fffbeb;
   --danger: #dc2626;
   --danger-soft: #fef2f2;
-  --info: #2563eb;
-  --info-soft: #eff6ff;
+  --info: #2d9cdb;
+  --info-soft: #eef8fe;
 }
 
 @theme inline {
@@ -46,6 +47,8 @@
   --color-brand-hover: var(--brand-hover);
   --color-brand-soft: var(--brand-soft);
   --color-brand-foreground: var(--brand-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-soft: var(--secondary-soft);
   --color-shell: var(--shell);
   --color-shell-strong: var(--shell-strong);
   --color-shell-border: var(--shell-border);
@@ -63,23 +66,95 @@
 }
 
 .dark {
-  --background: #020617;
+  color-scheme: dark;
+  --background: #0a0a0a;
   --foreground: #f8fafc;
-  --surface: #0f172a;
-  --surface-muted: #111827;
-  --surface-soft: #1e293b;
-  --foreground-muted: #94a3b8;
-  --foreground-subtle: #64748b;
-  --border-subtle: #1f2937;
-  --border-muted: #334155;
-  --brand-soft: #172554;
-  --shell: #020617;
-  --shell-strong: #020617;
-  --shell-border: #1e293b;
+  --surface: #171717;
+  --surface-muted: #222222;
+  --surface-soft: #2a2a2a;
+  --foreground-muted: #a1a1aa;
+  --foreground-subtle: #8f8f8f;
+  --border-subtle: #2a2a2a;
+  --border-muted: #444444;
+  --brand: #5dd66d;
+  --brand-hover: #4fb45d;
+  --brand-soft: #1d2a1f;
+  --brand-foreground: #ffffff;
+  --secondary: #b3b3b3;
+  --secondary-soft: #2a2a2a;
+  --shell: #111111;
+  --shell-strong: #111111;
+  --shell-border: #2a2a2a;
+  --shell-muted: #a1a1aa;
+  --success: #5bc66a;
+  --success-soft: #1d2a1f;
+  --warning: #fbbf24;
+  --warning-soft: #3b2b0d;
+  --danger: #f87171;
+  --danger-soft: #3b1719;
+  --info: #93c5fd;
+  --info-soft: #2a2a2a;
 }
 
+* {
+  border-color: var(--border-subtle);
+}
+
+html,
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+/* Compatibility layer for legacy utility classes while screens migrate to tokens. */
+.dark
+  :where(
+    .bg-white,
+    .bg-gray-50,
+    .bg-gray-50\/50,
+    .bg-gray-50\/70,
+    .bg-gray-50\/75
+  ) {
+  background-color: var(--surface);
+}
+
+.dark :where(.bg-gray-100, .bg-gray-200) {
+  background-color: var(--surface-muted);
+}
+
+.dark :where(.bg-gray-900, .bg-gray-950) {
+  background-color: var(--surface-soft);
+}
+
+.dark :where(.text-gray-950, .text-gray-900, .text-gray-800) {
+  color: var(--foreground);
+}
+
+.dark :where(.text-gray-700, .text-gray-600, .text-gray-500) {
+  color: var(--foreground-muted);
+}
+
+.dark :where(.text-gray-400, .text-gray-300) {
+  color: var(--foreground-subtle);
+}
+
+.dark :where(.border-gray-50, .border-gray-100, .border-gray-200) {
+  border-color: var(--border-subtle);
+}
+
+.dark :where(.border-gray-300) {
+  border-color: var(--border-muted);
 }

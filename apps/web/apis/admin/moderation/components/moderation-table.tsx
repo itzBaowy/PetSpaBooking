@@ -9,7 +9,10 @@ import type { DataTableColumn } from "@/components/ui/data-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
-import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import {
+  StatisticCard,
+  StatisticCardGrid,
+} from "@/components/ui/statistic-card";
 import { useModerationQueue, useReports } from "../queries";
 import type { ModerationItem } from "../queries";
 
@@ -103,7 +106,10 @@ export function ModerationTable() {
       header: "Rủi ro",
       widthClassName: "w-[12%]",
       render: (item) => (
-        <Badge label={riskLabels[item.risk]} className={riskStyles[item.risk]} />
+        <Badge
+          label={riskLabels[item.risk]}
+          className={riskStyles[item.risk]}
+        />
       ),
     },
     {
@@ -173,8 +179,8 @@ export function ModerationTable() {
         />
       </StatisticCardGrid>
 
-      <div className="rounded-lg border border-gray-100 bg-white shadow-sm">
-        <div className="flex flex-col gap-3 border-b border-gray-100 p-5 lg:flex-row lg:items-center lg:justify-between">
+      <div className="space-y-4">
+        <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h2 className="text-lg font-bold text-gray-900">
               Hàng đợi nội dung dịch vụ
@@ -202,7 +208,7 @@ export function ModerationTable() {
           getRowKey={(item) => item.id}
           minWidthClassName="min-w-[1180px]"
         />
-        <div className="border-t border-gray-100 px-5 py-4">
+        <div className="px-2 py-1">
           <Pagination
             page={page}
             totalPages={totalPages}

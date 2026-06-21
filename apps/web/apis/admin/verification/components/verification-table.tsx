@@ -8,7 +8,10 @@ import { DataTable } from "@/components/ui/data-table";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
-import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import {
+  StatisticCard,
+  StatisticCardGrid,
+} from "@/components/ui/statistic-card";
 import { useDebounce } from "@/hooks/use-debounce";
 import { MOCK_VERIFICATIONS } from "../queries";
 import type { MockVerificationRequest } from "../queries";
@@ -221,7 +224,7 @@ export function VerificationTable() {
       </StatisticCardGrid>
 
       {/* Thanh tìm kiếm và bộ lọc */}
-      <div className="rounded-2xl border border-gray-100 bg-white p-3 shadow-sm">
+      <div className="rounded-xl border border-border-subtle bg-surface p-4 shadow-sm">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
           <SearchInput
             className="w-full lg:max-w-md"
@@ -269,7 +272,9 @@ export function VerificationTable() {
                 d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
               />
             </svg>
-            <p className="font-medium text-gray-700">Không tìm thấy yêu cầu xác thực</p>
+            <p className="font-medium text-gray-700">
+              Không tìm thấy yêu cầu xác thực
+            </p>
             <p className="text-xs text-gray-500 mt-1">
               {statusFilter
                 ? `Không có yêu cầu trạng thái ${STATUS_LABELS[statusFilter]?.toLowerCase()}`
