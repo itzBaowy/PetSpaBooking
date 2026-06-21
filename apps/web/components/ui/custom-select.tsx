@@ -11,6 +11,8 @@ export interface CustomSelectOption {
 interface CustomSelectProps {
   options: Array<string | CustomSelectOption>;
   defaultValue?: string;
+  value?: string;
+  placeholder?: string;
   className?: string;
   onValueChange?: (value: string) => void;
 }
@@ -18,6 +20,8 @@ interface CustomSelectProps {
 export function CustomSelect({
   options,
   defaultValue,
+  value,
+  placeholder = "Chọn một tùy chọn",
   className,
   onValueChange,
 }: CustomSelectProps) {
@@ -29,9 +33,8 @@ export function CustomSelect({
   const [selectedValue, setSelectedValue] = useState(
     defaultValue ?? normalizedOptions[0]?.value ?? "",
   );
-  const selectedLabel =
-    normalizedOptions.find((option) => option.value === selectedValue)?.label ??
-    selectedValue;
+  const currentValue = value ?? selectedValue;
+  const selectedLabel = normalizedOptions.find((option) => option.value === currentValue)?.label ?? placeholder;
 
   return (
     <div className={cn("relative", className)}>
@@ -44,7 +47,7 @@ export function CustomSelect({
         onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
         className="flex h-11 w-full items-center justify-between rounded-xl border border-border-subtle bg-surface px-4 text-left text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border-muted focus:outline-none focus:ring-4 focus:ring-brand-soft"
       >
-        <span>{selectedLabel}</span>
+        <span className={currentValue ? "text-foreground" : "text-subtle"}>{selectedLabel}</span>
         <svg
           className={cn(
             "h-4 w-4 text-subtle transition-transform",
@@ -70,7 +73,7 @@ export function CustomSelect({
           className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-border-subtle bg-surface p-1.5 shadow-xl shadow-gray-900/10"
         >
           {normalizedOptions.map((option) => {
-            const isSelected = option.value === selectedValue;
+            const isSelected = option.value === currentValue;
 
             return (
               <button
@@ -80,7 +83,7 @@ export function CustomSelect({
                 aria-selected={isSelected}
                 onMouseDown={(event) => event.preventDefault()}
                 onClick={() => {
-                  setSelectedValue(option.value);
+                  if (value === undefined) setSelectedValue(option.value);
                   onValueChange?.(option.value);
                   setIsOpen(false);
                 }}

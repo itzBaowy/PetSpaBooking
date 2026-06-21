@@ -403,3 +403,60 @@ Known issues:
 
 Next steps:
 - Optional pass for provider/pet-owner UI localization if the product scope requires full Vietnamese across all roles.
+
+## Feature: Provider Account Registration & Business Verification Onboarding
+
+Role: Auth / Provider
+Status: Done
+
+Files created:
+- apis/auth/components/auth-visual-shell.tsx
+- apis/auth/components/provider-verification-form.tsx
+- app/(auth)/provider-verification/page.tsx
+
+Files modified:
+- app/(auth)/login/page.tsx
+- app/(auth)/register-provider/page.tsx
+- apis/auth/components/login-form.tsx
+- apis/auth/components/register-provider-form.tsx
+- docs/current-state.md
+
+Components reused:
+- Next.js Image and Link
+- Existing PetLink design tokens from app/globals.css
+- Existing brand photography from public/brand
+
+API endpoints used:
+- None. Mock UI only.
+
+Query keys used:
+- None.
+
+Types added or reused:
+- None.
+
+Libraries used:
+- Next.js, React, TypeScript, Tailwind CSS
+
+Notes:
+- Provider registration creates only the login account in the mock flow.
+- After registration, the user is sent to login with `next=/provider-verification`.
+- Business verification is a three-step authenticated onboarding mock: shop information, legal documents, and review/submit.
+- No verification or authentication API was added or called.
+
+Known issues:
+- Authentication and submitted form data are not persisted because backend contracts are not available.
+
+Next steps:
+- Connect provider session/route guard and verification submission API when backend contracts are ready.
+
+### Provider verification onboarding follow-up
+
+- Added an unverified-account callout to the provider dashboard linking to `/provider-verification`.
+- Verification form data is now controlled and preserved while moving forward/backward between steps.
+- Review step displays the values entered by the provider.
+- Reused the shared controlled `CustomSelect` for service and business type fields.
+- Added shadcn-style shared `Button`, `Input`, and `Textarea` primitives under `components/ui` and reused them in auth/onboarding forms.
+- No backend API was introduced; verification state remains mocked.
+- Provider registration now includes password confirmation and blocks submission when passwords do not match.
+- Login and registration reuse a shared `PasswordInput` with accessible eye/eye-off visibility icons.
