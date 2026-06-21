@@ -91,9 +91,9 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
     null,
   );
   const profile = profiles[role];
-  const closeSoon = (currentMenu: "notifications" | "profile" | null) =>
+  const closeSoon = (menu: "notifications" | "profile") =>
     window.setTimeout(() => {
-      setOpenMenu((current) => (current === currentMenu ? null : current));
+      setOpenMenu((prev) => (prev === menu ? null : prev));
     }, 150);
 
   return (
@@ -104,7 +104,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
           aria-label="Mở thông báo"
           aria-haspopup="menu"
           aria-expanded={openMenu === "notifications"}
-          onBlur={() => closeSoon(openMenu)}
+          onBlur={() => closeSoon("notifications")}
           onClick={() =>
             setOpenMenu(openMenu === "notifications" ? null : "notifications")
           }
@@ -155,7 +155,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
           aria-label="Mở menu hồ sơ"
           aria-haspopup="menu"
           aria-expanded={openMenu === "profile"}
-          onBlur={() => closeSoon(openMenu)}
+          onBlur={() => closeSoon("profile")}
           onClick={() => setOpenMenu(openMenu === "profile" ? null : "profile")}
           className="inline-flex h-10 items-center gap-3 rounded-xl border border-shell-border bg-surface py-1 pl-1 pr-3 text-left text-muted shadow-sm transition hover:border-brand hover:bg-brand-soft hover:text-brand focus:outline-none focus:ring-4 focus:ring-brand/20 dark:bg-shell dark:text-shell-muted"
         >
