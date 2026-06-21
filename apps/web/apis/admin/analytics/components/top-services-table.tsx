@@ -89,7 +89,7 @@ function SortButton({
         />
         <span
           className={cn(
-            "h-0 w-0 border-x-[4p border-t-[5px] border-x-transparent",
+            "h-0 w-0 border-x-[4px] border-t-[5px] border-x-transparent",
             active && direction === "desc"
               ? "border-t-gray-950"
               : "border-t-gray-300",
