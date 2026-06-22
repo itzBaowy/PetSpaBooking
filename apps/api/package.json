@@ -7,7 +7,12 @@
   "scripts": {
     "dev": "nodemon --exec tsx index.ts",
     "start": "tsx index.ts",
-    "build": "tsc"
+    "build": "tsc",
+    "db:generate": "npx prisma generate",
+    "db:migrate": "npx prisma migrate dev",
+    "db:studio": "npx prisma studio",
+    "db:seed": "ts-node prisma/seed.ts",
+    "db:sync": "npx prisma db push && npx prisma generate"
   },
   "keywords": [],
   "author": "",
