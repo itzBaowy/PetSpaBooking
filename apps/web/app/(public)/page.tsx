@@ -1,10 +1,41 @@
-import { AdminSection } from "./_components/AdminSection";
-import { ContactSection } from "./_components/ContactSection";
-import { FeatureSection } from "./_components/FeatureSection";
-import { HeroSection } from "./_components/HeroSection";
-import { LandingNavbar } from "./_components/LandingNavbar";
-import { ProcessSection } from "./_components/ProcessSection";
-import { ProviderSection } from "./_components/ProviderSection";
+import type { Metadata } from "next";
+import {
+  AdminSection,
+  ContactSection,
+  FeatureSection,
+  HeroSection,
+  LandingNavbar,
+  ProcessSection,
+  ProviderSection,
+} from "@/components/landing";
+
+
+export const metadata: Metadata = {
+  title: "PetLink — Nền tảng quản lý dịch vụ chăm sóc thú cưng",
+  description:
+    "PetLink giúp nhà cung cấp dịch vụ spa thú cưng quản lý lịch hẹn, khách hàng và doanh thu. Đăng ký ngay để trải nghiệm nền tảng quản trị toàn diện.",
+  keywords: [
+    "pet spa",
+    "quản lý thú cưng",
+    "spa thú cưng",
+    "PetLink",
+    "lịch hẹn thú cưng",
+    "chăm sóc thú cưng",
+  ],
+  openGraph: {
+    title: "PetLink — Nền tảng quản lý dịch vụ chăm sóc thú cưng",
+    description:
+      "Quản lý lịch hẹn, khách hàng và doanh thu spa thú cưng dễ dàng hơn với PetLink.",
+    type: "website",
+    locale: "vi_VN",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "PetLink — Nền tảng quản lý spa thú cưng",
+    description:
+      "Quản lý lịch hẹn, khách hàng và doanh thu spa thú cưng dễ dàng hơn với PetLink.",
+  },
+};
 
 export default function Home() {
   return (

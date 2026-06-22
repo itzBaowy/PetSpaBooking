@@ -1,0 +1,43 @@
+import { AnimatedCard, AnimatedReveal, AnimatedStagger } from "./AnimatedReveal";
+
+const steps = [
+  "Nhà cung cấp đăng ký và tải giấy tờ xác thực",
+  "Admin kiểm tra và phê duyệt hồ sơ",
+  "Nhà cung cấp tạo dịch vụ và thời gian khả dụng",
+  "Booking xuất hiện trong dashboard provider",
+  "Provider xác nhận lịch hẹn",
+  "Quét QR khi check-in và check-out",
+  "Doanh thu được quyết toán vào ví provider",
+  "Admin theo dõi báo cáo và xử lý rủi ro",
+];
+
+export function ProcessSection() {
+  return (
+    <section id="process" className="scroll-mt-18 bg-white px-5 py-24 lg:px-8">
+      <div className="mx-auto max-w-7xl">
+        <AnimatedReveal className="mx-auto max-w-3xl text-center">
+          <span className="text-sm font-extrabold uppercase tracking-[.18em] text-[#1eac61]">Quy trình</span>
+          <h2 className="mt-4 text-4xl font-black tracking-[-.04em] sm:text-5xl">
+            Rõ ràng từ đăng ký đến hoàn tất dịch vụ
+          </h2>
+          <p className="mt-5 text-[#64746b]">
+            Một luồng vận hành thống nhất giúp provider làm đúng việc và admin luôn nhìn thấy bức tranh toàn cảnh.
+          </p>
+        </AnimatedReveal>
+        <AnimatedStagger className="relative mt-12 grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          {steps.map((step, index) => (
+            <AnimatedCard
+              key={step}
+              className="relative rounded-[22px] border border-[#e1ece5] bg-white p-5 shadow-[0_8px_28px_rgba(20,70,40,.06)]"
+            >
+              <span className="inline-flex rounded-full bg-[#ddf8e8] px-2.5 py-1 text-[10px] font-black text-[#159755]">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <p className="mt-4 text-sm font-bold leading-6">{step}</p>
+            </AnimatedCard>
+          ))}
+        </AnimatedStagger>
+      </div>
+    </section>
+  );
+}
