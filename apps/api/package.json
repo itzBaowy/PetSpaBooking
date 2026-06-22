@@ -11,9 +11,9 @@
     "db:generate": "npx prisma generate",
     "db:migrate": "npx prisma migrate dev",
     "db:studio": "npx prisma studio",
-    "db:seed": "ts-node prisma/seed.ts",
+    "db:seed": "tsx prisma/seed.ts",
     "db:sync": "npx prisma db push && npx prisma generate",
-    "db:clean": "ts-node prisma/clean.ts",
+    "db:clean": "tsx prisma/clean.ts",
     "db:reseed": "pnpm run db:clean && pnpm run db:seed"
   },
   "keywords": [],
@@ -26,7 +26,10 @@
     "ejs": "^6.0.1",
     "express": "^5.2.1",
     "jsonwebtoken": "^9.0.3",
-    "morgan": "^1.11.0"
+    "morgan": "^1.11.0",
+    "reflect-metadata": "^0.2.2",
+    "swagger-jsdoc": "^6.3.0",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",
@@ -34,6 +37,8 @@
     "@types/jsonwebtoken": "^9.0.9",
     "@types/morgan": "^1.9.9",
     "@types/node": "^22.0.0",
+    "@types/swagger-jsdoc": "^6.0.4",
+    "@types/swagger-ui-express": "^4.1.8",
     "nodemon": "^3.1.14",
     "prisma": "6.19",
     "tsx": "^4.22.4",
