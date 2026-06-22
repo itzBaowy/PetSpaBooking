@@ -6,15 +6,24 @@ import prisma from "./../../connect.prisma.ts";
 
 export const authService = {
     async register(req: Request) {
-        const { userName, password, email } = req.body as { userName: string; password: string; email: string };
+        const { userName, password, email, phone } = req.body as { userName: string; password: string; email: string, phone: string };
         const userExist = await prisma.users.findUnique({ where: { userName } });
         if (userExist) {
             throw new BadRequestException("User already exists");
         }
+        const emailExist = await prisma.users.findUnique({ where: { email } });
+        if (emailExist) {
+            throw new BadRequestException("Email already exists");
+        }
+
+        const phoneExist = await prisma.users.findUnique({ where: { phone } });
+        if (phoneExist) {
+            throw new BadRequestException("Phone number already exists");
+        }
         const salt = bcrypt.genSaltSync(10);
         const hashPassword = bcrypt.hashSync(password, salt);
         const newUser = await prisma.users.create({
-            data: { userName, password: hashPassword, email },
+            data: { userName, password: hashPassword, email, phone },
         });
         const newUserId = newUser.id
         const tokens = tokenService.createTokens(newUserId);
