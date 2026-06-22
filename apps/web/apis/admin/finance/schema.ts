@@ -27,3 +27,19 @@ export const debtActionSchema = z.object({
 
 export type BalanceAdjustmentData = z.infer<typeof balanceAdjustmentSchema>;
 export type DebtActionData = z.infer<typeof debtActionSchema>;
+
+export const withdrawalDecisionSchema = z.object({
+  requestId: z.string().min(1),
+  decision: z.enum(["APPROVE", "REJECT"]),
+  reason: z.string().min(10, "Lý do phải có ít nhất 10 ký tự"),
+});
+
+export const depositConfigSchema = z.object({
+  minimumDeposit: z.number().min(0),
+  warningThreshold: z.number().min(0),
+  restrictionThreshold: z.number().min(0),
+  commissionRate: z.number().min(0).max(100),
+});
+
+export type WithdrawalDecisionData = z.infer<typeof withdrawalDecisionSchema>;
+export type DepositConfigData = z.infer<typeof depositConfigSchema>;

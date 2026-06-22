@@ -13,27 +13,24 @@ import {
   StatisticCard,
   StatisticCardGrid,
 } from "@/components/ui/statistic-card";
-import {
-  BOOKING_STATUS_LABELS,
-  BOOKING_STATUS_OPTIONS,
-} from "@/constants/booking-status";
 import { useAdminBookings } from "../queries";
 import type { AdminBooking } from "../queries";
+import { ADMIN_BOOKING_STATUS_LABELS } from "../schema";
 import { BookingStatusOverrideDialog } from "./booking-status-override-dialog";
 
 const bookingStatusStyles = {
-  BOOKED: "border-warning-soft bg-warning-soft text-warning",
+  PENDING: "border-warning-soft bg-warning-soft text-warning",
   CONFIRMED: "border-brand-soft bg-brand-soft text-brand",
   CHECKED_IN: "border-purple-100 bg-purple-50 text-purple-700",
-  IN_SERVICE: "border-purple-100 bg-purple-50 text-purple-700",
+  CHECKED_OUT: "border-info-soft bg-info-soft text-info",
   COMPLETED: "border-success-soft bg-success-soft text-success",
-  COMMISSION_CHARGED: "border-success-soft bg-success-soft text-success",
-  CANCELLED_BY_CUSTOMER: "border-danger-soft bg-danger-soft text-danger",
-  CANCELLED_BY_PROVIDER: "border-danger-soft bg-danger-soft text-danger",
-  NO_SHOW_REPORTED: "border-warning-soft bg-warning-soft text-warning",
-  DISPUTED: "border-danger-soft bg-danger-soft text-danger",
-  FAILED_APPROVED: "border-slate-200 bg-slate-100 text-slate-700",
+  CANCELLED: "border-danger-soft bg-danger-soft text-danger",
+  REJECTED: "border-danger-soft bg-danger-soft text-danger",
+  DISPUTE: "border-danger-soft bg-danger-soft text-danger",
+  NONE_ARRIVAL: "border-warning-soft bg-warning-soft text-warning",
 };
+
+const ADMIN_BOOKING_STATUS_OPTIONS = Object.entries(ADMIN_BOOKING_STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
 const paymentStatusStyles = {
   UNPAID: "border-gray-200 bg-gray-50 text-gray-700",
@@ -136,7 +133,7 @@ export function SystemBookingTable() {
         <span
           className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${bookingStatusStyles[booking.status]}`}
         >
-          {BOOKING_STATUS_LABELS[booking.status]}
+          {ADMIN_BOOKING_STATUS_LABELS[booking.status]}
         </span>
       ),
     },
@@ -155,7 +152,7 @@ export function SystemBookingTable() {
               onClick: () => setOverrideBooking(booking),
             },
             { label: "Mở tranh chấp" },
-            ...(booking.status === "NO_SHOW_REPORTED"
+            ...(booking.status === "NONE_ARRIVAL"
               ? [
                   {
                     label: "Duyệt vắng mặt",
@@ -221,7 +218,7 @@ export function SystemBookingTable() {
               defaultValue="ALL"
               options={[
                 { label: "Tất cả trạng thái", value: "ALL" },
-                ...BOOKING_STATUS_OPTIONS,
+                ...ADMIN_BOOKING_STATUS_OPTIONS,
               ]}
               onValueChange={(value) => {
                 setStatus(value);

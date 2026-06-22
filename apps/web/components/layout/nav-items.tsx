@@ -155,6 +155,8 @@ export const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Tài chính", href: "/admin/finance/ledger", icon: <IconCoin /> },
       { label: "Hoa hồng", href: "/admin/finance/commission", icon: <IconReceipt /> },
+      { label: "Rút tiền", href: "/admin/finance/withdrawals", icon: <IconReceipt /> },
+      { label: "Cấu hình ký quỹ", href: "/admin/finance/deposit-config", icon: <IconCoin /> },
     ],
   },
   {

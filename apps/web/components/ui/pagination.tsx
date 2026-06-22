@@ -62,7 +62,7 @@ export function Pagination({
     >
       {shouldShowPageSize && (
         <div className="flex items-center gap-2 text-sm font-medium text-muted">
-          <span>Rows per page</span>
+          <span>Số dòng mỗi trang</span>
           <CustomSelect
             className="w-24"
             defaultValue={String(pageSize)}
@@ -77,12 +77,12 @@ export function Pagination({
 
       {totalPages > 1 && (
         <nav
-          aria-label="Pagination"
+          aria-label="Phân trang"
           className="flex items-center justify-center gap-2"
         >
           <button
             type="button"
-            aria-label="Previous page"
+            aria-label="Trang trước"
             disabled={safePage === 1}
             onClick={() => onPageChange(safePage - 1)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface text-foreground shadow-sm transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
@@ -115,7 +115,7 @@ export function Pagination({
               <button
                 key={item}
                 type="button"
-                aria-label={`Page ${item}`}
+                aria-label={`Trang ${item}`}
                 aria-current={item === safePage ? "page" : undefined}
                 onClick={() => onPageChange(item)}
                 className={cn(
@@ -132,7 +132,7 @@ export function Pagination({
 
           <button
             type="button"
-            aria-label="Next page"
+            aria-label="Trang sau"
             disabled={safePage === totalPages}
             onClick={() => onPageChange(safePage + 1)}
             className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-border-subtle bg-surface text-foreground shadow-sm transition-colors hover:bg-surface-muted disabled:cursor-not-allowed disabled:opacity-40"
