@@ -8,6 +8,9 @@ export const authService = {
     async register(req: Request) {
         const { userName, password, email, phone } = req.body as { userName: string; password: string; email: string, phone: string };
         const userExist = await prisma.users.findUnique({ where: { userName } });
+        if (!userName || !password || !email || !phone) {
+            throw new BadRequestException("Please fill in all the required fields");
+        }
         if (userExist) {
             throw new BadRequestException("User already exists");
         }
@@ -33,7 +36,9 @@ export const authService = {
     async login(req: Request) {
         const { userName, password } = req.body as { userName: string; password: string };
         const userExist = await prisma.users.findUnique({ where: { userName } });
-
+        if (!userName || !password) {
+            throw new BadRequestException("Please fill in all the required fields");
+        }
         if (!userExist) {
             throw new UnauthorizedException("Incorrect username or password");
         }
