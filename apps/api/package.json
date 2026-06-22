@@ -12,7 +12,9 @@
     "db:migrate": "npx prisma migrate dev",
     "db:studio": "npx prisma studio",
     "db:seed": "ts-node prisma/seed.ts",
-    "db:sync": "npx prisma db push && npx prisma generate"
+    "db:sync": "npx prisma db push && npx prisma generate",
+    "db:clean": "ts-node prisma/clean.ts",
+    "db:reseed": "pnpm run db:clean && pnpm run db:seed"
   },
   "keywords": [],
   "author": "",
