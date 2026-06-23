@@ -69,6 +69,7 @@ export const authService = {
                 email: true,
                 phone: true,
                 createAt: true,
+                updateAt: true
             },
         });
 
