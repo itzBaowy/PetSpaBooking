@@ -10,7 +10,7 @@ RUN pnpm install
 
 COPY . .
 
-RUN pnpm db:sync
+RUN pnpm db:generate
 
 EXPOSE 3000
 
