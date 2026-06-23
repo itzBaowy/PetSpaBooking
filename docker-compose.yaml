@@ -1,19 +1,27 @@
 services:
+  backend:
+    build:
+      context: ./apps/api
+      dockerfile: Dockerfile
+    container_name: petspabooking-api
+    restart: unless-stopped
+    ports:
+      - "5500:5500"
+    env_file:
+      - ./apps/api/.env
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks:
+      - petspabooking-network
+
   mongo:
     image: mongo:8
     container_name: mongo-rs
     restart: unless-stopped
     ports:
       - "27018:27018"
-    command:
-      [
-        "mongod",
-        "--replSet",
-        "rs0",
-        "--bind_ip_all",
-        "--port",
-        "27018"
-      ]
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
     volumes:
       - mongo_data:/data/db
     healthcheck:
@@ -22,6 +30,8 @@ services:
       timeout: 10s
       retries: 30
       start_period: 10s
+    networks:
+      - petspabooking-network
 
   mongo-init:
     image: mongo:8
@@ -32,17 +42,23 @@ services:
     restart: "no"
     command: >
       mongosh --host mongo --port 27018 --quiet --eval "
-        try {
-          rs.status().ok
-        } catch (e) {
-          rs.initiate({
-            _id: 'rs0',
-            members: [
-              { _id: 0, host: 'localhost:27018' }
-            ]
-          }).ok
-        }
+      try {
+        rs.status().ok
+      } catch (e) {
+        rs.initiate({
+          _id: 'rs0',
+          members: [
+            { _id: 0, host: 'mongo:27018' }
+          ]
+        }).ok
+      }
       "
+    networks:
+      - petspabooking-network
 
 volumes:
   mongo_data:
+
+networks:
+  petspabooking-network:
+    driver: bridge
