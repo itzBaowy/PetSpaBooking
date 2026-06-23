@@ -1,50 +1,160 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-soft: #f1f5f9;
+  --foreground-muted: #64748b;
+  --foreground-subtle: #94a3b8;
+  --border-subtle: #e5e7eb;
+  --border-muted: #cbd5e1;
+  --brand: #22c55e;
+  --brand-hover: #16a34a;
+  --brand-soft: #ecfdf5;
+  --brand-foreground: #ffffff;
+  --secondary: #2d9cdb;
+  --secondary-soft: #eef8fe;
+  --shell: #ffffff;
+  --shell-strong: rgba(255, 255, 255, 0.9);
+  --shell-border: #e5e7eb;
+  --shell-muted: #64748b;
+  --success: #16a34a;
+  --success-soft: #f0fdf4;
+  --warning: #d97706;
+  --warning-soft: #fffbeb;
+  --danger: #dc2626;
+  --danger-soft: #fef2f2;
+  --info: #2d9cdb;
+  --info-soft: #eef8fe;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-surface-soft: var(--surface-soft);
+  --color-muted: var(--foreground-muted);
+  --color-subtle: var(--foreground-subtle);
+  --color-border-subtle: var(--border-subtle);
+  --color-border-muted: var(--border-muted);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+  --color-brand-soft: var(--brand-soft);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-soft: var(--secondary-soft);
+  --color-shell: var(--shell);
+  --color-shell-strong: var(--shell-strong);
+  --color-shell-border: var(--shell-border);
+  --color-shell-muted: var(--shell-muted);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: #0a0a0a;
+  --foreground: #f8fafc;
+  --surface: #171717;
+  --surface-muted: #222222;
+  --surface-soft: #2a2a2a;
+  --foreground-muted: #a1a1aa;
+  --foreground-subtle: #8f8f8f;
+  --border-subtle: #2a2a2a;
+  --border-muted: #444444;
+  --brand: #5dd66d;
+  --brand-hover: #4fb45d;
+  --brand-soft: #1d2a1f;
+  --brand-foreground: #ffffff;
+  --secondary: #b3b3b3;
+  --secondary-soft: #2a2a2a;
+  --shell: #111111;
+  --shell-strong: #111111;
+  --shell-border: #2a2a2a;
+  --shell-muted: #a1a1aa;
+  --success: #5bc66a;
+  --success-soft: #1d2a1f;
+  --warning: #fbbf24;
+  --warning-soft: #3b2b0d;
+  --danger: #f87171;
+  --danger-soft: #3b1719;
+  --info: #93c5fd;
+  --info-soft: #2a2a2a;
+}
+
+* {
+  border-color: var(--border-subtle);
 }
 
 html,
 body {
-  max-width: 100vw;
-  overflow-x: hidden;
+  background: var(--background);
+  color: var(--foreground);
 }
 
 body {
+  font-family:
+    var(--font-geist-sans),
+    system-ui,
+    -apple-system,
+    sans-serif;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--brand);
+}
+
+/* Compatibility layer for legacy utility classes while screens migrate to tokens. */
+.dark
+  :where(
+    .bg-white,
+    .bg-gray-50,
+    .bg-gray-50\/50,
+    .bg-gray-50\/70,
+    .bg-gray-50\/75
+  ) {
+  background-color: var(--surface);
+}
+
+.dark :where(.bg-gray-100, .bg-gray-200) {
+  background-color: var(--surface-muted);
+}
+
+.dark :where(.bg-gray-900, .bg-gray-950) {
+  background-color: var(--surface-soft);
+}
+
+.dark :where(.text-gray-950, .text-gray-900, .text-gray-800) {
   color: var(--foreground);
-  background: var(--background);
 }
 
-* {
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
+.dark :where(.text-gray-700, .text-gray-600, .text-gray-500) {
+  color: var(--foreground-muted);
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
+.dark :where(.text-gray-400, .text-gray-300) {
+  color: var(--foreground-subtle);
 }
 
-.imgDark {
-  display: none;
+.dark :where(.border-gray-50, .border-gray-100, .border-gray-200) {
+  border-color: var(--border-subtle);
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
-
-  .imgLight {
-    display: none;
-  }
-  .imgDark {
-    display: unset;
-  }
+.dark :where(.border-gray-300) {
+  border-color: var(--border-muted);
 }

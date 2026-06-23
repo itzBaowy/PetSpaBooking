@@ -1,0 +1,159 @@
+Bạn là coding agent trong dự án PetLink.
+
+Trước khi code, hãy đọc và tuân thủ các file context sau:
+
+* `agent-context.md`
+* `architecture.md`
+* `rules.md`
+* `ui-guideline.md`
+* `feature-mapping_updated.md`
+* `task_updated.md`
+* `current-state.md`
+
+---
+
+## Nhiệm vụ
+
+Tôi muốn làm tính năng mới cho role:
+
+`[GHI ROLE Ở ĐÂY: PET_OWNER | SERVICE_PROVIDER | ADMIN | GUEST]`
+
+Tên tính năng:
+
+`[GHI TÊN TÍNH NĂNG Ở ĐÂY]`
+
+Mô tả nghiệp vụ:
+
+`[MÔ TẢ NGẮN TÍNH NĂNG MUỐN LÀM]`
+
+Route mong muốn nếu có:
+
+`[VD: app/(dashboard)/admin/finance/ledger/page.tsx]`
+
+---
+
+## Yêu cầu bắt buộc
+
+### Trước khi code
+
+1. Kiểm tra cây thư mục hiện tại trước khi tạo file mới.
+2. Tìm component có thể tái sử dụng trong:
+   - `components/ui`
+   - `components/common`
+   - `components/layout`
+   - `apis/` (tìm component tương tự ở feature khác)
+3. Không tạo component trùng chức năng.
+
+### Quy tắc đặt file
+
+4. UI thuần → `components/ui`
+5. Component business dùng nhiều feature → `components/common`
+6. Component riêng của tính năng → `apis/[role]/[feature]/components/`
+7. Query/mutation → `apis/[role]/[feature]/queries.ts`
+8. Zod schema → `apis/[role]/[feature]/schema.ts`
+9. `page.tsx` chỉ compose feature components, không chứa business logic.
+
+### Quy tắc state & data
+
+10. Dùng TanStack Query cho server state.
+11. Không gọi Axios trực tiếp trong `page.tsx` hoặc UI components.
+12. Dùng axios instance từ `lib/axios.ts`.
+13. Không lưu server data vào Zustand.
+14. Global client state mới đặt trong `stores/`.
+
+### Quy tắc type & validation
+
+15. Không dùng `any`.
+16. Dùng Zod cho schema validation.
+17. Không dùng React Hook Form trừ khi đã cài trong `package.json`.
+18. Shared types đặt trong `types/`.
+19. Shared constants đặt trong `constants/`.
+
+### Quy tắc Booking Status (QUAN TRỌNG)
+
+20. Chỉ dùng các booking status sau:
+    - `BOOKED` (không dùng PENDING)
+    - `CONFIRMED`
+    - `CHECKED_IN`
+    - `IN_SERVICE` (không dùng IN_PROGRESS)
+    - `COMPLETED`
+    - `COMMISSION_CHARGED`
+    - `CANCELLED_BY_CUSTOMER` (không dùng CANCELLED chung)
+    - `CANCELLED_BY_PROVIDER` (không dùng REJECTED)
+    - `NO_SHOW_REPORTED`
+    - `DISPUTED`
+    - `FAILED_APPROVED`
+
+### Quy tắc nghiệp vụ Cash Booking
+
+21. Nếu liên quan đến CASH booking:
+    - Kiểm tra `provider.availableBalance >= estimatedCommission + provider.safetyBuffer` trước khi cho chọn CASH.
+    - Nếu không đủ → ẩn option CASH, không block booking online.
+    - Khi `CONFIRMED` (CASH) → reserve commission.
+    - Khi `COMPLETED` (CASH) → charge commission, ghi ledger.
+    - Khi hủy hợp lệ / no-show approved → release reserve.
+
+22. Nếu liên quan đến QR/OTP Check-in:
+    - Sau `CHECKED_IN`, provider không được tự chuyển sang FAILED.
+    - Provider chỉ báo no-show khi khách chưa check-in.
+    - Sau check-in có vấn đề → chỉ tạo dispute kèm bằng chứng.
+
+### Quy tắc Ledger
+
+23. Mọi thay đổi số dư phải ghi ledger entry với type phù hợp:
+    - `TOPUP`, `RESERVE_COMMISSION`, `RELEASE_RESERVE`, `CHARGE_COMMISSION`, `PAYOUT`, `DEBT_OFFSET`, `ADMIN_ADJUSTMENT`
+    - Admin adjustment phải kèm `admin_id` và `reason` trong metadata.
+
+### Quy tắc role
+
+24. Làm đúng role nghiệp vụ:
+    - `PET_OWNER` cho chủ thú cưng.
+    - `SERVICE_PROVIDER` cho nhà cung cấp dịch vụ.
+    - `ADMIN` cho quản trị viên.
+    - `GUEST` cho người chưa đăng nhập.
+25. Không tạo role `USER`.
+26. Không dùng `REJECTED` làm booking status.
+
+---
+
+## Sau khi code xong
+
+Bắt buộc cập nhật `current-state.md` với các nội dung:
+
+```txt
+## Feature: [Tên tính năng]
+
+Role: [Admin | Provider | Pet Owner | Guest]
+Status: Done / In Progress / Blocked
+
+Files created:
+- ...
+
+Files modified:
+- ...
+
+Components reused:
+- ...
+
+API endpoints used:
+- GET /...
+- POST /...
+
+Query keys used:
+- ["...", "...", "..."]
+
+Types added or reused:
+- ...
+
+Libraries used:
+- ...
+
+Notes:
+- ...
+
+Known issues:
+- ...
+
+Next steps:
+- ...
+```
