@@ -8,6 +8,9 @@ export const authService = {
     async register(req: Request) {
         const { userName, password, email, phone } = req.body as { userName: string; password: string; email: string, phone: string };
         const userExist = await prisma.users.findUnique({ where: { userName } });
+        if (!userName || !password || !email || !phone) {
+            throw new BadRequestException("Please fill in all the required fields");
+        }
         if (userExist) {
             throw new BadRequestException("User already exists");
         }
@@ -33,7 +36,9 @@ export const authService = {
     async login(req: Request) {
         const { userName, password } = req.body as { userName: string; password: string };
         const userExist = await prisma.users.findUnique({ where: { userName } });
-
+        if (!userName || !password) {
+            throw new BadRequestException("Please fill in all the required fields");
+        }
         if (!userExist) {
             throw new UnauthorizedException("Incorrect username or password");
         }
@@ -49,9 +54,28 @@ export const authService = {
     },
 
     async getInfo(req: Request) {
-        // req.user được gán bởi protect middleware
-        const user = (req as Request & { user?: unknown }).user;
-        delete (user as { password?: string }).password;
+        // req.user là JWT payload: { userId, iat, exp } — được gán bởi protect middleware
+        const payload = (req as Request & { user?: { userId?: string } }).user;
+        const userId = payload?.userId;
+        if (!userId) {
+            throw new UnauthorizedException("Unauthorized");
+        }
+
+        const user = await prisma.users.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                userName: true,
+                email: true,
+                phone: true,
+                createAt: true,
+            },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException("User not found");
+        }
+
         return user;
     },
 };

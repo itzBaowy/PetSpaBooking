@@ -106,7 +106,7 @@ authRouter.post("/login", authController.login);
  *     summary: Get current authenticated user info
  *     tags: [Auth]
  *     security:
- *       - BearerAuth: []
+ *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: User info retrieved successfully

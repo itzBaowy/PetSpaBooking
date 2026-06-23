@@ -38,9 +38,9 @@ export const swaggerOptions = {
         },
         LoginRequest: {
           type: 'object',
-          required: ['email', 'password'],
+          required: ['userName', 'password'],
           properties: {
-            email:    { type: 'string', format: 'email', example: 'john@example.com' },
+            userName: { type: 'string', example: 'johndoe' },
             password: { type: 'string', format: 'password', example: 'secret123' },
           },
         },
