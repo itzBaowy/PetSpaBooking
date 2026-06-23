@@ -13,7 +13,7 @@ export const swaggerOptions = {
     servers: [
       mode === 'development'
         ? { url: 'http://localhost:5500', description: 'Development server' }
-        : { url: 'https://petspa-booking.onrender.com', description: 'Production server' }
+        : { url:  process.env.API_URL, description: 'Production server' }
     ],
     components: {
       securitySchemes: {
