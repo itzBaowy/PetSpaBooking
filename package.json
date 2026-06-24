@@ -12,7 +12,8 @@
     "db:seed": "pnpm --filter api db:seed",
     "db:clean": "pnpm --filter api db:clean",
     "db:reseed": "pnpm --filter api db:reseed",
-    "db:studio": "pnpm --filter api db:studio"
+    "db:studio": "pnpm --filter api db:studio",
+    "docker:dev": "pnpm --filter api docker:dev"
   },
   "devDependencies": {
     "prettier": "^3.7.4",
