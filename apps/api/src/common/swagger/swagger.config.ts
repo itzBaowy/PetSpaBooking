@@ -151,6 +151,126 @@ export const swaggerOptions = {
             },
           },
         },
+
+        // ── Provider schemas ──────────────────────────────────────────────────
+        ProviderObject: {
+          type: 'object',
+          properties: {
+            id:               { type: 'string', example: '507f1f77bcf86cd799439011' },
+            userId:           { type: 'string', example: '507f1f77bcf86cd799439012' },
+            businessName:     { type: 'string', example: 'Happy Pet Spa' },
+            slug:             { type: 'string', example: 'happy-pet-spa' },
+            description:      { type: 'string', nullable: true, example: 'Professional pet grooming' },
+            avatarUrl:        { type: 'string', nullable: true, example: 'https://res.cloudinary.com/.../avatar.jpg' },
+            coverImageUrl:    { type: 'string', nullable: true, example: 'https://res.cloudinary.com/.../cover.jpg' },
+            phone:            { type: 'string', nullable: true, example: '0901234567' },
+            email:            { type: 'string', nullable: true, example: 'shop@example.com' },
+            address:          { type: 'string', nullable: true, example: '123 Nguyen Trai, Q5, HCM' },
+            lat:              { type: 'number', nullable: true, example: 10.762622 },
+            lng:              { type: 'number', nullable: true, example: 106.660172 },
+            providerStatus:   { type: 'string', enum: ['PENDING_VERIFICATION', 'VERIFIED', 'REJECTED', 'SUSPENDED'], example: 'PENDING_VERIFICATION' },
+            depositStatus:    { type: 'string', enum: ['NOT_PAID', 'ACTIVE', 'LOW_BALANCE', 'RESTRICTED'], example: 'NOT_PAID' },
+            depositBalance:   { type: 'number', example: 0 },
+            walletBalance:    { type: 'number', example: 0 },
+            cancellationRate: { type: 'number', example: 0 },
+            adminNote:        { type: 'string', nullable: true, example: null },
+            createAt:         { type: 'string', format: 'date-time' },
+            updateAt:         { type: 'string', format: 'date-time' },
+          },
+        },
+
+        ProviderDocumentObject: {
+          type: 'object',
+          properties: {
+            id:           { type: 'string', example: '507f1f77bcf86cd799439013' },
+            providerId:   { type: 'string', example: '507f1f77bcf86cd799439011' },
+            documentType: { type: 'string', enum: ['business_license', 'id_card_front', 'id_card_back', 'tax_code', 'other'], example: 'business_license' },
+            imageUrl:     { type: 'string', example: 'https://res.cloudinary.com/.../doc.jpg' },
+            status:       { type: 'string', enum: ['PENDING', 'APPROVED', 'REJECTED'], example: 'PENDING' },
+            adminNote:    { type: 'string', nullable: true, example: null },
+            createAt:     { type: 'string', format: 'date-time' },
+            updateAt:     { type: 'string', format: 'date-time' },
+          },
+        },
+
+        ProviderDetailObject: {
+          allOf: [
+            { '$ref': '#/components/schemas/ProviderObject' },
+            {
+              type: 'object',
+              properties: {
+                documents: {
+                  type: 'array',
+                  items: { '$ref': '#/components/schemas/ProviderDocumentObject' },
+                },
+              },
+            },
+          ],
+        },
+
+        ProviderListResponse: {
+          type: 'object',
+          properties: {
+            page:      { type: 'integer', example: 1 },
+            pageSize:  { type: 'integer', example: 10 },
+            totalItem: { type: 'integer', example: 20 },
+            totalPage: { type: 'integer', example: 2 },
+            items: { type: 'array', items: { '$ref': '#/components/schemas/ProviderObject' } },
+          },
+        },
+
+        RegisterProviderRequest: {
+          type: 'object',
+          required: ['businessName'],
+          properties: {
+            businessName: { type: 'string', example: 'Happy Pet Spa' },
+            description:  { type: 'string', example: 'Professional pet grooming and spa service' },
+            phone:        { type: 'string', example: '0901234567' },
+            email:        { type: 'string', format: 'email', example: 'shop@example.com' },
+            address:      { type: 'string', example: '123 Nguyen Trai, Q5, HCM' },
+            lat:          { type: 'number', example: 10.762622 },
+            lng:          { type: 'number', example: 106.660172 },
+          },
+        },
+
+        UpdateProviderRequest: {
+          type: 'object',
+          properties: {
+            businessName:  { type: 'string', example: 'Happy Pet Spa Updated' },
+            description:   { type: 'string', example: 'Updated description' },
+            avatarUrl:     { type: 'string', example: 'https://res.cloudinary.com/.../avatar.jpg' },
+            coverImageUrl: { type: 'string', example: 'https://res.cloudinary.com/.../cover.jpg' },
+            phone:         { type: 'string', example: '0901234567' },
+            email:         { type: 'string', example: 'new@example.com' },
+            address:       { type: 'string', example: '456 Le Van Sy, Q3, HCM' },
+            lat:           { type: 'number', example: 10.762622 },
+            lng:           { type: 'number', example: 106.660172 },
+          },
+        },
+
+        UploadDocumentRequest: {
+          type: 'object',
+          required: ['documentType', 'imageUrl'],
+          properties: {
+            documentType: { type: 'string', enum: ['business_license', 'id_card_front', 'id_card_back', 'tax_code', 'other'], example: 'business_license' },
+            imageUrl:     { type: 'string', example: 'https://res.cloudinary.com/.../doc.jpg', description: 'Cloudinary URL after frontend upload' },
+          },
+        },
+
+        RejectProviderRequest: {
+          type: 'object',
+          required: ['reason'],
+          properties: {
+            reason: { type: 'string', example: 'Documents are not clear or incomplete' },
+          },
+        },
+
+        SuspendProviderRequest: {
+          type: 'object',
+          properties: {
+            reason: { type: 'string', example: 'Violation of platform terms' },
+          },
+        },
       },
     },
   },
