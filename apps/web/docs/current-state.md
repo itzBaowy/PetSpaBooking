@@ -460,3 +460,33 @@ Next steps:
 - No backend API was introduced; verification state remains mocked.
 - Provider registration now includes password confirmation and blocks submission when passwords do not match.
 - Login and registration reuse a shared `PasswordInput` with accessible eye/eye-off visibility icons.
+
+## Feature: Admin SRS Finance & Booking Alignment
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/finance/components/withdrawal-management-page.tsx
+- apis/admin/finance/components/deposit-config-page.tsx
+- app/(dashboard)/admin/finance/withdrawals/page.tsx
+- app/(dashboard)/admin/finance/deposit-config/page.tsx
+
+Files modified:
+- apis/admin/bookings/schema.ts
+- apis/admin/bookings/queries.ts
+- apis/admin/bookings/components/system-booking-table.tsx
+- apis/admin/bookings/components/booking-status-override-dialog.tsx
+- apis/admin/finance/schema.ts
+- apis/admin/finance/queries.ts
+- components/layout/nav-items.tsx
+
+API endpoints used:
+- None. Mock UI only.
+
+Notes:
+- Admin booking monitoring now uses the SRS lifecycle: PENDING, CONFIRMED, CHECKED_IN, CHECKED_OUT, COMPLETED, CANCELLED, REJECTED, DISPUTE, NONE_ARRIVAL.
+- Added mock approval/rejection workflow for provider withdrawal requests.
+- Added mock configuration for minimum deposit and warning/restriction thresholds.
+- Changes are scoped to Admin and do not alter Provider/Customer operations.
+- Localized audit-log actor roles, action filters, mock names/notes, and pagination labels to Vietnamese; audit-log filters now work against mock data.

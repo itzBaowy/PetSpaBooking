@@ -19,7 +19,7 @@ const actionStyles = {
   ACCOUNT_LOCKED: "border-gray-200 bg-gray-50 text-gray-700",
 };
 
-const actionLabels = {
+const actionLabels: Record<AuditLogItem["actionType"], string> = {
   CONTENT_APPROVED: "Duyệt nội dung",
   CONTENT_HIDDEN: "Ẩn nội dung",
   REPORT_RESOLVED: "Xử lý báo cáo",
@@ -28,13 +28,29 @@ const actionLabels = {
   ACCOUNT_LOCKED: "Khóa tài khoản",
 };
 
+const roleLabels: Record<AuditLogItem["actorRole"], string> = {
+  ADMIN: "Quản trị viên",
+  PET_OWNER: "Chủ thú cưng",
+  SERVICE_PROVIDER: "Nhà cung cấp dịch vụ",
+};
+
 export function AuditLogTable() {
   const auditLogs = useAuditLogs();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(3);
-  const total = auditLogs.data.length;
-  const totalPages = Math.ceil(total / pageSize);
-  const records = auditLogs.data.slice((page - 1) * pageSize, page * pageSize);
+  const [search, setSearch] = useState("");
+  const [role, setRole] = useState("ALL");
+  const [action, setAction] = useState("ALL");
+  const filteredLogs = auditLogs.data.filter((log) => {
+    const matchesRole = role === "ALL" || log.actorRole === role;
+    const matchesAction = action === "ALL" || log.actionType === action;
+    const matchesSearch = [log.id, log.actorName, log.target, log.note, actionLabels[log.actionType]]
+      .join(" ").toLowerCase().includes(search.toLowerCase());
+    return matchesRole && matchesAction && matchesSearch;
+  });
+  const total = filteredLogs.length;
+  const totalPages = Math.max(1, Math.ceil(total / pageSize));
+  const records = filteredLogs.slice((page - 1) * pageSize, page * pageSize);
   const columns: Array<DataTableColumn<AuditLogItem>> = [
     {
       key: "id",
@@ -51,7 +67,7 @@ export function AuditLogTable() {
       render: (log) => (
         <div>
           <p className="font-semibold text-gray-900">{log.actorName}</p>
-          <p className="text-xs text-gray-500">{log.actorRole}</p>
+          <p className="text-xs text-gray-500">{roleLabels[log.actorRole]}</p>
         </div>
       ),
     },
@@ -104,29 +120,22 @@ export function AuditLogTable() {
         <div className="flex flex-col gap-3 rounded-xl border border-border-subtle bg-surface p-4 shadow-sm xl:flex-row xl:items-center xl:justify-between">
           <div className="flex flex-col gap-2 md:flex-row">
             <SearchInput
-              value=""
-              onChange={() => undefined}
+              value={search}
+              onChange={(value) => { setSearch(value); setPage(1); }}
               className="md:w-96"
               placeholder="Tìm hành động, người thực hiện, đối tượng..."
             />
             <CustomSelect
               className="md:w-48"
-              options={[
-                "Tất cả vai trò",
-                "ADMIN",
-                "PET_OWNER",
-                "SERVICE_PROVIDER",
-              ]}
+              value={role}
+              options={[{ label: "Tất cả vai trò", value: "ALL" }, { label: "Quản trị viên", value: "ADMIN" }, { label: "Chủ thú cưng", value: "PET_OWNER" }, { label: "Nhà cung cấp dịch vụ", value: "SERVICE_PROVIDER" }]}
+              onValueChange={(value) => { setRole(value); setPage(1); }}
             />
             <CustomSelect
               className="md:w-64"
-              options={[
-                "Tất cả hành động",
-                "DISPUTE_REFUNDED",
-                "BOOKING_STATUS_UPDATED",
-                "CONTENT_HIDDEN",
-                "REPORT_RESOLVED",
-              ]}
+              value={action}
+              options={[{ label: "Tất cả hành động", value: "ALL" }, ...Object.entries(actionLabels).map(([value, label]) => ({ value, label }))]}
+              onValueChange={(value) => { setAction(value); setPage(1); }}
             />
           </div>
         </div>

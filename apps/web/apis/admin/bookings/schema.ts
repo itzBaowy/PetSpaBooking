@@ -1,17 +1,15 @@
 import { z } from "zod";
 
 export const adminBookingStatusSchema = z.enum([
-  "BOOKED",
+  "PENDING",
   "CONFIRMED",
   "CHECKED_IN",
-  "IN_SERVICE",
+  "CHECKED_OUT",
   "COMPLETED",
-  "COMMISSION_CHARGED",
-  "CANCELLED_BY_CUSTOMER",
-  "CANCELLED_BY_PROVIDER",
-  "NO_SHOW_REPORTED",
-  "DISPUTED",
-  "FAILED_APPROVED",
+  "CANCELLED",
+  "REJECTED",
+  "DISPUTE",
+  "NONE_ARRIVAL",
 ]);
 
 export const disputeResolutionSchema = z.object({
@@ -37,6 +35,11 @@ export const bookingStatusOverrideSchema = z.object({
 });
 
 export type AdminBookingStatus = z.infer<typeof adminBookingStatusSchema>;
+export const ADMIN_BOOKING_STATUS_LABELS: Record<AdminBookingStatus, string> = {
+  PENDING: "Chờ xác nhận", CONFIRMED: "Đã xác nhận", CHECKED_IN: "Đã check-in",
+  CHECKED_OUT: "Đã check-out", COMPLETED: "Hoàn tất", CANCELLED: "Khách hủy",
+  REJECTED: "Nhà cung cấp từ chối", DISPUTE: "Đang khiếu nại", NONE_ARRIVAL: "Khách không đến",
+};
 export type DisputeResolutionData = z.infer<typeof disputeResolutionSchema>;
 export type NoShowResolutionData = z.infer<typeof noShowResolutionSchema>;
 export type BookingStatusOverrideData = z.infer<
