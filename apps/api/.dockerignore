@@ -1,0 +1,11 @@
+node_modules
+.pnpm-store
+generated
+dist
+build
+coverage
+.env
+.env.*
+*.log
+Dockerfile
+.dockerignore

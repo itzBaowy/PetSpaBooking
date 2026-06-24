@@ -2,16 +2,16 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-RUN npm install -g pnpm@9
+RUN corepack enable && corepack prepare pnpm@9.15.9 --activate
 
 COPY package.json ./
 
-RUN pnpm install
+RUN pnpm install --prod=false
 
 COPY . .
 
 RUN pnpm db:generate
 
-EXPOSE 3000
+EXPOSE 5500
 
 CMD ["pnpm", "start"]

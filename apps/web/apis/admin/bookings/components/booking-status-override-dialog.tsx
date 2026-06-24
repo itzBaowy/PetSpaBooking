@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { CustomSelect } from "@/components/ui/custom-select";
-import { BOOKING_STATUS_OPTIONS } from "@/constants/booking-status";
+import { ADMIN_BOOKING_STATUS_LABELS } from "../schema";
 import { bookingStatusOverrideSchema } from "../schema";
 import { useOverrideBookingStatus } from "../queries";
 import type { AdminBooking } from "../queries";
@@ -69,7 +69,7 @@ export function BookingStatusOverrideDialog({
             <span className="text-sm font-semibold text-muted">Trạng thái</span>
             <CustomSelect
               defaultValue={status}
-              options={BOOKING_STATUS_OPTIONS}
+              options={Object.entries(ADMIN_BOOKING_STATUS_LABELS).map(([value, label]) => ({ value, label }))}
               onValueChange={(value) =>
                 setStatus(value as AdminBooking["status"])
               }

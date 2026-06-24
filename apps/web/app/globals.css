@@ -106,6 +106,33 @@ body {
   color: var(--foreground);
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* The marketing site is intentionally light, independent from dashboard theme. */
+.public-landing {
+  color-scheme: light;
+  --background: #ffffff;
+  --foreground: #10251a;
+  --surface: #ffffff;
+  --surface-muted: #f8fafc;
+  --surface-soft: #f1f5f9;
+  --foreground-muted: #64748b;
+  --foreground-subtle: #94a3b8;
+  --border-subtle: #e5e7eb;
+  --border-muted: #cbd5e1;
+  --brand: #22c55e;
+  --brand-hover: #16a34a;
+  --brand-soft: #ecfdf5;
+}
+
 body {
   font-family:
     var(--font-geist-sans),

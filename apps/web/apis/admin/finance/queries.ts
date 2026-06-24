@@ -4,6 +4,18 @@ import { useMutation, useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
+
+export interface WithdrawalRequest {
+  id: string; providerName: string; amount: number; availableBalance: number;
+  bankName: string; bankAccount: string; requestedAt: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | "PAID";
+}
+
+export const withdrawalMockItems: WithdrawalRequest[] = [
+  { id: "WD-24018", providerName: "Happy Paws Spa", amount: 8500000, availableBalance: 12400000, bankName: "Vietcombank", bankAccount: "**** 4821", requestedAt: "21/06/2026 09:20", status: "PENDING" },
+  { id: "WD-24012", providerName: "VetCare 24h", amount: 5200000, availableBalance: 9100000, bankName: "MB Bank", bankAccount: "**** 1706", requestedAt: "20/06/2026 14:05", status: "APPROVED" },
+  { id: "WD-23998", providerName: "Pet Hotel Luna", amount: 3000000, availableBalance: 6800000, bankName: "Techcombank", bankAccount: "**** 8830", requestedAt: "19/06/2026 10:30", status: "PAID" },
+];
 import type { LedgerTransaction } from "@/types/ledger";
 import type { ProviderBalance, ProviderTrustScore } from "@/types/provider";
 import { balanceAdjustmentSchema, debtActionSchema } from "./schema";
