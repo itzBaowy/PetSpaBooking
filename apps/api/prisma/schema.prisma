@@ -59,4 +59,19 @@ model provider_documents {
   adminNote    String?
   createAt     DateTime @default(now())
   updateAt     DateTime @updatedAt
-}
+}
+
+model services {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  providerId      String   @db.ObjectId
+  name            String
+  description     String?
+  price           Float
+  duration        Int
+  category        String   @default("OTHER")
+  imageUrls       String[]
+  isActive        Boolean  @default(true)
+  isHiddenByAdmin Boolean  @default(false)
+  createAt        DateTime @default(now())
+  updateAt        DateTime @updatedAt
+}

@@ -271,6 +271,65 @@ export const swaggerOptions = {
             reason: { type: 'string', example: 'Violation of platform terms' },
           },
         },
+
+        // ── Service schemas ───────────────────────────────────────────────────
+        ServiceObject: {
+          type: 'object',
+          properties: {
+            id:              { type: 'string', example: '507f1f77bcf86cd799439020' },
+            providerId:      { type: 'string', example: '507f1f77bcf86cd799439011' },
+            name:            { type: 'string', example: 'Dog Grooming Basic' },
+            description:     { type: 'string', nullable: true, example: 'Full bath, blow-dry, and nail trim' },
+            price:           { type: 'number', example: 150000, description: 'Price in VND' },
+            duration:        { type: 'integer', example: 60, description: 'Duration in minutes' },
+            category:        { type: 'string', enum: ['GROOMING', 'SPA', 'BOARDING', 'TRAINING', 'VETERINARY', 'OTHER'], example: 'GROOMING' },
+            imageUrls:       { type: 'array', items: { type: 'string' }, example: ['https://res.cloudinary.com/.../img1.jpg'] },
+            isActive:        { type: 'boolean', example: true, description: 'Provider can toggle visibility' },
+            isHiddenByAdmin: { type: 'boolean', example: false, description: 'Admin can hide violating services' },
+            createAt:        { type: 'string', format: 'date-time', example: '2026-01-01T00:00:00.000Z' },
+            updateAt:        { type: 'string', format: 'date-time', example: '2026-06-01T00:00:00.000Z' },
+          },
+        },
+
+        ServiceListResponse: {
+          type: 'object',
+          properties: {
+            page:      { type: 'integer', example: 1 },
+            pageSize:  { type: 'integer', example: 10 },
+            totalItem: { type: 'integer', example: 25 },
+            totalPage: { type: 'integer', example: 3 },
+            items: {
+              type: 'array',
+              items: { '$ref': '#/components/schemas/ServiceObject' },
+            },
+          },
+        },
+
+        CreateServiceRequest: {
+          type: 'object',
+          required: ['name', 'price', 'duration'],
+          properties: {
+            name:        { type: 'string', example: 'Dog Grooming Basic' },
+            description: { type: 'string', example: 'Full bath, blow-dry, and nail trim' },
+            price:       { type: 'number', minimum: 0, example: 150000, description: 'Price in VND (non-negative)' },
+            duration:    { type: 'integer', minimum: 1, example: 60, description: 'Duration in minutes (positive)' },
+            category:    { type: 'string', enum: ['GROOMING', 'SPA', 'BOARDING', 'TRAINING', 'VETERINARY', 'OTHER'], example: 'GROOMING', description: 'Defaults to OTHER if omitted' },
+            imageUrls:   { type: 'array', items: { type: 'string' }, example: ['https://res.cloudinary.com/.../img1.jpg'], description: 'Cloudinary URLs uploaded by frontend' },
+          },
+        },
+
+        UpdateServiceRequest: {
+          type: 'object',
+          description: 'All fields are optional. Only provided fields will be updated.',
+          properties: {
+            name:        { type: 'string', example: 'Dog Grooming Premium' },
+            description: { type: 'string', example: 'Updated description' },
+            price:       { type: 'number', minimum: 0, example: 200000 },
+            duration:    { type: 'integer', minimum: 1, example: 90 },
+            category:    { type: 'string', enum: ['GROOMING', 'SPA', 'BOARDING', 'TRAINING', 'VETERINARY', 'OTHER'], example: 'SPA' },
+            imageUrls:   { type: 'array', items: { type: 'string' }, example: ['https://res.cloudinary.com/.../new.jpg'] },
+          },
+        },
       },
     },
   },
