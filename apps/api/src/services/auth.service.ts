@@ -68,6 +68,10 @@ export const authService = {
                 userName: true,
                 email: true,
                 phone: true,
+                fullName: true,
+                avatar: true,
+                role: true,
+                status: true,
                 createAt: true,
                 updateAt: true
             },
