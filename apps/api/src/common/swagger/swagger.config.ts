@@ -73,10 +73,82 @@ export const swaggerOptions = {
         UserInfo: {
           type: 'object',
           properties: {
-            id:        { type: 'string', example: 'cuid_abc123' },
+            id:        { type: 'string', example: '507f1f77bcf86cd799439011' },
             userName:  { type: 'string', example: 'johndoe' },
             email:     { type: 'string', format: 'email', example: 'john@example.com' },
             createdAt: { type: 'string', format: 'date-time', example: '2024-01-01T00:00:00.000Z' },
+          },
+        },
+
+        // ── User CRUD schemas ────────────────────────────────────────────────
+        UserObject: {
+          type: 'object',
+          properties: {
+            id:        { type: 'string', example: '507f1f77bcf86cd799439011' },
+            userName:  { type: 'string', example: 'johndoe' },
+            email:     { type: 'string', format: 'email', example: 'john@example.com' },
+            phone:     { type: 'string', nullable: true, example: '0901234567' },
+            fullName:  { type: 'string', nullable: true, example: 'John Doe' },
+            avatar:    { type: 'string', nullable: true, example: 'https://example.com/avatar.jpg' },
+            role:      { type: 'string', enum: ['CUSTOMER', 'ADMIN', 'PROVIDER'], example: 'CUSTOMER' },
+            status:    { type: 'string', enum: ['ACTIVE', 'INACTIVE', 'BANNED'], example: 'ACTIVE' },
+            createAt:  { type: 'string', format: 'date-time', example: '2026-01-01T00:00:00.000Z' },
+            updateAt:  { type: 'string', format: 'date-time', example: '2026-06-01T00:00:00.000Z' },
+          },
+        },
+
+        UserListResponse: {
+          type: 'object',
+          properties: {
+            page:      { type: 'integer', example: 1 },
+            pageSize:  { type: 'integer', example: 10 },
+            totalItem: { type: 'integer', example: 50 },
+            totalPage: { type: 'integer', example: 5 },
+            items: {
+              type: 'array',
+              items: { '$ref': '#/components/schemas/UserObject' },
+            },
+          },
+        },
+
+        CreateUserRequest: {
+          type: 'object',
+          required: ['userName', 'email', 'phone'],
+          properties: {
+            userName: { type: 'string', example: 'johndoe' },
+            email:    { type: 'string', format: 'email', example: 'john@example.com' },
+            phone:    { type: 'string', example: '0901234567' },
+            fullName: { type: 'string', example: 'John Doe' },
+            avatar:   { type: 'string', example: 'https://example.com/avatar.jpg' },
+            role:     { type: 'string', enum: ['CUSTOMER', 'ADMIN', 'PROVIDER'], example: 'CUSTOMER' },
+            status:   { type: 'string', enum: ['ACTIVE', 'INACTIVE'], example: 'ACTIVE' },
+          },
+        },
+
+        UpdateUserRequest: {
+          type: 'object',
+          description: 'Admin can update all fields. Regular user can only update fullName, avatar, phone.',
+          properties: {
+            fullName: { type: 'string', example: 'Jane Doe' },
+            avatar:   { type: 'string', example: 'https://example.com/avatar.jpg' },
+            phone:    { type: 'string', example: '0909876543' },
+            email:    { type: 'string', format: 'email', description: 'Admin only', example: 'newemail@example.com' },
+            userName: { type: 'string', description: 'Admin only', example: 'newusername' },
+            role:     { type: 'string', enum: ['CUSTOMER', 'ADMIN', 'PROVIDER'], description: 'Admin only', example: 'PROVIDER' },
+            status:   { type: 'string', enum: ['ACTIVE', 'INACTIVE'], description: 'Admin only', example: 'INACTIVE' },
+          },
+        },
+
+        UpdateRoleRequest: {
+          type: 'object',
+          required: ['role'],
+          properties: {
+            role: {
+              type: 'string',
+              enum: ['CUSTOMER', 'ADMIN', 'PROVIDER'],
+              example: 'PROVIDER',
+              description: 'New role to assign to the user',
+            },
           },
         },
       },
