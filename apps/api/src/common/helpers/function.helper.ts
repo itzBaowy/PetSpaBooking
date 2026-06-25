@@ -1,3 +1,5 @@
+import { Request } from "express";
+
 export interface SuccessResponse<T = unknown> {
     status: "success";
     statusCode: number;
@@ -33,4 +35,13 @@ export function responseError(
         statusCode,
         message,
     };
+}
+
+
+export function getTokenFromHeader(req: Request): string | null {
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith("Bearer ")) {
+        return authHeader.split(" ")[1];
+    }
+    return null;
 }
