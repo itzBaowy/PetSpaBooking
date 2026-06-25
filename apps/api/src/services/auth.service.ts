@@ -43,7 +43,7 @@ export const authService = {
         if (!userExist) {
             throw new UnauthorizedException("Incorrect username or password");
         }
-
+ 
         // kiểm tra password
         const isMatch = bcrypt.compareSync(password, userExist.password);
         if (!isMatch) {
@@ -87,7 +87,7 @@ export const authService = {
     
     async refreshToken(req: Request) {
         const { refreshToken } = req.body as { refreshToken: string };
-        const accessToken = getTokenFromHeader(req);
+        const accessToken = req.headers.authorization?.split(" ")[1];
         if (!refreshToken) {
             throw new BadRequestException("Refresh token is required");
         }
