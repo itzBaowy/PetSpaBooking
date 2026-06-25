@@ -1,4 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
 import {
@@ -14,17 +16,13 @@ import type {
   UploadProviderDocumentData,
 } from "./schema";
 
-export const providerVerificationKeys = {
-  all: ["providerVerification"] as const,
-  me: () => [...providerVerificationKeys.all, "me"] as const,
-  documents: () => [...providerVerificationKeys.all, "documents"] as const,
-};
-
 export function useMyProviderInfo(enabled = true) {
   return useQuery<ProviderInfo>({
-    queryKey: providerVerificationKeys.me(),
+    queryKey: queryKeys.providerVerification.me(),
     queryFn: async () => {
-      const response = await api.get<ApiResponse<ProviderInfo>>("/providers/me");
+      const response = await api.get<ApiResponse<ProviderInfo>>(
+        API_ENDPOINTS.PROVIDERS.ME,
+      );
       return providerInfoSchema.parse(response.data.data);
     },
     enabled,
@@ -34,11 +32,11 @@ export function useMyProviderInfo(enabled = true) {
 
 export function useMyProviderDocuments(enabled = true) {
   return useQuery<ProviderDocument[]>({
-    queryKey: providerVerificationKeys.documents(),
+    queryKey: queryKeys.providerVerification.documents(),
     queryFn: async () => {
       const response =
         await api.get<ApiResponse<ProviderDocument[]>>(
-          "/providers/me/documents",
+          API_ENDPOINTS.PROVIDERS.MY_DOCUMENTS,
         );
       return zodArrayParse(response.data.data);
     },
@@ -58,13 +56,13 @@ export function useRegisterProviderApplication() {
     mutationFn: async (payload: ProviderRegistrationData) => {
       const parsedPayload = providerRegistrationSchema.parse(payload);
       const response = await api.post<ApiResponse<ProviderInfo>>(
-        "/providers/register",
+        API_ENDPOINTS.PROVIDERS.REGISTER,
         parsedPayload,
       );
       return providerInfoSchema.parse(response.data.data);
     },
     onSuccess: (provider) => {
-      queryClient.setQueryData(providerVerificationKeys.me(), provider);
+      queryClient.setQueryData(queryKeys.providerVerification.me(), provider);
     },
   });
 }
@@ -76,14 +74,14 @@ export function useUploadProviderDocument() {
     mutationFn: async (payload: UploadProviderDocumentData) => {
       const parsedPayload = uploadProviderDocumentSchema.parse(payload);
       const response = await api.post<ApiResponse<ProviderDocument>>(
-        "/providers/me/documents",
+        API_ENDPOINTS.PROVIDERS.MY_DOCUMENTS,
         parsedPayload,
       );
       return providerDocumentSchema.parse(response.data.data);
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({
-        queryKey: providerVerificationKeys.documents(),
+        queryKey: queryKeys.providerVerification.documents(),
       });
     },
   });

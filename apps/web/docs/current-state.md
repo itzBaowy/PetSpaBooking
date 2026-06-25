@@ -490,3 +490,48 @@ Notes:
 - Added mock configuration for minimum deposit and warning/restriction thresholds.
 - Changes are scoped to Admin and do not alter Provider/Customer operations.
 - Localized audit-log actor roles, action filters, mock names/notes, and pagination labels to Vietnamese; audit-log filters now work against mock data.
+
+## Feature: Auth Provider Verification FE Refactor
+
+Role: Auth / Provider
+Status: Done
+
+Files created:
+- apis/auth/hooks/use-provider-registration-draft.ts
+- apis/auth/hooks/use-identity-ocr.ts
+
+Files modified:
+- apis/auth/components/provider-verification-form.tsx
+- apis/auth/queries.ts
+- apis/banks/queries.ts
+- apis/provider/verification/queries.ts
+- app/(auth)/login/page.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+
+Components reused:
+- Button
+- Input
+- PasswordInput
+- CustomSelect
+
+API endpoints used:
+- POST /auth/register
+- GET /auth/get-info
+- GET /banks
+- GET /providers/me
+- POST /providers/register
+- GET /providers/me/documents
+- POST /providers/me/documents
+
+Query keys used:
+- ["auth", "me"]
+- ["banks", "list"]
+- ["providerVerification", "me"]
+- ["providerVerification", "documents"]
+
+Notes:
+- Provider verification form now keeps feature-specific server calls in `apis/**/queries.ts` and routes them through `lib/axios.ts`.
+- Endpoint strings and query keys were moved into shared constants instead of being hardcoded in feature queries.
+- Registration draft persistence and CCCD OCR are now feature custom hooks, keeping the form component focused on UI flow.
+- The provider registration flow still stays under `app/(auth)` pages as routing-only composition.

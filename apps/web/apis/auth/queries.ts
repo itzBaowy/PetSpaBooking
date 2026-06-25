@@ -1,5 +1,6 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
 import { useAuthStore } from "@/stores/auth-store";
 import type { ApiResponse } from "@/types/api";
@@ -10,12 +11,6 @@ import type {
   RegisterResponse,
   User,
 } from "@/types/auth";
-
-export const authKeys = {
-  all: ["auth"] as const,
-  login: () => [...authKeys.all, "login"] as const,
-  me: () => [...authKeys.all, "me"] as const,
-};
 
 export function useLogin() {
   return useMutation({
@@ -45,7 +40,7 @@ export function useProfile() {
   const accessToken = useAuthStore((state) => state.accessToken);
 
   return useQuery<User>({
-    queryKey: authKeys.me(),
+    queryKey: queryKeys.auth.me(),
     queryFn: async () => {
       const response = await api.get<ApiResponse<User>>(
         API_ENDPOINTS.AUTH.PROFILE,

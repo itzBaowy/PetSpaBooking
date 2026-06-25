@@ -3,8 +3,8 @@
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
-import { createWorker } from "tesseract.js";
+import type { ChangeEvent, FormEvent, ReactNode } from "react";
+import { useMemo, useState } from "react";
 import { useRegister, useProfile } from "@/apis/auth/queries";
 import { useBanks } from "@/apis/banks/queries";
 import {
@@ -21,72 +21,19 @@ import type {
   ProviderDocument,
   ProviderInfo,
 } from "@/apis/provider/verification/schema";
-import { Button, Input, Textarea } from "@/components/ui";
+import { useIdentityOcr } from "@/apis/auth/hooks/use-identity-ocr";
+import {
+  type ProviderRegistrationFormState,
+  useProviderRegistrationDraft,
+} from "@/apis/auth/hooks/use-provider-registration-draft";
+import {
+  Button,
+  CustomSelect,
+  Input,
+  PasswordInput,
+  Textarea,
+} from "@/components/ui";
 import { useAuthStore } from "@/stores/auth-store";
-
-type ProviderFormState = {
-  userName: string;
-  businessName: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-  address: string;
-  description: string;
-  idCardFront: string;
-  idCardBack: string;
-  identityNumber: string;
-  identityFullName: string;
-  identityDob: string;
-  identityAddress: string;
-  businessLicense: string;
-  taxCode: string;
-  businessImage: string;
-  bankCode: string;
-  bankAccountNumber: string;
-  bankAccountName: string;
-};
-
-const initialFormState: ProviderFormState = {
-  userName: "",
-  businessName: "",
-  email: "",
-  phone: "",
-  password: "",
-  confirmPassword: "",
-  address: "",
-  description: "",
-  idCardFront: "",
-  idCardBack: "",
-  identityNumber: "",
-  identityFullName: "",
-  identityDob: "",
-  identityAddress: "",
-  businessLicense: "",
-  taxCode: "",
-  businessImage: "",
-  bankCode: "",
-  bankAccountNumber: "",
-  bankAccountName: "",
-};
-
-const providerRegisterDraftKey = "petlink-provider-register-draft";
-
-function getInitialProviderDraft(): ProviderFormState {
-  if (typeof window === "undefined") return initialFormState;
-
-  try {
-    const rawDraft = window.sessionStorage.getItem(providerRegisterDraftKey);
-    if (!rawDraft) return initialFormState;
-
-    return {
-      ...initialFormState,
-      ...(JSON.parse(rawDraft) as Partial<ProviderFormState>),
-    };
-  } catch {
-    return initialFormState;
-  }
-}
 
 const steps = [
   {
@@ -114,94 +61,6 @@ function getErrorMessage(error: unknown): string {
   return "Thao tác thất bại.";
 }
 
-function parseIdentityText(text: string) {
-  const normalized = text
-    .replace(/\r/g, "\n")
-    .replace(/[ \t]+/g, " ")
-    .trim();
-  const lines = normalized
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const identityNumber =
-    normalized.match(/\b\d{12}\b/)?.[0] ??
-    normalized.match(/\b\d{9}\b/)?.[0] ??
-    "";
-  const dob =
-    normalized.match(/\b\d{2}[/-]\d{2}[/-]\d{4}\b/)?.[0] ??
-    "";
-  const nameLine =
-    lines.find((line) => /họ|ho|full name|name/i.test(line)) ??
-    "";
-  const addressLine =
-    lines.find((line) => /nơi thường trú|noi thuong tru|address|quê quán|que quan/i.test(line)) ??
-    "";
-
-  return {
-    identityNumber,
-    identityDob: dob,
-    identityFullName: nameLine
-      .replace(/.*(?:họ và tên|ho va ten|full name|name)[:\s]*/i, "")
-      .trim(),
-    identityAddress: addressLine
-      .replace(/.*(?:nơi thường trú|noi thuong tru|address|quê quán|que quan)[:\s]*/i, "")
-      .trim(),
-    rawText: normalized,
-  };
-}
-
-function parseIdentityTextV2(text: string) {
-  const normalized = text
-    .replace(/\r/g, "\n")
-    .replace(/[ \t]+/g, " ")
-    .trim();
-  const compactText = normalized.replace(/\s+/g, " ");
-  const lines = normalized
-    .split("\n")
-    .map((line) => line.trim())
-    .filter(Boolean);
-  const identityNumber =
-    compactText.match(/\b\d{12}\b/)?.[0] ??
-    compactText.match(/\b\d{9}\b/)?.[0] ??
-    "";
-  const identityDob =
-    compactText.match(/\b\d{2}[/-]\d{2}[/-]\d{4}\b/)?.[0] ?? "";
-  const nameIndex = lines.findIndex((line) =>
-    /full\s*name|name|ho\s*va\s*ten|họ\s*và\s*tên/i.test(line),
-  );
-  const addressIndex = lines.findIndex((line) =>
-    /place\s*of\s*residence|residence|address|noi\s*thuong\s*tru|nơi\s*thường\s*trú|que\s*quan|quê\s*quán/i.test(
-      line,
-    ),
-  );
-  const nameLine = nameIndex >= 0 ? lines[nameIndex] : "";
-  const nextNameLine = nameIndex >= 0 ? lines[nameIndex + 1] ?? "" : "";
-  const addressLine = addressIndex >= 0 ? lines[addressIndex] : "";
-  const nextAddressLines =
-    addressIndex >= 0
-      ? lines.slice(addressIndex + 1, addressIndex + 3).join(", ")
-      : "";
-
-  return {
-    identityNumber,
-    identityDob,
-    identityFullName:
-      nameLine
-        .replace(/.*(?:full\s*name|name|ho\s*va\s*ten|họ\s*và\s*tên)[:\s]*/i, "")
-        .trim() || nextNameLine,
-    identityAddress:
-      addressLine
-        .replace(
-          /.*(?:place\s*of\s*residence|residence|address|noi\s*thuong\s*tru|nơi\s*thường\s*trú|que\s*quan|quê\s*quán)[:\s]*/i,
-          "",
-        )
-        .trim() || nextAddressLines,
-    rawText: normalized,
-  };
-}
-
-void parseIdentityText;
-
 export function ProviderVerificationForm() {
   const accessToken = useAuthStore((state) => state.accessToken);
   const clearTokens = useAuthStore((state) => state.clearTokens);
@@ -216,8 +75,12 @@ export function ProviderVerificationForm() {
     return <LoadingState text="Đang kiểm tra tài khoản..." />;
   }
 
-  if (role === "ADMIN") {
-    return <AlreadyPrivilegedState roleLabel="quản trị viên" />;
+  if (role === "ADMIN" || role === "PROVIDER") {
+    return (
+      <AlreadyPrivilegedState
+        roleLabel={role === "ADMIN" ? "quản trị viên" : "nhà cung cấp"}
+      />
+    );
   }
 
   if (role === "PENDING_PROVIDER") {
@@ -246,23 +109,29 @@ function ProviderApplicationWizard() {
   const router = useRouter();
   const setTokens = useAuthStore((state) => state.setTokens);
   const clearTokens = useAuthStore((state) => state.clearTokens);
-  const [step, setStep] = useState(() => {
-    if (typeof window === "undefined") return 1;
-    return Number(window.sessionStorage.getItem(`${providerRegisterDraftKey}:step`)) || 1;
-  });
-  const [form, setForm] = useState<ProviderFormState>(getInitialProviderDraft);
+  const { form, setForm, step, setStep, updateField, clearDraft } =
+    useProviderRegistrationDraft();
+  const identityOcr = useIdentityOcr();
   const [formError, setFormError] = useState("");
-  const [ocrStatus, setOcrStatus] = useState("");
 
   const isSubmitting =
     registerMutation.isLoading ||
     registerProviderMutation.isLoading ||
     uploadDocumentMutation.isLoading;
 
-  useEffect(() => {
-    window.sessionStorage.setItem(providerRegisterDraftKey, JSON.stringify(form));
-    window.sessionStorage.setItem(`${providerRegisterDraftKey}:step`, String(step));
-  }, [form, step]);
+  const bankOptions = useMemo(
+    () => [
+      {
+        label: bankQuery.isLoading ? "Đang tải ngân hàng..." : "Chọn ngân hàng",
+        value: "",
+      },
+      ...(bankQuery.data ?? []).map((bank) => ({
+        label: `${bank.shortName} - ${bank.name}`,
+        value: bank.code,
+      })),
+    ],
+    [bankQuery.data, bankQuery.isLoading],
+  );
 
   const reviewItems = useMemo(
     () => [
@@ -287,24 +156,25 @@ function ProviderApplicationWizard() {
     [form],
   );
 
-  function updateField(name: keyof ProviderFormState, value: string) {
-    setForm((current) => ({ ...current, [name]: value }));
-  }
-
   function handleInput(
-    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>,
+    event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) {
-    updateField(event.target.name as keyof ProviderFormState, event.target.value);
+    updateField(
+      event.target.name as keyof ProviderRegistrationFormState,
+      event.target.value,
+    );
   }
 
-  async function runIdentityOcr(file: File) {
-    setOcrStatus("Đang quét CCCD bằng OCR...");
+  async function handleFileChange(
+    event: ChangeEvent<HTMLInputElement>,
+    name: keyof ProviderRegistrationFormState,
+  ) {
+    const file = event.target.files?.[0];
+    updateField(name, file?.name ?? "");
 
-    try {
-      const worker = await createWorker("eng");
-      const result = await worker.recognize(file);
-      await worker.terminate();
-      const parsed = parseIdentityTextV2(result.data.text);
+    if (file && name === "idCardFront") {
+      const parsed = await identityOcr.scan(file);
+      if (!parsed) return;
 
       setForm((current) => ({
         ...current,
@@ -313,25 +183,6 @@ function ProviderApplicationWizard() {
         identityDob: parsed.identityDob || current.identityDob,
         identityAddress: parsed.identityAddress || current.identityAddress,
       }));
-      setOcrStatus(
-        parsed.identityNumber || parsed.identityFullName
-          ? "Đã quét CCCD. Vui lòng kiểm tra và sửa nếu OCR đọc sai."
-          : "OCR chưa đọc rõ thông tin. Vui lòng nhập thủ công.",
-      );
-    } catch {
-      setOcrStatus("Không thể quét CCCD. Vui lòng nhập thủ công.");
-    }
-  }
-
-  function handleFileChange(
-    event: ChangeEvent<HTMLInputElement>,
-    name: keyof ProviderFormState,
-  ) {
-    const file = event.target.files?.[0];
-    updateField(name, file?.name ?? "");
-
-    if (file && name === "idCardFront") {
-      void runIdentityOcr(file);
     }
   }
 
@@ -354,13 +205,21 @@ function ProviderApplicationWizard() {
       if (!form.idCardFront) return "Vui lòng tải CCCD mặt trước.";
       if (!form.idCardBack) return "Vui lòng tải CCCD mặt sau.";
       if (!form.identityNumber.trim()) return "Vui lòng nhập số CCCD.";
-      if (!form.identityFullName.trim()) return "Vui lòng nhập họ tên trên CCCD.";
-      if (!form.businessLicense) return "Vui lòng tải giấy đăng ký kinh doanh.";
+      if (!form.identityFullName.trim()) {
+        return "Vui lòng nhập họ tên trên CCCD.";
+      }
+      if (!form.businessLicense) {
+        return "Vui lòng tải giấy đăng ký kinh doanh.";
+      }
       if (!form.taxCode.trim()) return "Vui lòng nhập mã số thuế.";
       if (!form.businessImage) return "Vui lòng tải ảnh doanh nghiệp.";
       if (!form.bankCode) return "Vui lòng chọn ngân hàng.";
-      if (!form.bankAccountNumber.trim()) return "Vui lòng nhập số tài khoản.";
-      if (!form.bankAccountName.trim()) return "Vui lòng nhập tên chủ tài khoản.";
+      if (!form.bankAccountNumber.trim()) {
+        return "Vui lòng nhập số tài khoản.";
+      }
+      if (!form.bankAccountName.trim()) {
+        return "Vui lòng nhập tên chủ tài khoản.";
+      }
     }
 
     return null;
@@ -372,6 +231,7 @@ function ProviderApplicationWizard() {
       setFormError(message);
       return;
     }
+
     setFormError("");
     setStep((current) => Math.min(current + 1, 3));
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -434,8 +294,8 @@ function ProviderApplicationWizard() {
             uploadDocumentMutation.mutateAsync({ documentType, imageUrl }),
           ),
       );
-      window.sessionStorage.removeItem(providerRegisterDraftKey);
-      window.sessionStorage.removeItem(`${providerRegisterDraftKey}:step`);
+
+      clearDraft();
       clearTokens();
       router.replace("/login?providerRegistered=1");
     } catch (error) {
@@ -492,9 +352,8 @@ function ProviderApplicationWizard() {
             />
           </Field>
           <Field label="Mật khẩu" required>
-            <Input
+            <PasswordInput
               required
-              type="password"
               name="password"
               value={form.password}
               onChange={handleInput}
@@ -502,9 +361,8 @@ function ProviderApplicationWizard() {
             />
           </Field>
           <Field label="Xác nhận mật khẩu" required>
-            <Input
+            <PasswordInput
               required
-              type="password"
               name="confirmPassword"
               value={form.confirmPassword}
               onChange={handleInput}
@@ -537,13 +395,13 @@ function ProviderApplicationWizard() {
             <Field label="CCCD/CMND mặt trước" required>
               <UploadBox
                 fileName={form.idCardFront}
-                onChange={(event) => handleFileChange(event, "idCardFront")}
+                onChange={(event) => void handleFileChange(event, "idCardFront")}
               />
             </Field>
             <Field label="CCCD/CMND mặt sau" required>
               <UploadBox
                 fileName={form.idCardBack}
-                onChange={(event) => handleFileChange(event, "idCardBack")}
+                onChange={(event) => void handleFileChange(event, "idCardBack")}
               />
             </Field>
             <Field label="Số CCCD" required>
@@ -583,7 +441,9 @@ function ProviderApplicationWizard() {
             <Field label="Giấy đăng ký kinh doanh" required>
               <UploadBox
                 fileName={form.businessLicense}
-                onChange={(event) => handleFileChange(event, "businessLicense")}
+                onChange={(event) =>
+                  void handleFileChange(event, "businessLicense")
+                }
               />
             </Field>
             <Field label="Mã số thuế" required>
@@ -598,13 +458,13 @@ function ProviderApplicationWizard() {
             <Field label="Ảnh doanh nghiệp" required className="md:col-span-2">
               <UploadBox
                 fileName={form.businessImage}
-                onChange={(event) => handleFileChange(event, "businessImage")}
+                onChange={(event) => void handleFileChange(event, "businessImage")}
               />
             </Field>
           </div>
-          {ocrStatus && (
+          {identityOcr.status && (
             <p className="rounded-xl bg-info-soft px-4 py-3 text-sm font-semibold text-muted">
-              {ocrStatus}
+              {identityOcr.status}
             </p>
           )}
 
@@ -615,22 +475,11 @@ function ProviderApplicationWizard() {
             </p>
             <div className="mt-5 grid gap-5 md:grid-cols-3">
               <Field label="Ngân hàng" required>
-                <select
-                  required
-                  name="bankCode"
+                <CustomSelect
                   value={form.bankCode}
-                  onChange={handleInput}
-                  className="h-11 w-full rounded-xl border border-border-muted bg-surface px-3.5 text-sm text-foreground outline-none transition focus:border-brand focus:ring-4 focus:ring-brand-soft"
-                >
-                  <option value="">
-                    {bankQuery.isLoading ? "Đang tải ngân hàng..." : "Chọn ngân hàng"}
-                  </option>
-                  {(bankQuery.data ?? []).map((bank) => (
-                    <option key={`${bank.code}-${bank.bin}`} value={bank.code}>
-                      {bank.shortName} - {bank.name}
-                    </option>
-                  ))}
-                </select>
+                  options={bankOptions}
+                  onValueChange={(value) => updateField("bankCode", value)}
+                />
               </Field>
               <Field label="Số tài khoản" required>
                 <Input
@@ -674,7 +523,8 @@ function ProviderApplicationWizard() {
           </div>
           <label className="flex items-start gap-3 text-sm leading-6 text-muted">
             <input required type="checkbox" className="mt-1 h-4 w-4 accent-brand" />
-            Tôi xác nhận thông tin cung cấp là chính xác và đồng ý với điều khoản dành cho nhà cung cấp.
+            Tôi xác nhận thông tin cung cấp là chính xác và đồng ý với điều
+            khoản dành cho nhà cung cấp.
           </label>
         </section>
       )}
@@ -688,28 +538,24 @@ function ProviderApplicationWizard() {
         </p>
       )}
 
-      {registerMutation.isSuccess ? (
-        <SuccessState />
-      ) : (
-        <div className="flex items-center justify-between border-t border-border-subtle pt-6">
-          {step > 1 ? (
-            <Button type="button" variant="outline" onClick={goBack}>
-              Quay lại
-            </Button>
-          ) : (
-            <span />
-          )}
-          {step < 3 ? (
-            <Button type="button" onClick={goNext}>
-              Bước tiếp theo →
-            </Button>
-          ) : (
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "Đang gửi hồ sơ..." : "Gửi hồ sơ"}
-            </Button>
-          )}
-        </div>
-      )}
+      <div className="flex items-center justify-between border-t border-border-subtle pt-6">
+        {step > 1 ? (
+          <Button type="button" variant="outline" onClick={goBack}>
+            Quay lại
+          </Button>
+        ) : (
+          <span />
+        )}
+        {step < 3 ? (
+          <Button type="button" onClick={goNext}>
+            Bước tiếp theo →
+          </Button>
+        ) : (
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting ? "Đang gửi hồ sơ..." : "Gửi hồ sơ"}
+          </Button>
+        )}
+      </div>
     </form>
   );
 }
@@ -748,14 +594,6 @@ function StepBar({ currentStep }: { currentStep: number }) {
           </div>
         );
       })}
-    </div>
-  );
-}
-
-function SuccessState() {
-  return (
-    <div className="rounded-2xl border border-success/20 bg-success-soft p-5 text-sm font-semibold text-success">
-      Đã gửi hồ sơ đăng ký nhà cung cấp. Bạn có thể đăng nhập bằng tài khoản vừa tạo để xem trạng thái hồ sơ.
     </div>
   );
 }
@@ -852,90 +690,6 @@ function PendingProviderState({
   );
 }
 
-function ProviderInfoPage({
-  provider,
-  documents,
-  isLoadingDocuments,
-}: {
-  provider: ProviderInfo;
-  documents: ProviderDocument[];
-  isLoadingDocuments: boolean;
-}) {
-  return (
-    <div className="space-y-8">
-      <Header
-        title="Thông tin hồ sơ nhà cung cấp"
-        description="Đây là trạng thái hồ sơ hiện tại của bạn trên hệ thống PetLink."
-      />
-
-      <div className="grid gap-4 md:grid-cols-3">
-        <InfoCard label="Mã hồ sơ" value={provider.id} />
-        <InfoCard
-          label="Trạng thái"
-          value={
-            providerStatusLabels[provider.providerStatus] ??
-            provider.providerStatus
-          }
-        />
-        <InfoCard label="Tên cơ sở" value={provider.businessName} />
-      </div>
-
-      <div className="rounded-2xl border border-border-subtle bg-surface-muted p-5">
-        <h3 className="text-sm font-bold uppercase tracking-wider text-brand">
-          Ghi chú quản trị
-        </h3>
-        <p className="mt-2 text-sm leading-6 text-muted">
-          {provider.adminNote || "Chưa có ghi chú từ quản trị viên."}
-        </p>
-      </div>
-
-      <div className="rounded-2xl border border-border-subtle bg-surface p-5">
-        <h3 className="text-lg font-bold">Tài liệu đã gửi</h3>
-        {isLoadingDocuments ? (
-          <p className="mt-3 text-sm text-muted">Đang tải tài liệu...</p>
-        ) : documents.length > 0 ? (
-          <div className="mt-4 grid gap-3 md:grid-cols-2">
-            {documents.map((document) => (
-              <div
-                key={document.id}
-                className="rounded-xl border border-border-subtle bg-surface-muted p-4"
-              >
-                <p className="text-sm font-bold">
-                  {providerDocumentTypeLabels[document.documentType] ??
-                    document.documentType}
-                </p>
-                <p className="mt-1 break-all text-xs text-muted">
-                  {document.imageUrl}
-                </p>
-                <p className="mt-3 text-xs font-semibold text-brand">
-                  Trạng thái: {document.status}
-                </p>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <p className="mt-3 text-sm text-muted">Chưa có tài liệu nào.</p>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function CustomerBlockedState({ onLogout }: { onLogout: () => void }) {
-  return (
-    <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
-      <h1 className="text-3xl font-bold">Tài khoản customer không dùng cho cổng này</h1>
-      <p className="mt-3 max-w-lg text-sm leading-6 text-muted">
-        Cổng web chỉ dành cho quản trị viên và nhà cung cấp. Hãy đăng xuất để
-        tạo tài khoản provider mới.
-      </p>
-      <Button className="mt-8" onClick={onLogout}>
-        Đăng xuất để tạo tài khoản provider
-      </Button>
-    </div>
-  );
-}
-
 function AlreadyPrivilegedState({ roleLabel }: { roleLabel: string }) {
   return (
     <div className="flex min-h-[420px] flex-col items-center justify-center text-center">
@@ -975,10 +729,6 @@ function InfoCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-void ProviderInfoPage;
-void CustomerBlockedState;
-void InfoCard;
-
 function Field({
   label,
   required,
@@ -988,17 +738,15 @@ function Field({
   label: string;
   required?: boolean;
   className?: string;
-  children: React.ReactNode;
+  children: ReactNode;
 }) {
   return (
-    <label
-      className={`block space-y-1.5 text-sm font-semibold text-foreground ${className ?? ""}`}
-    >
+    <div className={`block space-y-1.5 text-sm font-semibold text-foreground ${className ?? ""}`}>
       <span>
         {label} {required && <span className="text-danger">*</span>}
       </span>
       {children}
-    </label>
+    </div>
   );
 }
 
@@ -1029,7 +777,7 @@ function UploadBox({
         onChange={onChange}
       />
       <span className="text-xl text-brand">↑</span>
-      {fileName || "Tải lên PDF, PNG hoặc JPG"}
+      {fileName || "Tải lên PNG hoặc JPG"}
     </label>
   );
 }

@@ -3,6 +3,17 @@ export const queryKeys = {
     all: ["auth"] as const,
     profile: () => [...queryKeys.auth.all, "profile"] as const,
     login: () => [...queryKeys.auth.all, "login"] as const,
+    me: () => [...queryKeys.auth.all, "me"] as const,
+  },
+  banks: {
+    all: ["banks"] as const,
+    list: () => [...queryKeys.banks.all, "list"] as const,
+  },
+  providerVerification: {
+    all: ["providerVerification"] as const,
+    me: () => [...queryKeys.providerVerification.all, "me"] as const,
+    documents: () =>
+      [...queryKeys.providerVerification.all, "documents"] as const,
   },
   services: {
     all: ["services"] as const,

@@ -6,6 +6,14 @@ export const API_ENDPOINTS = {
     PROFILE: "/auth/get-info",
     REFRESH: "/auth/refresh-token",
   },
+  BANKS: {
+    LIST: "/banks",
+  },
+  PROVIDERS: {
+    ME: "/providers/me",
+    REGISTER: "/providers/register",
+    MY_DOCUMENTS: "/providers/me/documents",
+  },
   SERVICES: {
     LIST: "/services",
     CREATE: "/services",

@@ -1,13 +1,10 @@
 import { useQuery } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
 import { bankSchema } from "./schema";
 import type { Bank } from "./schema";
-
-export const bankKeys = {
-  all: ["banks"] as const,
-  list: () => [...bankKeys.all, "list"] as const,
-};
 
 const fallbackBanks: Bank[] = [
   {
@@ -44,10 +41,12 @@ const fallbackBanks: Bank[] = [
 
 export function useBanks() {
   return useQuery<Bank[]>({
-    queryKey: bankKeys.list(),
+    queryKey: queryKeys.banks.list(),
     queryFn: async () => {
       try {
-        const response = await api.get<ApiResponse<Bank[]>>("/banks");
+        const response = await api.get<ApiResponse<Bank[]>>(
+          API_ENDPOINTS.BANKS.LIST,
+        );
         return response.data.data.map((bank) => bankSchema.parse(bank));
       } catch {
         return fallbackBanks;
