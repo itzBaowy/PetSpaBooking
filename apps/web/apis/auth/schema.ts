@@ -1,16 +1,17 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  userName: z.string().min(1, "Tên đăng nhập là bắt buộc"),
+  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
 });
 
 export type LoginFormData = z.infer<typeof loginSchema>;
 
 export const registerProviderSchema = z
   .object({
-    fullName: z.string().min(1, "Họ và tên là bắt buộc"),
+    userName: z.string().min(1, "Tên đăng nhập là bắt buộc"),
     email: z.string().email("Email không hợp lệ"),
+    phone: z.string().min(1, "Số điện thoại là bắt buộc"),
     password: z.string().min(8, "Mật khẩu phải có ít nhất 8 ký tự"),
     confirmPassword: z.string().min(8, "Vui lòng nhập lại mật khẩu"),
   })

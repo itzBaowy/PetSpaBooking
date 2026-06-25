@@ -1,12 +1,14 @@
 export interface ApiResponse<T> {
   data: T;
   message: string;
-  status: number;
+  status?: number;
+  statusCode?: number;
 }
 
 export interface ApiError {
   message: string;
-  status: number;
+  status?: number;
+  statusCode?: number;
   errors?: Record<string, string[]>;
 }
 

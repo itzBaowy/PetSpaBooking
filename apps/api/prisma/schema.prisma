@@ -38,6 +38,14 @@ model providers {
   phone            String?
   email            String?
   address          String?
+  taxCode          String?
+  identityNumber   String?
+  identityFullName String?
+  identityDob      String?
+  identityAddress  String?
+  bankCode         String?
+  bankAccountNumber String?
+  bankAccountName  String?
   lat              Float?
   lng              Float?
   providerStatus   String   @default("PENDING_VERIFICATION")

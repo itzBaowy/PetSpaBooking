@@ -1,14 +1,19 @@
+import { useAuthStore } from "@/stores/auth-store";
+
 export function getToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken");
+  return useAuthStore.getState().accessToken;
 }
 
 export function setToken(token: string): void {
-  localStorage.setItem("accessToken", token);
+  const currentRefreshToken = useAuthStore.getState().refreshToken ?? "";
+  useAuthStore.getState().setTokens({
+    accessToken: token,
+    refreshToken: currentRefreshToken,
+  });
 }
 
 export function removeToken(): void {
-  localStorage.removeItem("accessToken");
+  useAuthStore.getState().clearTokens();
 }
 
 export function isAuthenticated(): boolean {

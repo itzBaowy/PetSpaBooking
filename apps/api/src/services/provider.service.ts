@@ -39,6 +39,14 @@ const PROVIDER_SELECT = {
     phone: true,
     email: true,
     address: true,
+    taxCode: true,
+    identityNumber: true,
+    identityFullName: true,
+    identityDob: true,
+    identityAddress: true,
+    bankCode: true,
+    bankAccountNumber: true,
+    bankAccountName: true,
     lat: true,
     lng: true,
     providerStatus: true,
@@ -100,8 +108,8 @@ export const providerService = {
 
         const user = await prisma.users.findUnique({ where: { id: userId } });
         if (!user) throw new NotFoundException("User not found");
-        if (user.role === "PROVIDER") {
-            throw new BadRequestException("You are already a provider");
+        if (user.role === "ADMIN") {
+            throw new BadRequestException("Admin accounts cannot register as providers");
         }
 
         const existing = await prisma.providers.findUnique({ where: { userId } });
@@ -113,13 +121,37 @@ export const providerService = {
             );
         }
 
-        const { businessName, description, phone, email, address, lat, lng } =
+        const {
+            businessName,
+            description,
+            phone,
+            email,
+            address,
+            taxCode,
+            identityNumber,
+            identityFullName,
+            identityDob,
+            identityAddress,
+            bankCode,
+            bankAccountNumber,
+            bankAccountName,
+            lat,
+            lng,
+        } =
             req.body as {
                 businessName: string;
                 description?: string;
                 phone?: string;
                 email?: string;
                 address?: string;
+                taxCode?: string;
+                identityNumber?: string;
+                identityFullName?: string;
+                identityDob?: string;
+                identityAddress?: string;
+                bankCode?: string;
+                bankAccountNumber?: string;
+                bankAccountName?: string;
                 lat?: number;
                 lng?: number;
             };
@@ -137,22 +169,36 @@ export const providerService = {
                     ? existing.slug
                     : await ensureUniqueSlug(baseSlug);
 
-            const updated = await prisma.providers.update({
-                where: { userId },
-                data: {
-                    businessName,
-                    slug,
-                    description: description ?? null,
-                    phone: phone ?? null,
-                    email: email ?? null,
-                    address: address ?? null,
-                    lat: lat ?? null,
-                    lng: lng ?? null,
-                    providerStatus: "PENDING_VERIFICATION",
-                    adminNote: null, // xóa lý do reject cũ
-                },
-                select: PROVIDER_SELECT,
-            });
+            const [updated] = await prisma.$transaction([
+                prisma.providers.update({
+                    where: { userId },
+                    data: {
+                        businessName,
+                        slug,
+                        description: description ?? null,
+                        phone: phone ?? null,
+                        email: email ?? null,
+                        address: address ?? null,
+                        taxCode: taxCode ?? null,
+                        identityNumber: identityNumber ?? null,
+                        identityFullName: identityFullName ?? null,
+                        identityDob: identityDob ?? null,
+                        identityAddress: identityAddress ?? null,
+                        bankCode: bankCode ?? null,
+                        bankAccountNumber: bankAccountNumber ?? null,
+                        bankAccountName: bankAccountName ?? null,
+                        lat: lat ?? null,
+                        lng: lng ?? null,
+                        providerStatus: "PENDING_VERIFICATION",
+                        adminNote: null, // xóa lý do reject cũ
+                    },
+                    select: PROVIDER_SELECT,
+                }),
+                prisma.users.update({
+                    where: { id: userId },
+                    data: { role: "PENDING_PROVIDER" },
+                }),
+            ]);
 
             return updated;
         }
@@ -161,20 +207,34 @@ export const providerService = {
         const baseSlug = generateSlug(businessName);
         const slug = await ensureUniqueSlug(baseSlug);
 
-        const provider = await prisma.providers.create({
-            data: {
-                userId,
-                businessName,
-                slug,
-                description: description ?? null,
-                phone: phone ?? null,
-                email: email ?? null,
-                address: address ?? null,
-                lat: lat ?? null,
-                lng: lng ?? null,
-            },
-            select: PROVIDER_SELECT,
-        });
+        const [provider] = await prisma.$transaction([
+            prisma.providers.create({
+                data: {
+                    userId,
+                    businessName,
+                    slug,
+                    description: description ?? null,
+                    phone: phone ?? null,
+                    email: email ?? null,
+                    address: address ?? null,
+                    taxCode: taxCode ?? null,
+                    identityNumber: identityNumber ?? null,
+                    identityFullName: identityFullName ?? null,
+                    identityDob: identityDob ?? null,
+                    identityAddress: identityAddress ?? null,
+                    bankCode: bankCode ?? null,
+                    bankAccountNumber: bankAccountNumber ?? null,
+                    bankAccountName: bankAccountName ?? null,
+                    lat: lat ?? null,
+                    lng: lng ?? null,
+                },
+                select: PROVIDER_SELECT,
+            }),
+            prisma.users.update({
+                where: { id: userId },
+                data: { role: "PENDING_PROVIDER" },
+            }),
+        ]);
 
         return provider;
     },
@@ -413,11 +473,17 @@ export const providerService = {
             throw new BadRequestException("Cannot reject an already verified provider. Use suspend instead.");
         }
 
-        const updated = await prisma.providers.update({
-            where: { id },
-            data: { providerStatus: "REJECTED", adminNote: reason },
-            select: PROVIDER_SELECT,
-        });
+        const [updated] = await Promise.all([
+            prisma.providers.update({
+                where: { id },
+                data: { providerStatus: "REJECTED", adminNote: reason },
+                select: PROVIDER_SELECT,
+            }),
+            prisma.users.update({
+                where: { id: provider.userId },
+                data: { role: "CUSTOMER" },
+            }),
+        ]);
 
         return updated;
     },

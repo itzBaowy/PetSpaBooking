@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useProfile } from "@/apis/auth/queries";
 import { ThemeMenuItem } from "@/components/ui/theme-menu-item";
 import { cn } from "@/lib/utils";
+import { useAuthStore } from "@/stores/auth-store";
 
 type DashboardTopbarRole = "admin" | "provider";
 
@@ -27,28 +30,24 @@ const notifications = [
   ],
 ] as const;
 
-const profiles = {
-  admin: {
-    initials: "SA",
-    name: "Super Admin",
-    email: "admin@petlink.vn",
-    label: "Quản trị viên",
-  },
-  provider: {
-    initials: "AN",
-    name: "Anh Nguyen",
-    email: "owner@happypaws.vn",
-    label: "Nhà cung cấp dịch vụ",
-  },
+const roleLabels: Record<string, string> = {
+  ADMIN: "Quản trị viên",
+  PENDING_PROVIDER: "Nhà cung cấp chờ duyệt",
+  PROVIDER: "Nhà cung cấp dịch vụ",
+  CUSTOMER: "Khách hàng",
 };
 
 function Icon({ type }: { type: "bell" | "user" | "activity" | "logout" }) {
   const paths = {
-    bell: "M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h11Zm0 0a3 3 0 1 1-6 0",
-    user: "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
+    bell:
+      "M15 17h5l-1.4-1.4A2 2 0 0 1 18 14.2V11a6 6 0 1 0-12 0v3.2a2 2 0 0 1-.6 1.4L4 17h11Zm0 0a3 3 0 1 1-6 0",
+    user:
+      "M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2m8-10a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z",
     activity: "M3 3v18h18M7 15l3-3 3 2 5-6",
-    logout: "m10 17 5-5-5-5m5 5H3m11-9h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5",
+    logout:
+      "m10 17 5-5-5-5m5 5H3m11-9h5a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-5",
   };
+
   return (
     <svg
       className="h-4 w-4"
@@ -86,15 +85,45 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
+function getInitials(name: string): string {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .map((part) => part.charAt(0))
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
+
 export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
+  const router = useRouter();
   const [openMenu, setOpenMenu] = useState<"notifications" | "profile" | null>(
     null,
   );
-  const profile = profiles[role];
+  const { data: profile } = useProfile();
+  const clearTokens = useAuthStore((state) => state.clearTokens);
+
+  const displayName =
+    profile?.fullName ||
+    profile?.userName ||
+    (role === "admin" ? "Admin" : "Provider");
+  const displayEmail = profile?.email ?? "Đang tải...";
+  const displayRole = profile?.role
+    ? roleLabels[profile.role] ?? profile.role
+    : role === "admin"
+      ? "Quản trị viên"
+      : "Nhà cung cấp dịch vụ";
+  const initials = getInitials(displayName);
+
   const closeSoon = (menu: "notifications" | "profile") =>
     window.setTimeout(() => {
       setOpenMenu((prev) => (prev === menu ? null : prev));
     }, 150);
+
+  function handleLogout() {
+    clearTokens();
+    router.replace("/login");
+  }
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-end border-b border-shell-border bg-shell-strong px-5 shadow-sm backdrop-blur dark:bg-shell-strong">
@@ -160,14 +189,14 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
           className="inline-flex h-10 items-center gap-3 rounded-xl border border-shell-border bg-surface py-1 pl-1 pr-3 text-left text-muted shadow-sm transition hover:border-brand hover:bg-brand-soft hover:text-brand focus:outline-none focus:ring-4 focus:ring-brand/20 dark:bg-shell dark:text-shell-muted"
         >
           <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm font-bold text-brand-foreground">
-            {profile.initials}
+            {initials}
           </span>
           <span className="hidden min-w-0 sm:block">
             <span className="block text-sm font-bold leading-4 text-foreground dark:text-white">
-              {profile.name}
+              {displayName}
             </span>
             <span className="block text-xs font-medium text-shell-muted">
-              {profile.label}
+              {displayRole}
             </span>
           </span>
           <Chevron open={openMenu === "profile"} />
@@ -178,13 +207,13 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
             <div className="border-b border-border-subtle p-4">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-soft text-sm font-bold text-brand">
-                  {profile.initials}
+                  {initials}
                 </div>
                 <div className="min-w-0">
-                  <p className="truncate text-sm font-bold">{profile.name}</p>
-                  <p className="truncate text-xs text-muted">{profile.email}</p>
+                  <p className="truncate text-sm font-bold">{displayName}</p>
+                  <p className="truncate text-xs text-muted">{displayEmail}</p>
                   <p className="mt-1 text-xs font-semibold text-brand">
-                    {profile.label}
+                    {displayRole}
                   </p>
                 </div>
               </div>
@@ -208,6 +237,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
               <button
                 type="button"
                 onMouseDown={(event) => event.preventDefault()}
+                onClick={handleLogout}
                 className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-danger transition hover:bg-danger-soft"
               >
                 <Icon type="logout" /> Đăng xuất
