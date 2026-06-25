@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import { Request } from "express";
 import { tokenService } from "./token.service.ts";
 import { BadRequestException, UnauthorizedException } from "../common/helpers/exception.helper.ts";
+import { getTokenFromHeader } from "../common/helpers/function.helper.ts";
 import prisma from "./../../connect.prisma.ts";
 
 export const authService = {
@@ -83,4 +84,25 @@ export const authService = {
 
         return user;
     },
+    
+    async refreshToken(req: Request) {
+        const { refreshToken } = req.body as { refreshToken: string };
+        const accessToken = getTokenFromHeader(req);
+        if (!refreshToken) {
+            throw new BadRequestException("Refresh token is required");
+        }
+        if (!accessToken) {
+            throw new UnauthorizedException("Access token is required");
+        }
+        const decodeAccessToken = tokenService.verifyAccessToken(accessToken, { ignoreExpiration: true });
+        const decodeRefreshToken = tokenService.verifyRefreshToken(refreshToken);
+
+        if (decodeAccessToken.userId !== decodeRefreshToken.userId) {
+            throw new UnauthorizedException("Invalid refresh token");
+        }
+
+        const tokens = tokenService.createTokens(decodeRefreshToken.userId);
+        return tokens;
+    },
+
 };
