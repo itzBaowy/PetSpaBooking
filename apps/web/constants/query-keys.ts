@@ -51,4 +51,11 @@ export const queryKeys = {
     configs: () => [...queryKeys.adminCommission.all, "configs"] as const,
     summary: () => [...queryKeys.adminCommission.all, "summary"] as const,
   },
+  adminUsers: {
+    all: ["admin", "users"] as const,
+    lists: () => [...queryKeys.adminUsers.all, "list"] as const,
+    list: (params: unknown) =>
+      [...queryKeys.adminUsers.lists(), params] as const,
+    detail: (id: string) => [...queryKeys.adminUsers.all, "detail", id] as const,
+  },
 } as const;

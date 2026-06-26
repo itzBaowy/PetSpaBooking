@@ -535,3 +535,57 @@ Notes:
 - Endpoint strings and query keys were moved into shared constants instead of being hardcoded in feature queries.
 - Registration draft persistence and CCCD OCR are now feature custom hooks, keeping the form component focused on UI flow.
 - The provider registration flow still stays under `app/(auth)` pages as routing-only composition.
+
+## Feature: Admin User Management API Integration
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/users/components/user-form-dialog.tsx
+- apis/admin/users/components/user-format.tsx
+- apis/admin/users/hooks/use-admin-user-list.ts
+- apis/admin/users/hooks/use-admin-user-detail.ts
+- apis/admin/users/hooks/use-admin-user-form.ts
+- apis/admin/users/user-helpers.ts
+
+Files modified:
+- apis/admin/users/schema.ts
+- apis/admin/users/queries.ts
+- apis/admin/users/components/user-table.tsx
+- apis/admin/users/components/user-detail.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+- lib/date.ts
+
+Components reused:
+- PageHeader
+- StatisticCard / StatisticCardGrid
+- DataTable
+- SearchInput
+- CustomSelect
+- Pagination
+- ActionMenu
+- Button / Input
+
+API endpoints used:
+- GET /users?page=&pageSize=&filters=&role=&status=
+- GET /users/:id
+- POST /users
+- PUT /users/:id
+- DELETE /users/:id
+- PATCH /users/:id/role
+
+Query keys used:
+- ["admin", "users", "list", params]
+- ["admin", "users", "detail", userId]
+
+Notes:
+- Admin user list now uses the backend `/users` contract instead of mock `/admin/users`.
+- List supports backend pagination, `filters` JSON search by `userName`, role filter, and status filter.
+- Added "Thêm người dùng" action in the page header; create/edit use the same dialog.
+- Delete action maps to BE soft delete, which sets user status to `INACTIVE`.
+- Provider management mock in `apis/admin/users` remains available for existing provider admin screens.
+- Refactored list/detail/form logic into feature custom hooks.
+- Moved user display helpers and select options into `apis/admin/users/user-helpers.ts`.
+- Moved reusable Vietnamese date formatting into `lib/date.ts`.

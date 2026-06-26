@@ -14,6 +14,14 @@ export const API_ENDPOINTS = {
     REGISTER: "/providers/register",
     MY_DOCUMENTS: "/providers/me/documents",
   },
+  USERS: {
+    LIST: "/users",
+    DETAIL: (id: string) => `/users/${id}`,
+    CREATE: "/users",
+    UPDATE: (id: string) => `/users/${id}`,
+    DELETE: (id: string) => `/users/${id}`,
+    UPDATE_ROLE: (id: string) => `/users/${id}/role`,
+  },
   SERVICES: {
     LIST: "/services",
     CREATE: "/services",
