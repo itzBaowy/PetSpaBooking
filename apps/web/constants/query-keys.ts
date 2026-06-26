@@ -58,4 +58,12 @@ export const queryKeys = {
       [...queryKeys.adminUsers.lists(), params] as const,
     detail: (id: string) => [...queryKeys.adminUsers.all, "detail", id] as const,
   },
+  adminProviders: {
+    all: ["admin", "providers"] as const,
+    lists: () => [...queryKeys.adminProviders.all, "list"] as const,
+    list: (params: unknown) =>
+      [...queryKeys.adminProviders.lists(), params] as const,
+    detail: (id: string) =>
+      [...queryKeys.adminProviders.all, "detail", id] as const,
+  },
 } as const;

@@ -589,3 +589,38 @@ Notes:
 - Refactored list/detail/form logic into feature custom hooks.
 - Moved user display helpers and select options into `apis/admin/users/user-helpers.ts`.
 - Moved reusable Vietnamese date formatting into `lib/date.ts`.
+
+## Feature: Admin Provider Management API Integration
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/providers/schema.ts
+- apis/admin/providers/queries.ts
+- apis/admin/providers/provider-helpers.ts
+- apis/admin/providers/hooks/use-admin-provider-list.ts
+- apis/admin/providers/hooks/use-admin-provider-detail.ts
+- apis/admin/providers/components/provider-management.tsx
+- apis/admin/providers/components/provider-detail.tsx
+- apis/admin/providers/components/provider-status-badge.tsx
+
+Files modified:
+- app/(dashboard)/admin/providers/page.tsx
+- app/(dashboard)/admin/providers/[providerId]/page.tsx
+- app/(dashboard)/admin/verification/page.tsx
+- app/(dashboard)/admin/verification/[verificationId]/page.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+
+API endpoints used:
+- GET /providers?page=&pageSize=&filters=&providerStatus=
+- GET /providers/:id
+- PATCH /providers/:id/approve
+- PATCH /providers/:id/reject
+- PATCH /providers/:id/suspend
+
+Notes:
+- Admin provider management and provider verification now share the same backend `/providers` admin API.
+- Verification page defaults to `PENDING_VERIFICATION` while provider management allows all provider statuses.
+- Provider detail now loads documents from `GET /providers/:id` and uses real approve/reject/suspend mutations.

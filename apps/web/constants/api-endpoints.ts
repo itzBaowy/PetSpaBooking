@@ -13,6 +13,11 @@ export const API_ENDPOINTS = {
     ME: "/providers/me",
     REGISTER: "/providers/register",
     MY_DOCUMENTS: "/providers/me/documents",
+    LIST: "/providers",
+    DETAIL: (id: string) => `/providers/${id}`,
+    APPROVE: (id: string) => `/providers/${id}/approve`,
+    REJECT: (id: string) => `/providers/${id}/reject`,
+    SUSPEND: (id: string) => `/providers/${id}/suspend`,
   },
   USERS: {
     LIST: "/users",
