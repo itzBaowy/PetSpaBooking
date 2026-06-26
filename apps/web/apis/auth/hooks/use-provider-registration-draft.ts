@@ -19,7 +19,7 @@ export type ProviderRegistrationFormState = {
   identityAddress: string;
   businessLicense: string;
   taxCode: string;
-  businessImage: string;
+  businessImages: string[];
   bankCode: string;
   bankAccountNumber: string;
   bankAccountName: string;
@@ -42,7 +42,7 @@ export const initialProviderRegistrationForm: ProviderRegistrationFormState = {
   identityAddress: "",
   businessLicense: "",
   taxCode: "",
-  businessImage: "",
+  businessImages: [],
   bankCode: "",
   bankAccountNumber: "",
   bankAccountName: "",
@@ -58,9 +58,16 @@ function readProviderDraft(): ProviderRegistrationFormState {
     const rawDraft = window.sessionStorage.getItem(providerRegisterDraftKey);
     if (!rawDraft) return initialProviderRegistrationForm;
 
+    const parsedDraft = JSON.parse(rawDraft) as Partial<
+      ProviderRegistrationFormState & { businessImage?: string }
+    >;
+
     return {
       ...initialProviderRegistrationForm,
-      ...(JSON.parse(rawDraft) as Partial<ProviderRegistrationFormState>),
+      ...parsedDraft,
+      businessImages:
+        parsedDraft.businessImages ??
+        (parsedDraft.businessImage ? [parsedDraft.businessImage] : []),
     };
   } catch {
     return initialProviderRegistrationForm;
@@ -88,7 +95,7 @@ export function useProviderRegistrationDraft() {
 
   function updateField(
     name: keyof ProviderRegistrationFormState,
-    value: string,
+    value: ProviderRegistrationFormState[keyof ProviderRegistrationFormState],
   ) {
     setForm((current) => ({ ...current, [name]: value }));
   }
