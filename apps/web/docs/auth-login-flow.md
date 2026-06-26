@@ -98,11 +98,14 @@ api.interceptors.request.use((config) => {
 Khi API trả `401`, interceptor sẽ:
 
 1. Kiểm tra request chưa retry.
-2. Bỏ qua nếu chính request đó là `/auth/refresh-token`.
-3. Gọi refresh token.
-4. Lưu token mới vào store.
-5. Gửi lại request cũ với access token mới.
-6. Nếu refresh fail thì clear token và reject lỗi.
+2. Bỏ qua các request auth public như `/auth/login`, `/auth/register`, `/auth/refresh-token`.
+3. Kiểm tra store có đủ `accessToken` và `refreshToken`.
+4. Gọi refresh token.
+5. Lưu token mới vào store.
+6. Gửi lại request cũ với access token mới.
+7. Nếu refresh fail thì clear token và reject lỗi.
+
+Các request login/register không chạy refresh flow. Nếu login sai tài khoản/mật khẩu và backend trả `401`, lỗi sẽ được trả về login form để hiển thị thông báo đăng nhập thất bại.
 
 `refreshPromise` được dùng để tránh nhiều request cùng lúc gọi refresh token trùng nhau:
 

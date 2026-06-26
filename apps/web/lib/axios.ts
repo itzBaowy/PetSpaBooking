@@ -55,21 +55,35 @@ function refreshTokens() {
   return refreshPromise;
 }
 
+function shouldSkipAuthRefresh(url?: string) {
+  if (!url) return false;
+
+  return [
+    API_ENDPOINTS.AUTH.LOGIN,
+    API_ENDPOINTS.AUTH.REGISTER,
+    API_ENDPOINTS.AUTH.REFRESH,
+  ].some((endpoint) => url.includes(endpoint));
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    const isRefreshRequest = originalRequest?.url?.includes(
-      API_ENDPOINTS.AUTH.REFRESH,
-    );
+    const skipAuthRefresh = shouldSkipAuthRefresh(originalRequest?.url);
 
     if (
       error.response?.status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
-      !isRefreshRequest
+      !skipAuthRefresh
     ) {
       originalRequest._retry = true;
+      const { accessToken, refreshToken } = useAuthStore.getState();
+
+      if (!accessToken || !refreshToken) {
+        useAuthStore.getState().clearTokens();
+        return Promise.reject(error);
+      }
 
       try {
         const tokens = await refreshTokens();
