@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/feedback-provider";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { noShowResolutionSchema } from "../schema";
 import { useResolveNoShowReview } from "../queries";
@@ -13,6 +14,7 @@ export function NoShowResolutionDialog({
   review: NoShowReview;
   onClose: () => void;
 }) {
+  const { showToast } = useToast();
   const resolveMutation = useResolveNoShowReview();
   const [decision, setDecision] = useState<
     "APPROVE_NO_SHOW" | "REJECT_TO_DISPUTE" | "REJECT_TO_COMPLETED"
@@ -36,11 +38,11 @@ export function NoShowResolutionDialog({
 
     resolveMutation.mutate(result.data, {
       onError: () => {
-        window.alert("Quyết định vắng mặt đã được kiểm tra. Backend chưa kết nối.");
+        showToast("Không thể lưu quyết định. Backend chưa hỗ trợ API này.", "error");
         onClose();
       },
       onSuccess: () => {
-        window.alert("Đã lưu quyết định vắng mặt (mock).");
+        showToast("Đã lưu quyết định vắng mặt.", "success");
         onClose();
       },
     });

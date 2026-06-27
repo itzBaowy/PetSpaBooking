@@ -30,8 +30,8 @@ const actionLabels: Record<AuditLogItem["actionType"], string> = {
 
 const roleLabels: Record<AuditLogItem["actorRole"], string> = {
   ADMIN: "Quản trị viên",
-  PET_OWNER: "Chủ thú cưng",
-  SERVICE_PROVIDER: "Nhà cung cấp dịch vụ",
+  CUSTOMER: "Khách hàng",
+  PROVIDER: "Nhà cung cấp",
 };
 
 export function AuditLogTable() {
@@ -128,7 +128,7 @@ export function AuditLogTable() {
             <CustomSelect
               className="md:w-48"
               value={role}
-              options={[{ label: "Tất cả vai trò", value: "ALL" }, { label: "Quản trị viên", value: "ADMIN" }, { label: "Chủ thú cưng", value: "PET_OWNER" }, { label: "Nhà cung cấp dịch vụ", value: "SERVICE_PROVIDER" }]}
+              options={[{ label: "Tất cả vai trò", value: "ALL" }, { label: "Quản trị viên", value: "ADMIN" }, { label: "Khách hàng", value: "CUSTOMER" }, { label: "Nhà cung cấp", value: "PROVIDER" }]}
               onValueChange={(value) => { setRole(value); setPage(1); }}
             />
             <CustomSelect

@@ -11,9 +11,16 @@ export const providerDocumentSchema = z.object({
   id: z.string(),
   providerId: z.string(),
   documentType: z.string(),
-  imageUrl: z.string(),
+  fileName: z.string().nullable().optional(),
+  fileUrl: z.string().nullable().optional(),
+  signedUrl: z.string().nullable().optional(),
+  // Backward compatibility until BE migrates to fileUrl/signedUrl.
+  imageUrl: z.string().nullable().optional(),
+  mimeType: z.string().nullable().optional(),
+  fileSize: z.number().nullable().optional(),
   status: z.string(),
   adminNote: z.string().nullable().optional(),
+  uploadedAt: z.string().nullable().optional(),
   createAt: z.string(),
   updateAt: z.string(),
 });

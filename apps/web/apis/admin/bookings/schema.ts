@@ -31,7 +31,6 @@ export const bookingStatusOverrideSchema = z.object({
   bookingId: z.string().min(1),
   status: adminBookingStatusSchema,
   reason: z.string().min(10),
-  adminId: z.string().min(1),
 });
 
 export type AdminBookingStatus = z.infer<typeof adminBookingStatusSchema>;

@@ -1,16 +1,10 @@
-import { ProviderDetail } from "@/apis/admin/providers/components/provider-detail";
+import { redirect } from "next/navigation";
 
-interface PageProps {
+type PageProps = {
   params: Promise<{ verificationId: string }>;
-}
+};
 
 export default async function VerificationDetailPage({ params }: PageProps) {
   const { verificationId } = await params;
-
-  return (
-    <ProviderDetail
-      providerId={verificationId}
-      backHref="/admin/verification"
-    />
-  );
+  redirect(`/admin/providers/${verificationId}`);
 }

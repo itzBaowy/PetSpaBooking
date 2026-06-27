@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
@@ -144,7 +144,6 @@ export const ledgerMockItems: LedgerTransaction[] = [
     balanceAfter: 520000,
     createdAt: "2026-06-13 18:45",
     metadata: {
-      admin_id: "ADM-001",
       reason: "Manual correction after duplicated debt offset.",
     },
   },
@@ -238,6 +237,8 @@ export function useProviderDebts() {
 }
 
 export function useAdjustProviderBalance() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (payload: BalanceAdjustmentData) => {
       const parsedPayload = balanceAdjustmentSchema.parse(payload);
@@ -247,10 +248,17 @@ export function useAdjustProviderBalance() {
       );
       return response.data;
     },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.adminFinance.all,
+      });
+    },
   });
 }
 
 export function useResolveProviderDebt() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (payload: DebtActionData) => {
       const parsedPayload = debtActionSchema.parse(payload);
@@ -259,6 +267,11 @@ export function useResolveProviderDebt() {
         parsedPayload,
       );
       return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.adminFinance.all,
+      });
     },
   });
 }

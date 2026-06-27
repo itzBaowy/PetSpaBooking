@@ -73,10 +73,6 @@ export function UserDetail({ userId }: { userId: string }) {
                 onClick: () => void state.changeRole("CUSTOMER"),
               },
               {
-                label: "Đổi thành nhà cung cấp",
-                onClick: () => void state.changeRole("PROVIDER"),
-              },
-              {
                 label: "Đổi thành quản trị viên",
                 onClick: () => void state.changeRole("ADMIN"),
               },

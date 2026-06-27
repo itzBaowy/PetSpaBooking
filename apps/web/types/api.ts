@@ -14,12 +14,19 @@ export interface ApiError {
 
 export interface PaginationParams {
   page: number;
-  limit: number;
+  pageSize: number;
 }
 
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
+export interface PaginationMeta {
   page: number;
-  limit: number;
+  pageSize: number;
+  totalItem: number;
+  totalPage: number;
 }
+
+export interface Paginated<T> extends PaginationMeta {
+  items: T[];
+}
+
+/** @deprecated Use Paginated<T>. */
+export type PaginatedResponse<T> = Paginated<T>;

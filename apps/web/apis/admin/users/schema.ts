@@ -53,8 +53,8 @@ export const updateAdminUserRoleSchema = z.object({
 });
 
 export const adminAccountRoleSchema = z.enum([
-  "PET_OWNER",
-  "SERVICE_PROVIDER",
+  "CUSTOMER",
+  "PROVIDER",
   "ADMIN",
 ]);
 

@@ -14,7 +14,7 @@ export const reportResolutionSchema = z.object({
 
 export const reportCreateSchema = z.object({
   contentId: z.string(),
-  contentType: z.enum(["SERVICE", "REVIEW", "PROVIDER", "PET_OWNER"]),
+  contentType: z.enum(["SERVICE", "REVIEW", "PROVIDER", "CUSTOMER"]),
   reason: z.string().min(10),
 });
 

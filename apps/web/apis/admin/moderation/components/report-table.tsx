@@ -8,6 +8,7 @@ import type { DataTableColumn } from "@/components/ui/data-table";
 import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
+import { useToast } from "@/components/ui/feedback-provider";
 import { useDebounce } from "@/hooks/use-debounce";
 import { useReports } from "../queries";
 import type { ReportStatus, UserReport } from "../queries";
@@ -33,6 +34,7 @@ const reportStatusLabels: Record<ReportStatus, string> = {
 };
 
 export function ReportTable() {
+  const { showToast } = useToast();
   const reports = useReports();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<"" | ReportStatus>("");
@@ -120,21 +122,24 @@ export function ReportTable() {
       align: "right",
       isAction: true,
       widthClassName: "w-[8%]",
-      render: (report) => (
+      render: () => (
         <ActionMenu
           items={[
             {
               label: "Bỏ qua báo cáo",
-              onClick: () => alert(`${report.id} dismissed (mock)`),
+              onClick: () =>
+                showToast("BE chưa hỗ trợ API bỏ qua báo cáo.", "info"),
             },
             {
               label: "Ẩn dịch vụ",
-              onClick: () => alert(`${report.target} hidden (mock)`),
+              onClick: () =>
+                showToast("BE chưa hỗ trợ API xử lý báo cáo.", "info"),
               variant: "danger",
             },
             {
               label: "Xử lý báo cáo",
-              onClick: () => alert(`${report.id} resolved (mock)`),
+              onClick: () =>
+                showToast("BE chưa hỗ trợ API kết luận báo cáo.", "info"),
             },
           ]}
         />

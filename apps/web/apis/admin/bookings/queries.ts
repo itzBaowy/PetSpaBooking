@@ -1,5 +1,6 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
+import type { PaymentMethod, PaymentStatus } from "@/types/payment";
 import { bookingStatusOverrideSchema, noShowResolutionSchema } from "./schema";
 import type {
   AdminBookingStatus,
@@ -8,7 +9,6 @@ import type {
   NoShowResolutionData,
 } from "./schema";
 
-export type PaymentStatus = "UNPAID" | "PAID" | "FAILED" | "REFUNDED";
 export type DisputeStatus = "OPEN" | "REVIEWING" | "RESOLVED";
 
 export interface AdminBooking {
@@ -21,7 +21,7 @@ export interface AdminBooking {
   status: AdminBookingStatus;
   paymentStatus: PaymentStatus;
   disputeStatus?: DisputeStatus;
-  paymentMethod: "CASH" | "ONLINE_MOMO";
+  paymentMethod: PaymentMethod;
   commissionReserved?: number;
 }
 
@@ -85,7 +85,7 @@ export const adminBookingMockItems: AdminBooking[] = [
     status: "REJECTED",
     paymentStatus: "REFUNDED",
     disputeStatus: "RESOLVED",
-    paymentMethod: "ONLINE_MOMO",
+    paymentMethod: "MOMO",
   },
   {
     id: "BK-91942",
@@ -211,6 +211,8 @@ export function useDisputeBookings() {
 }
 
 export function useResolveBookingDispute() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (payload: DisputeResolutionData) => {
       const response = await api.post(
@@ -219,10 +221,15 @@ export function useResolveBookingDispute() {
       );
       return response.data as { success: boolean; auditLogId: string };
     },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminBookingKeys.all });
+    },
   });
 }
 
 export function useResolveNoShowReview() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (payload: NoShowResolutionData) => {
       const parsedPayload = noShowResolutionSchema.parse(payload);
@@ -232,10 +239,15 @@ export function useResolveNoShowReview() {
       );
       return response.data;
     },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminBookingKeys.all });
+    },
   });
 }
 
 export function useOverrideBookingStatus() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (payload: BookingStatusOverrideData) => {
       const parsedPayload = bookingStatusOverrideSchema.parse(payload);
@@ -244,6 +256,9 @@ export function useOverrideBookingStatus() {
         parsedPayload,
       );
       return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: adminBookingKeys.all });
     },
   });
 }

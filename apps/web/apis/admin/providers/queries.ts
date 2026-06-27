@@ -114,6 +114,8 @@ function useProviderMutation() {
   function syncProvider(provider: AdminProvider) {
     queryClient.setQueryData(queryKeys.adminProviders.detail(provider.id), provider);
     void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders.all });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
+    void queryClient.invalidateQueries({ queryKey: ["admin", "analytics"] });
   }
 
   return { syncProvider };

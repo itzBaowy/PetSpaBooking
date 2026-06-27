@@ -102,9 +102,7 @@ export function ProviderManagement({
               label: verificationOnly ? "Rà soát hồ sơ" : "Xem nhà cung cấp",
               onClick: () =>
                 router.push(
-                  verificationOnly
-                    ? `/admin/verification/${provider.id}`
-                    : `/admin/providers/${provider.id}`,
+                  `/admin/providers/${provider.id}`,
                 ),
             },
             ...(provider.providerStatus === "PENDING_VERIFICATION"
