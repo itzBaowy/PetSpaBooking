@@ -3,7 +3,6 @@ import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
-import type { ProviderBalance, ProviderTrustScore } from "@/types/provider";
 import {
   adminUserListParamsSchema,
   adminUserListSchema,
@@ -17,76 +16,12 @@ import type {
   AdminUserList,
   AdminUserListParams,
   AdminUserPayload,
-  ProviderType,
-  ProviderVerificationStatus,
   UpdateAdminUserPayload,
   UpdateAdminUserRolePayload,
 } from "./schema";
 
 export type { AdminUser, AdminUserList, AdminUserListParams };
 
-export interface AdminProviderAccount {
-  id: string;
-  businessName: string;
-  ownerName: string;
-  email: string;
-  phone: string;
-  providerType: ProviderType;
-  verificationStatus: ProviderVerificationStatus;
-  status: "ACTIVE" | "SUSPENDED";
-  joinedAt: string;
-  servicesCount: number;
-  bookingsCount: number;
-  rating: number;
-  revenueVnd: number;
-  balance: ProviderBalance;
-  trustScore: ProviderTrustScore;
-  violations: Array<{
-    id: string;
-    type: "REPORT" | "NO_SHOW" | "DISPUTE" | "CONTENT_POLICY";
-    note: string;
-    createdAt: string;
-    severity: "LOW" | "MEDIUM" | "HIGH";
-  }>;
-  banReason?: string;
-  banExpiresAt?: string;
-}
-
-const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
-  {
-    id: "PRV-2001",
-    businessName: "Happy Paws Spa",
-    ownerName: "Anh Nguyen",
-    email: "owner@happypaws.vn",
-    phone: "+84 28 3456 7890",
-    providerType: "SPA",
-    verificationStatus: "VERIFIED",
-    status: "ACTIVE",
-    joinedAt: "2025-12-20",
-    servicesCount: 12,
-    bookingsCount: 342,
-    rating: 4.9,
-    revenueVnd: 38400000,
-    balance: {
-      availableBalance: 7200000,
-      reservedBalance: 1260000,
-      debtBalance: 0,
-      safetyBuffer: 1500000,
-      currency: "VND",
-      lastUpdatedAt: "2026-06-14 09:30",
-    },
-    trustScore: {
-      score: 92,
-      riskLevel: "LOW",
-      completionRate: 97,
-      noShowRate: 1.2,
-      disputeRate: 0.8,
-      cashAbnormalityRate: 0.5,
-      lastCalculatedAt: "2026-06-14",
-    },
-    violations: [],
-  },
-];
 
 function buildUserListParams(params: AdminUserListParams) {
   const parsed = adminUserListParamsSchema.parse(params);
@@ -204,14 +139,5 @@ export function useUpdateAdminUserRole(userId: string) {
       queryClient.setQueryData(queryKeys.adminUsers.detail(user.id), user);
       void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
     },
-  });
-}
-
-export function useAdminProviders() {
-  return useQuery<AdminProviderAccount[]>({
-    queryKey: ["admin", "users", "providers"],
-    queryFn: async () => MOCK_ADMIN_PROVIDERS,
-    initialData: MOCK_ADMIN_PROVIDERS,
-    enabled: false,
   });
 }

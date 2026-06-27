@@ -55,11 +55,19 @@ export const API_ENDPOINTS = {
       ADJUST_BALANCE: "/admin/finance/adjustments",
     },
     COMMISSION: {
-      RECORDS: "/admin/finance/commission",
-      PENDING: "/admin/finance/commission/pending",
-      CONFIGS: "/admin/finance/commission/config",
+      SUMMARY: "/admin/finance/commissions/summary",
+      RECORDS: "/admin/finance/commissions",
+      PENDING: "/admin/finance/commissions/pending",
+      CONFIGS: "/admin/config/commissions",
       UPDATE_CONFIG: (configId: string) =>
-        `/admin/finance/commission/config/${configId}`,
+        `/admin/config/commissions/${configId}`,
+    },
+    SERVICES: {
+      LIST: "/admin/services",
+      MODERATE: (serviceId: string) =>
+        `/admin/services/${serviceId}/moderation`,
+      HIDE: (serviceId: string) => `/admin/services/${serviceId}/hide`,
+      UNHIDE: (serviceId: string) => `/admin/services/${serviceId}/unhide`,
     },
   },
 } as const;

@@ -6,6 +6,7 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DataTable } from "@/components/ui/data-table";
 import { SearchInput } from "@/components/ui/search-input";
+import { useToast } from "@/components/ui/feedback-provider";
 import { TRUST_RISK_LABELS } from "@/constants/trust-score";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import { useProviderBalances } from "../queries";
@@ -22,6 +23,7 @@ const riskOptions = [
 ];
 
 export function ProviderBalanceTable() {
+  const { showToast } = useToast();
   const { data: balances } = useProviderBalances();
   const [search, setSearch] = useState("");
   const [risk, setRisk] = useState("ALL");
@@ -117,7 +119,10 @@ export function ProviderBalanceTable() {
             {
               label: "Điều chỉnh số dư",
               onClick: () =>
-                window.alert("Dùng biểu mẫu điều chỉnh bên dưới (mock)."),
+                showToast(
+                  "Dùng biểu mẫu điều chỉnh số dư ở cuối trang.",
+                  "info",
+                ),
             },
           ]}
         />

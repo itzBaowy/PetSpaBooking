@@ -14,7 +14,7 @@ export interface Commission {
   commissionAmount: number;
   rateLabel: string;
   status: CommissionStatus;
-  paymentMethod: "CASH" | "ONLINE_MOMO";
+  paymentMethod: PaymentMethod;
   reservedAt?: string;
   chargedAt?: string;
 }
@@ -30,3 +30,4 @@ export interface CommissionConfig {
   appliesToNewBookingsOnly: true;
   isActive: boolean;
 }
+import type { PaymentMethod } from "@/types/payment";

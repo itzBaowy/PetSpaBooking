@@ -1,6 +1,6 @@
 ﻿"use client";
 
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
@@ -64,7 +64,7 @@ export const commissionMockItems: Commission[] = [
     commissionAmount: 142500,
     rateLabel: "15%",
     status: "RELEASED",
-    paymentMethod: "ONLINE_MOMO",
+    paymentMethod: "MOMO",
     reservedAt: "2026-06-13 19:00",
   },
   {
@@ -123,7 +123,7 @@ export function useCommissionSummary() {
     queryKey: queryKeys.adminCommission.summary(),
     queryFn: async () => {
       const response = await api.get<CommissionSummary>(
-        API_ENDPOINTS.ADMIN.COMMISSION.RECORDS,
+        API_ENDPOINTS.ADMIN.COMMISSION.SUMMARY,
       );
       return response.data;
     },
@@ -177,6 +177,8 @@ export function useCommissionConfigs() {
 }
 
 export function useSaveCommissionConfig() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async (payload: CommissionConfigData) => {
       const parsedPayload = commissionConfigSchema.parse(payload);
@@ -188,6 +190,11 @@ export function useSaveCommissionConfig() {
         parsedPayload,
       );
       return response.data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.adminCommission.all,
+      });
     },
   });
 }

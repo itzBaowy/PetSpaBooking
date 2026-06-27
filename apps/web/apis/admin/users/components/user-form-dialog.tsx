@@ -3,7 +3,7 @@
 import { Button, CustomSelect, Input } from "@/components/ui";
 import { useAdminUserForm } from "../hooks/use-admin-user-form";
 import type { AdminUser } from "../schema";
-import { roleSelectOptions, statusSelectOptions } from "../user-helpers";
+import { assignableRoleOptions, statusSelectOptions } from "../user-helpers";
 
 export function UserFormDialog({
   open,
@@ -96,7 +96,17 @@ function UserFormDialogContent({
             <Field label="Vai trò" required>
               <CustomSelect
                 value={formState.form.role}
-                options={roleSelectOptions}
+                options={
+                  user?.role === "PROVIDER"
+                    ? [
+                        {
+                          value: "PROVIDER",
+                          label: "Nhà cung cấp (cấp qua duyệt hồ sơ)",
+                        },
+                        ...assignableRoleOptions,
+                      ]
+                    : assignableRoleOptions
+                }
                 onValueChange={(value) => formState.updateField("role", value)}
               />
             </Field>

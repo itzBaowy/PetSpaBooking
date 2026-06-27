@@ -4,6 +4,7 @@ import { FormEvent } from "react";
 import { useMyProviderInfo } from "@/apis/provider/verification/queries";
 import { providerStatusLabels } from "@/apis/provider/verification/schema";
 import { PageHeader } from "@/components/ui/page-header";
+import { useToast } from "@/components/ui/feedback-provider";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
 import { profileUpdateSchema } from "../schema";
 import { useProfile } from "../queries";
@@ -63,6 +64,7 @@ function getInitials(name: string): string {
 }
 
 export function ProfilePage({ role }: { role: ProfileRouteRole }) {
+  const { showToast } = useToast();
   const { data: profile, isLoading, error } = useProfile();
   const providerQuery = useMyProviderInfo(role === "provider");
 
@@ -76,12 +78,16 @@ export function ProfilePage({ role }: { role: ProfileRouteRole }) {
     });
 
     if (!result.success) {
-      window.alert(result.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
+      showToast(
+        result.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.",
+        "error",
+      );
       return;
     }
 
-    window.alert(
+    showToast(
       "BE hiện chưa có API cập nhật hồ sơ cá nhân. Màn này đang lấy dữ liệu từ /auth/get-info và /providers/me.",
+      "info",
     );
   };
 

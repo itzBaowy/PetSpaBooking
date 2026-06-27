@@ -2,7 +2,7 @@ import { z } from "zod";
 
 export const auditLogFilterSchema = z.object({
   actorRole: z
-    .enum(["ADMIN", "PET_OWNER", "SERVICE_PROVIDER"])
+    .enum(["ADMIN", "CUSTOMER", "PROVIDER"])
     .optional(),
   actionType: z
     .enum([

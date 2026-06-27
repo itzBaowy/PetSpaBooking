@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { useToast } from "@/components/ui/feedback-provider";
 import { ADMIN_BOOKING_STATUS_LABELS } from "../schema";
 import { bookingStatusOverrideSchema } from "../schema";
 import { useOverrideBookingStatus } from "../queries";
@@ -15,6 +16,7 @@ export function BookingStatusOverrideDialog({
   onClose: () => void;
 }) {
   const overrideMutation = useOverrideBookingStatus();
+  const { showToast } = useToast();
   const [status, setStatus] = useState(booking.status);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
@@ -24,7 +26,6 @@ export function BookingStatusOverrideDialog({
       bookingId: booking.id,
       status,
       reason,
-      adminId: "ADM-001",
     });
 
     if (!result.success) {
@@ -34,11 +35,10 @@ export function BookingStatusOverrideDialog({
 
     overrideMutation.mutate(result.data, {
       onError: () => {
-        window.alert("Ghi đè trạng thái đã hợp lệ. Backend chưa được kết nối.");
-        onClose();
+        showToast("Không thể lưu trạng thái. Backend chưa hỗ trợ API này.", "error");
       },
       onSuccess: () => {
-        window.alert("Đã lưu ghi đè trạng thái đặt lịch (mock).");
+        showToast("Đã cập nhật trạng thái đặt lịch.", "success");
         onClose();
       },
     });

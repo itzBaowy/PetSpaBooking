@@ -25,6 +25,14 @@ function isImageDocument(value: string) {
   return /\.(png|jpe?g|webp|gif|avif)$/i.test(value);
 }
 
+function getDocumentUrl(document: ProviderDocument) {
+  return document.signedUrl ?? document.fileUrl ?? document.imageUrl ?? "";
+}
+
+function getDocumentName(document: ProviderDocument) {
+  return document.fileName ?? getDocumentUrl(document) ?? "Chưa có tên file";
+}
+
 function getDocumentPreviewSrc(value: string) {
   if (/^(https?:)?\/\//i.test(value) || value.startsWith("/")) {
     return value;
@@ -59,10 +67,11 @@ export function ProviderDocumentPanel({
   }
 
   const previewSrc = selectedDocument
-    ? getDocumentPreviewSrc(selectedDocument.imageUrl)
+    ? getDocumentPreviewSrc(getDocumentUrl(selectedDocument))
     : fallbackPreview;
   const canPreviewImage = selectedDocument
-    ? isImageDocument(selectedDocument.imageUrl)
+    ? Boolean(selectedDocument.mimeType?.startsWith("image/")) ||
+      isImageDocument(getDocumentUrl(selectedDocument))
     : false;
   const selectedLabel = selectedDocument
     ? providerDocumentTypeLabels[selectedDocument.documentType] ??
@@ -91,7 +100,7 @@ export function ProviderDocumentPanel({
             >
               <p className="text-sm font-bold text-foreground">{label}</p>
               <p className="mt-1 break-all text-xs text-muted">
-                {document.imageUrl}
+                {getDocumentName(document)}
               </p>
               <p className="mt-3 text-xs font-semibold text-brand">
                 {getDocumentDisplayStatus(document, providerStatus)} /{" "}
@@ -107,7 +116,9 @@ export function ProviderDocumentPanel({
           <div>
             <p className="text-sm font-bold text-foreground">{selectedLabel}</p>
             <p className="text-xs text-muted">
-              {selectedDocument?.imageUrl ?? "Không có tài liệu"}
+              {selectedDocument
+                ? getDocumentName(selectedDocument)
+                : "Không có tài liệu"}
             </p>
           </div>
           {selectedDocument && (
@@ -143,8 +154,13 @@ export function ProviderDocumentPanel({
             </div>
           )}
         </div>
-        {!/^(https?:)?\/\//i.test(selectedDocument?.imageUrl ?? "") &&
-          !(selectedDocument?.imageUrl ?? "").startsWith("/") && (
+        {!/^(https?:)?\/\//i.test(
+          selectedDocument ? getDocumentUrl(selectedDocument) : "",
+        ) &&
+          !(selectedDocument
+            ? getDocumentUrl(selectedDocument)
+            : ""
+          ).startsWith("/") && (
             <p className="border-t border-border-subtle bg-warning-soft px-4 py-3 text-xs font-semibold text-warning">
               BE hiện chỉ lưu tên file, chưa có URL ảnh thật. Cần upload lên
               Cloudinary hoặc serve static file để preview hiển thị đúng.

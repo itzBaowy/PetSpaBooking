@@ -164,7 +164,7 @@ export default function AdminDashboard() {
           </Link>
 
           <Link
-            href="/admin/verification"
+            href="/admin/providers?providerStatus=PENDING_VERIFICATION"
             className="flex flex-col items-center justify-center p-4 rounded-lg bg-gray-50/70 border border-gray-100 text-center hover:bg-amber-50/50 hover:border-amber-200 transition-all group"
           >
             <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">

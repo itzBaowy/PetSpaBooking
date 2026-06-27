@@ -15,7 +15,6 @@ export const balanceAdjustmentSchema = z.object({
   amount: z.number().min(1000, "Adjustment amount must be at least 1,000 VND."),
   direction: z.enum(["CREDIT", "DEBIT"]),
   ledgerType: z.literal("ADMIN_ADJUSTMENT"),
-  admin_id: z.string().min(1, "Admin id is required."),
   reason: z.string().min(10, "Reason must be at least 10 characters."),
 });
 

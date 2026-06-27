@@ -2,6 +2,10 @@
 
 import { ActionMenu } from "@/components/ui/action-menu";
 import { DataTable } from "@/components/ui/data-table";
+import {
+  useConfirmDialog,
+  useToast,
+} from "@/components/ui/feedback-provider";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import { debtActionSchema } from "../schema";
 import { useProviderDebts, useResolveProviderDebt } from "../queries";
@@ -15,34 +19,48 @@ const debtStatusLabels = {
   ESCALATED: "Đã chuyển xử lý",
 };
 
-function handleDebtAction(
-  provider: ProviderDebtRow,
-  action: "MARK_RESOLVED" | "FORCE_OFFSET" | "ESCALATE",
-  mutate: ReturnType<typeof useResolveProviderDebt>["mutate"],
-) {
-  const reason = window.prompt("Nhập lý do xử lý công nợ:");
-  if (!reason) return;
-
-  const result = debtActionSchema.safeParse({
-    providerId: provider.providerId,
-    action,
-    reason,
-  });
-
-  if (!result.success) {
-    window.alert(result.error.issues[0]?.message ?? "Thao tác công nợ không hợp lệ.");
-    return;
-  }
-
-  mutate(result.data, {
-    onError: () => window.alert("Thao tác công nợ đã được kiểm tra (mock)."),
-    onSuccess: () => window.alert("Đã lưu thao tác công nợ (mock)."),
-  });
-}
-
 export function DebtManagementTable() {
   const { data: debts } = useProviderDebts();
   const debtMutation = useResolveProviderDebt();
+  const confirm = useConfirmDialog();
+  const { showToast } = useToast();
+
+  async function handleDebtAction(
+    provider: ProviderDebtRow,
+    action: "MARK_RESOLVED" | "FORCE_OFFSET" | "ESCALATE",
+  ) {
+    const confirmation = await confirm({
+      title: "Xác nhận xử lý công nợ",
+      description: `${provider.providerName} / ${provider.providerId}`,
+      confirmLabel: "Tiếp tục",
+      tone: action === "ESCALATE" ? "danger" : "default",
+      input: {
+        label: "Lý do",
+        placeholder: "Nhập lý do xử lý công nợ...",
+        required: true,
+      },
+    });
+    if (!confirmation.confirmed) return;
+
+    const result = debtActionSchema.safeParse({
+      providerId: provider.providerId,
+      action,
+      reason: confirmation.value,
+    });
+    if (!result.success) {
+      showToast(
+        result.error.issues[0]?.message ?? "Thao tác công nợ không hợp lệ.",
+        "error",
+      );
+      return;
+    }
+
+    debtMutation.mutate(result.data, {
+      onError: () =>
+        showToast("BE chưa hỗ trợ API xử lý công nợ.", "error"),
+      onSuccess: () => showToast("Đã lưu thao tác công nợ.", "success"),
+    });
+  }
 
   const columns: Array<DataTableColumn<ProviderDebtRow>> = [
     {
@@ -96,18 +114,18 @@ export function DebtManagementTable() {
             {
               label: "Đánh dấu đã xử lý",
               onClick: () =>
-                handleDebtAction(debt, "MARK_RESOLVED", debtMutation.mutate),
+                void handleDebtAction(debt, "MARK_RESOLVED"),
             },
             {
               label: "Bù trừ bắt buộc",
               onClick: () =>
-                handleDebtAction(debt, "FORCE_OFFSET", debtMutation.mutate),
+                void handleDebtAction(debt, "FORCE_OFFSET"),
             },
             {
               label: "Chuyển xử lý cao hơn",
               variant: "danger",
               onClick: () =>
-                handleDebtAction(debt, "ESCALATE", debtMutation.mutate),
+                void handleDebtAction(debt, "ESCALATE"),
             },
           ]}
         />

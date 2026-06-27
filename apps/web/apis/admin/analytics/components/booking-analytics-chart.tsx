@@ -1,13 +1,6 @@
 "use client";
 
-const MOCK_DATA = [
-  { month: "Jan", completed: 180, cancelled: 15 },
-  { month: "Feb", completed: 215, cancelled: 24 },
-  { month: "Mar", completed: 260, cancelled: 18 },
-  { month: "Apr", completed: 230, cancelled: 32 },
-  { month: "May", completed: 285, cancelled: 21 },
-  { month: "Jun", completed: 325, cancelled: 14 },
-];
+import { bookingTrendMock as MOCK_DATA } from "../mock-data";
 
 const SVG_WIDTH = 500;
 const SVG_HEIGHT = 220;

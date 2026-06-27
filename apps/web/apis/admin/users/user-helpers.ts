@@ -14,10 +14,10 @@ export const statusFilterOptions: Array<{ label: string; value: "" | AdminUserSt
   { label: statusLabels.BANNED, value: "BANNED" },
 ];
 
-export const roleSelectOptions = Object.entries(roleLabels).map(([value, label]) => ({
-  value,
-  label,
-}));
+export const assignableRoleOptions = [
+  { value: "CUSTOMER", label: roleLabels.CUSTOMER },
+  { value: "ADMIN", label: roleLabels.ADMIN },
+];
 
 export const statusSelectOptions = Object.entries(statusLabels).map(([value, label]) => ({
   value,

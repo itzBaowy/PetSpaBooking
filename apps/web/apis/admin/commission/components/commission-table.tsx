@@ -5,6 +5,7 @@ import { ActionMenu } from "@/components/ui/action-menu";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { DataTable } from "@/components/ui/data-table";
 import { SearchInput } from "@/components/ui/search-input";
+import { useToast } from "@/components/ui/feedback-provider";
 import { COMMISSION_STATUS_LABELS } from "@/constants/commission";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import type { Commission } from "@/types/commission";
@@ -21,6 +22,7 @@ const statusOptions = [
 ];
 
 export function CommissionTable() {
+  const { showToast } = useToast();
   const { data: commissions } = useCommissionRecords();
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("ALL");
@@ -109,7 +111,10 @@ export function CommissionTable() {
             {
               label: "Xem đặt lịch",
               onClick: () =>
-                window.alert(`Mở đặt lịch ${commission.bookingId} (mock).`),
+                showToast(
+                  `Chưa có API chi tiết đặt lịch ${commission.bookingId}.`,
+                  "info",
+                ),
             },
             {
               label: "Xem sổ cái",
