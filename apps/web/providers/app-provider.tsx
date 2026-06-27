@@ -3,6 +3,7 @@
 import { QueryProvider } from "./query-provider";
 import { ThemeProvider } from "./theme-provider";
 import { AuthProvider } from "./auth-provider";
+import { FeedbackProvider } from "@/components/ui/feedback-provider";
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   return (
@@ -13,7 +14,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         enableSystem
         disableTransitionOnChange
       >
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <FeedbackProvider>{children}</FeedbackProvider>
+        </AuthProvider>
       </ThemeProvider>
     </QueryProvider>
   );

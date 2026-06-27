@@ -1,11 +1,13 @@
 ﻿"use client";
 
 import { useState } from "react";
+import { useToast } from "@/components/ui/feedback-provider";
 import { CustomSelect } from "@/components/ui/custom-select";
 import { commissionConfigSchema } from "../schema";
 import { useSaveCommissionConfig } from "../queries";
 
 export function CommissionConfigForm() {
+  const { showToast } = useToast();
   const saveMutation = useSaveCommissionConfig();
   const [name, setName] = useState("Hoa hồng mặc định cho dịch vụ grooming");
   const [type, setType] = useState<"PERCENTAGE" | "FIXED">("PERCENTAGE");
@@ -38,8 +40,8 @@ export function CommissionConfigForm() {
     setError("");
     saveMutation.mutate(result.data, {
       onError: () =>
-        window.alert("Cấu hình hoa hồng đã được kiểm tra. Backend chưa kết nối."),
-      onSuccess: () => window.alert("Đã lưu cấu hình hoa hồng (mock)."),
+        showToast("Không thể lưu cấu hình. Backend chưa hỗ trợ API này.", "error"),
+      onSuccess: () => showToast("Đã lưu cấu hình hoa hồng.", "success"),
     });
   };
 

@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
 
 export const analyticsKeys = {
-  all: ["analytics"] as const,
+  all: ["admin", "analytics"] as const,
   metrics: () => [...analyticsKeys.all, "metrics"] as const,
   trends: () => [...analyticsKeys.all, "trends"] as const,
   commissionRevenue: () =>

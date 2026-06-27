@@ -32,4 +32,14 @@ export const authController = {
             next(error);
         }
     },
+
+    async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const result = await authService.refreshToken(req);
+            const response = responseSuccess(result, `Refresh token successfully`);
+            res.status(response.statusCode).json(response);
+        } catch (error) {
+            next(error);
+        }
+    },
 };

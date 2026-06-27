@@ -6,7 +6,7 @@ import { api } from "@/lib/axios";
 export interface AuditLogItem {
   id: string;
   actorName: string;
-  actorRole: "ADMIN" | "PET_OWNER" | "SERVICE_PROVIDER";
+  actorRole: "ADMIN" | "CUSTOMER" | "PROVIDER";
   actionType:
     | "CONTENT_APPROVED"
     | "CONTENT_HIDDEN"

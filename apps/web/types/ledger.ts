@@ -12,7 +12,6 @@ export type LedgerDirection = "CREDIT" | "DEBIT";
 export interface LedgerTransactionMetadata {
   bookingId?: string;
   commissionId?: string;
-  admin_id?: string;
   reason?: string;
   note?: string;
 }

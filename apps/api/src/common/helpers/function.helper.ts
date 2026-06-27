@@ -1,3 +1,5 @@
+import { Request } from "express";
+
 export interface SuccessResponse<T = unknown> {
     status: "success";
     statusCode: number;

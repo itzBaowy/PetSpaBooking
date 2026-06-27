@@ -27,7 +27,7 @@ export interface UserReport {
   id: string;
   target: string;
   targetType: "PROVIDER" | "SERVICE";
-  reporterRole: "PET_OWNER" | "SERVICE_PROVIDER";
+  reporterRole: "CUSTOMER" | "PROVIDER";
   reason: string;
   status: ReportStatus;
   createdAt: string;
@@ -68,7 +68,7 @@ export const reportMockItems: UserReport[] = [
     id: "RPT-7781",
     target: "Happy Paws Spa",
     targetType: "PROVIDER",
-    reporterRole: "PET_OWNER",
+    reporterRole: "CUSTOMER",
     reason: "Service quality did not match listed package details.",
     status: "OPEN",
     createdAt: "2026-06-14 10:05",
@@ -77,7 +77,7 @@ export const reportMockItems: UserReport[] = [
     id: "RPT-7764",
     target: "Basic Bath Service",
     targetType: "SERVICE",
-    reporterRole: "PET_OWNER",
+    reporterRole: "CUSTOMER",
     reason: "Reported inaccurate photos and unclear price surcharge.",
     status: "INVESTIGATING",
     createdAt: "2026-06-13 14:22",
@@ -86,7 +86,7 @@ export const reportMockItems: UserReport[] = [
     id: "RPT-7702",
     target: "VetCare 24h",
     targetType: "PROVIDER",
-    reporterRole: "SERVICE_PROVIDER",
+    reporterRole: "PROVIDER",
     reason: "Duplicate service listing appears under another provider.",
     status: "RESOLVED",
     createdAt: "2026-06-11 08:15",

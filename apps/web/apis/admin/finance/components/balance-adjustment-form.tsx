@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { useToast } from "@/components/ui/feedback-provider";
 import { balanceAdjustmentSchema } from "../schema";
 import { useAdjustProviderBalance, useProviderBalances } from "../queries";
 
@@ -12,6 +13,7 @@ export function BalanceAdjustmentForm({
 }) {
   const { data: providers } = useProviderBalances();
   const adjustmentMutation = useAdjustProviderBalance();
+  const { showToast } = useToast();
   const [providerId, setProviderId] = useState(
     defaultProviderId ?? providers[0]?.providerId ?? "",
   );
@@ -26,7 +28,6 @@ export function BalanceAdjustmentForm({
       direction,
       amount: Number(amount),
       ledgerType: "ADMIN_ADJUSTMENT",
-      admin_id: "ADM-001",
       reason,
     });
 
@@ -38,10 +39,10 @@ export function BalanceAdjustmentForm({
     setError("");
     adjustmentMutation.mutate(result.data, {
       onError: () => {
-        window.alert("Điều chỉnh mock đã được kiểm tra. Backend chưa kết nối.");
+        showToast("Không thể điều chỉnh số dư. Backend chưa hỗ trợ API này.", "error");
       },
       onSuccess: () => {
-        window.alert("Đã lưu điều chỉnh số dư (mock).");
+        showToast("Đã điều chỉnh số dư.", "success");
       },
     });
   };
@@ -53,7 +54,8 @@ export function BalanceAdjustmentForm({
           Điều chỉnh số dư thủ công
         </h2>
         <p className="mt-1 text-sm text-muted">
-          Tạo bút toán ADMIN_ADJUSTMENT kèm mã quản trị viên và lý do.
+          Tạo bút toán ADMIN_ADJUSTMENT kèm lý do kiểm toán. Danh tính quản trị
+          viên được xác định từ access token.
         </p>
       </div>
 

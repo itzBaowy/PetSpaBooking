@@ -141,5 +141,42 @@ authRouter.post("/login", authController.login);
  */
 authRouter.get("/get-info", protect, authController.getInfo);
 
+/**
+ * @swagger
+ * /api/auth/refresh-token:
+ *   post:
+ *     summary: Làm mới token
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *                 description: Refresh token còn hiệu lực
+ *             required:
+ *               - refreshToken
+ *     responses:
+ *       200:
+ *         description: Làm mới token thành công
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 accessToken:
+ *                   type: string
+ *                 refreshToken:
+ *                   type: string
+ *       401:
+ *         description: Token không hợp lệ
+ */
+authRouter.post("/refresh-token", protect, authController.refreshToken);
+
 export default authRouter;
 

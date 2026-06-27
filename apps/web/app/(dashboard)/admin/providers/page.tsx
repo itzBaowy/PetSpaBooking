@@ -1,5 +1,24 @@
-import { ProviderManagement } from "@/apis/admin/users/components/provider-management";
+import { ProviderManagement } from "@/apis/admin/providers/components/provider-management";
+import type { AdminProviderStatus } from "@/apis/admin/providers/schema";
 
-export default function AdminProviders() {
-  return <ProviderManagement />;
+const providerStatuses = new Set<AdminProviderStatus>([
+  "PENDING_VERIFICATION",
+  "VERIFIED",
+  "REJECTED",
+  "SUSPENDED",
+]);
+
+type PageProps = {
+  searchParams: Promise<{ providerStatus?: string }>;
+};
+
+export default async function AdminProviders({ searchParams }: PageProps) {
+  const { providerStatus } = await searchParams;
+  const defaultStatus =
+    providerStatus &&
+    providerStatuses.has(providerStatus as AdminProviderStatus)
+      ? (providerStatus as AdminProviderStatus)
+      : undefined;
+
+  return <ProviderManagement defaultStatus={defaultStatus} />;
 }

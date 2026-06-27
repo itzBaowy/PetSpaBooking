@@ -2,27 +2,31 @@ import { z } from "zod";
 
 export const profileRouteRoleSchema = z.enum(["admin", "provider"]);
 
-export const profileRoleSchema = z.enum(["ADMIN", "SERVICE_PROVIDER"]);
+export const profileRoleSchema = z.enum([
+  "ADMIN",
+  "PENDING_PROVIDER",
+  "PROVIDER",
+  "CUSTOMER",
+]);
+
+export const profileStatusSchema = z.enum(["ACTIVE", "INACTIVE", "BANNED"]);
 
 export const profileSchema = z.object({
   id: z.string().min(1),
-  name: z.string().min(1),
+  userName: z.string().min(1),
   email: z.string().email(),
   phone: z.string().min(1),
+  fullName: z.string().nullable(),
+  avatar: z.string().nullable(),
   role: profileRoleSchema,
-  title: z.string().min(1),
-  department: z.string().min(1),
-  timezone: z.string().min(1),
-  lastLoginAt: z.string().min(1),
-  joinedAt: z.string().min(1),
+  status: profileStatusSchema.or(z.string()),
+  createAt: z.string().min(1),
+  updateAt: z.string().min(1),
 });
 
-export const profileUpdateSchema = profileSchema.pick({
-  name: true,
-  phone: true,
-  title: true,
-  department: true,
-  timezone: true,
+export const profileUpdateSchema = z.object({
+  fullName: z.string().min(1, "Họ và tên là bắt buộc"),
+  phone: z.string().min(1, "Số điện thoại là bắt buộc"),
 });
 
 export type ProfileRouteRole = z.infer<typeof profileRouteRoleSchema>;

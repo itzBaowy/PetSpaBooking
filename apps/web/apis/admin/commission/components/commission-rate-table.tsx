@@ -2,11 +2,13 @@
 
 import { ActionMenu } from "@/components/ui/action-menu";
 import { DataTable } from "@/components/ui/data-table";
+import { useToast } from "@/components/ui/feedback-provider";
 import type { DataTableColumn } from "@/components/ui/data-table";
 import type { CommissionConfig } from "@/types/commission";
 import { useCommissionConfigs } from "../queries";
 
 export function CommissionRateTable() {
+  const { showToast } = useToast();
   const { data: configs } = useCommissionConfigs();
   const columns: Array<DataTableColumn<CommissionConfig>> = [
     {
@@ -68,12 +70,12 @@ export function CommissionRateTable() {
             {
               label: "Sửa cấu hình",
               onClick: () =>
-                window.alert(`${config.name} would be edited (mock).`),
+                showToast("BE chưa hỗ trợ cập nhật cấu hình hoa hồng.", "info"),
             },
             {
               label: config.isActive ? "Tắt cấu hình" : "Bật cấu hình",
               onClick: () =>
-                window.alert(`${config.name} status would change (mock).`),
+                showToast("BE chưa hỗ trợ đổi trạng thái cấu hình.", "info"),
             },
           ]}
         />

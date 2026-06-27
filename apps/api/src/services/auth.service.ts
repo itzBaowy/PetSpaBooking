@@ -42,7 +42,7 @@ export const authService = {
         if (!userExist) {
             throw new UnauthorizedException("Incorrect username or password");
         }
-
+ 
         // kiểm tra password
         const isMatch = bcrypt.compareSync(password, userExist.password);
         if (!isMatch) {
@@ -68,6 +68,10 @@ export const authService = {
                 userName: true,
                 email: true,
                 phone: true,
+                fullName: true,
+                avatar: true,
+                role: true,
+                status: true,
                 createAt: true,
                 updateAt: true
             },
@@ -79,4 +83,25 @@ export const authService = {
 
         return user;
     },
+    
+    async refreshToken(req: Request) {
+        const { refreshToken } = req.body as { refreshToken: string };
+        const accessToken = req.headers.authorization?.split(" ")[1];
+        if (!refreshToken) {
+            throw new BadRequestException("Refresh token is required");
+        }
+        if (!accessToken) {
+            throw new UnauthorizedException("Access token is required");
+        }
+        const decodeAccessToken = tokenService.verifyAccessToken(accessToken, { ignoreExpiration: true });
+        const decodeRefreshToken = tokenService.verifyRefreshToken(refreshToken);
+
+        if (decodeAccessToken.userId !== decodeRefreshToken.userId) {
+            throw new UnauthorizedException("Invalid refresh token");
+        }
+
+        const tokens = tokenService.createTokens(decodeRefreshToken.userId);
+        return tokens;
+    },
+
 };

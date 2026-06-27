@@ -1,21 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/currency";
-
-const MOCK_REVENUE = [
-  { month: "Jan", value: 8200000 },
-  { month: "Feb", value: 9500000 },
-  { month: "Mar", value: 11800000 },
-  { month: "Apr", value: 10400000 },
-  { month: "May", value: 13600000 },
-  { month: "Jun", value: 12100000 },
-  { month: "Jul", value: 15300000 },
-  { month: "Aug", value: 14200000 },
-  { month: "Sep", value: 16800000 },
-  { month: "Oct", value: 18500000 },
-  { month: "Nov", value: 17900000 },
-  { month: "Dec", value: 19150000 },
-];
+import { revenueTrendMock as MOCK_REVENUE } from "../mock-data";
 
 const SVG_WIDTH = 500;
 const SVG_HEIGHT = 220;

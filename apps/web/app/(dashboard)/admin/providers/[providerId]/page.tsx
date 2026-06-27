@@ -1,4 +1,4 @@
-import { ProviderDetail } from "@/apis/admin/users/components/provider-detail";
+import { ProviderDetail } from "@/apis/admin/providers/components/provider-detail";
 
 interface PageProps {
   params: Promise<{ providerId: string }>;

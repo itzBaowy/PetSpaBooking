@@ -17,11 +17,69 @@ model users {
   id        String   @id @default(auto()) @map("_id") @db.ObjectId
   userName  String   @unique
   password  String
-  phone     String  @unique
+  phone     String   @unique
   email     String   @unique
   fullName  String?
   avatar    String?
-  role      String   @default("USER")
+  role      String   @default("CUSTOMER")
+  status    String   @default("ACTIVE")
   createAt  DateTime @default(now())
   updateAt  DateTime @updatedAt
+}
+
+model providers {
+  id               String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId           String   @unique @db.ObjectId
+  businessName     String
+  slug             String   @unique
+  description      String?
+  avatarUrl        String?
+  coverImageUrl    String?
+  phone            String?
+  email            String?
+  address          String?
+  taxCode          String?
+  identityNumber   String?
+  identityFullName String?
+  identityDob      String?
+  identityAddress  String?
+  bankCode         String?
+  bankAccountNumber String?
+  bankAccountName  String?
+  lat              Float?
+  lng              Float?
+  providerStatus   String   @default("PENDING_VERIFICATION")
+  depositStatus    String   @default("NOT_PAID")
+  depositBalance   Float    @default(0)
+  walletBalance    Float    @default(0)
+  cancellationRate Float    @default(0)
+  adminNote        String?
+  createAt         DateTime @default(now())
+  updateAt         DateTime @updatedAt
+}
+
+model provider_documents {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  providerId   String   @db.ObjectId
+  documentType String
+  imageUrl     String
+  status       String   @default("PENDING")
+  adminNote    String?
+  createAt     DateTime @default(now())
+  updateAt     DateTime @updatedAt
+}
+
+model services {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  providerId      String   @db.ObjectId
+  name            String
+  description     String?
+  price           Float
+  duration        Int
+  category        String   @default("OTHER")
+  imageUrls       String[]
+  isActive        Boolean  @default(true)
+  isHiddenByAdmin Boolean  @default(false)
+  createAt        DateTime @default(now())
+  updateAt        DateTime @updatedAt
 }

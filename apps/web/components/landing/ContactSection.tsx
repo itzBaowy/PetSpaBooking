@@ -41,7 +41,7 @@ export function ContactSection() {
             <a href="#home">Trang chủ</a>
             <a href="#features">Tính năng</a>
             <a href="#process">Quy trình</a>
-            <a href="mailto:hello@petlink.vn">hello@petlink.vn</a>
+            <a href="mailto:bussiness@petlink.io.vn">bussiness@petlink.io.vn</a>
           </div>
         </div>
         <p className="mx-auto mt-8 max-w-7xl text-xs text-[#91a098]">
