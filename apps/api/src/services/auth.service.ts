@@ -2,7 +2,6 @@ import bcrypt from "bcrypt";
 import { Request } from "express";
 import { tokenService } from "./token.service.ts";
 import { BadRequestException, UnauthorizedException } from "../common/helpers/exception.helper.ts";
-import { getTokenFromHeader } from "../common/helpers/function.helper.ts";
 import prisma from "./../../connect.prisma.ts";
 
 export const authService = {
