@@ -3,6 +3,17 @@ export const queryKeys = {
     all: ["auth"] as const,
     profile: () => [...queryKeys.auth.all, "profile"] as const,
     login: () => [...queryKeys.auth.all, "login"] as const,
+    me: () => [...queryKeys.auth.all, "me"] as const,
+  },
+  banks: {
+    all: ["banks"] as const,
+    list: () => [...queryKeys.banks.all, "list"] as const,
+  },
+  providerVerification: {
+    all: ["providerVerification"] as const,
+    me: () => [...queryKeys.providerVerification.all, "me"] as const,
+    documents: () =>
+      [...queryKeys.providerVerification.all, "documents"] as const,
   },
   services: {
     all: ["services"] as const,
@@ -39,5 +50,20 @@ export const queryKeys = {
     pending: () => [...queryKeys.adminCommission.all, "pending"] as const,
     configs: () => [...queryKeys.adminCommission.all, "configs"] as const,
     summary: () => [...queryKeys.adminCommission.all, "summary"] as const,
+  },
+  adminUsers: {
+    all: ["admin", "users"] as const,
+    lists: () => [...queryKeys.adminUsers.all, "list"] as const,
+    list: (params: unknown) =>
+      [...queryKeys.adminUsers.lists(), params] as const,
+    detail: (id: string) => [...queryKeys.adminUsers.all, "detail", id] as const,
+  },
+  adminProviders: {
+    all: ["admin", "providers"] as const,
+    lists: () => [...queryKeys.adminProviders.all, "list"] as const,
+    list: (params: unknown) =>
+      [...queryKeys.adminProviders.lists(), params] as const,
+    detail: (id: string) =>
+      [...queryKeys.adminProviders.all, "detail", id] as const,
   },
 } as const;

@@ -1,4 +1,4 @@
-import { ProviderManagement } from "@/apis/admin/users/components/provider-management";
+import { ProviderManagement } from "@/apis/admin/providers/components/provider-management";
 
 export default function AdminProviders() {
   return <ProviderManagement />;

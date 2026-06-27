@@ -1,28 +1,29 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
+import type { ApiResponse } from "@/types/api";
 import type { ProviderBalance, ProviderTrustScore } from "@/types/provider";
-import { accountStatusActionSchema } from "./schema";
+import {
+  adminUserListParamsSchema,
+  adminUserListSchema,
+  adminUserPayloadSchema,
+  adminUserSchema,
+  updateAdminUserPayloadSchema,
+  updateAdminUserRoleSchema,
+} from "./schema";
 import type {
-  AccountStatusActionData,
-  AdminAccountRole,
-  AdminAccountStatus,
+  AdminUser,
+  AdminUserList,
+  AdminUserListParams,
+  AdminUserPayload,
   ProviderType,
   ProviderVerificationStatus,
+  UpdateAdminUserPayload,
+  UpdateAdminUserRolePayload,
 } from "./schema";
 
-export interface AdminUserAccount {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  role: AdminAccountRole;
-  status: AdminAccountStatus;
-  joinedAt: string;
-  bookings: number;
-  totalSpendVnd: number;
-  banReason?: string;
-  banExpiresAt?: string;
-}
+export type { AdminUser, AdminUserList, AdminUserListParams };
 
 export interface AdminProviderAccount {
   id: string;
@@ -32,7 +33,7 @@ export interface AdminProviderAccount {
   phone: string;
   providerType: ProviderType;
   verificationStatus: ProviderVerificationStatus;
-  status: AdminAccountStatus;
+  status: "ACTIVE" | "SUSPENDED";
   joinedAt: string;
   servicesCount: number;
   bookingsCount: number;
@@ -51,101 +52,7 @@ export interface AdminProviderAccount {
   banExpiresAt?: string;
 }
 
-export const MOCK_ADMIN_USERS: AdminUserAccount[] = [
-  {
-    id: "USR-1001",
-    name: "Minh Nguyen",
-    email: "minh.nguyen@example.com",
-    phone: "+84 90 111 2233",
-    role: "PET_OWNER",
-    status: "ACTIVE",
-    joinedAt: "2026-01-12",
-    bookings: 12,
-    totalSpendVnd: 8200000,
-  },
-  {
-    id: "USR-1002",
-    name: "Lan Pham",
-    email: "lan.pham@example.com",
-    phone: "+84 91 222 3344",
-    role: "PET_OWNER",
-    status: "ACTIVE",
-    joinedAt: "2026-02-05",
-    bookings: 8,
-    totalSpendVnd: 5100000,
-  },
-  {
-    id: "USR-1003",
-    name: "An Tran",
-    email: "an.tran@example.com",
-    phone: "+84 93 333 4455",
-    role: "PET_OWNER",
-    status: "SUSPENDED",
-    joinedAt: "2026-03-18",
-    bookings: 3,
-    totalSpendVnd: 1400000,
-    banReason: "Repeated no-show reports",
-    banExpiresAt: "2026-06-30",
-  },
-  {
-    id: "USR-1004",
-    name: "Happy Paws Spa",
-    email: "owner@happypaws.vn",
-    phone: "+84 28 3456 7890",
-    role: "SERVICE_PROVIDER",
-    status: "ACTIVE",
-    joinedAt: "2025-12-20",
-    bookings: 342,
-    totalSpendVnd: 38400000,
-  },
-  {
-    id: "USR-1005",
-    name: "VetCare 24h",
-    email: "admin@vetcare24h.vn",
-    phone: "+84 28 3822 1234",
-    role: "SERVICE_PROVIDER",
-    status: "ACTIVE",
-    joinedAt: "2026-01-04",
-    bookings: 218,
-    totalSpendVnd: 27600000,
-  },
-  {
-    id: "USR-1006",
-    name: "Super Admin",
-    email: "admin@petlink.vn",
-    phone: "+84 28 0000 0001",
-    role: "ADMIN",
-    status: "ACTIVE",
-    joinedAt: "2025-10-01",
-    bookings: 0,
-    totalSpendVnd: 0,
-  },
-  {
-    id: "USR-1007",
-    name: "Bao Le",
-    email: "bao.le@example.com",
-    phone: "+84 97 555 6677",
-    role: "PET_OWNER",
-    status: "ACTIVE",
-    joinedAt: "2026-04-02",
-    bookings: 5,
-    totalSpendVnd: 2800000,
-  },
-  {
-    id: "USR-1008",
-    name: "Paws & Claws Spa",
-    email: "spa@pawsnclaws.com",
-    phone: "+84 93 456 7890",
-    role: "SERVICE_PROVIDER",
-    status: "SUSPENDED",
-    joinedAt: "2026-02-26",
-    bookings: 94,
-    totalSpendVnd: 12300000,
-    banReason: "Unresolved service quality reports",
-  },
-];
-
-export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
+const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
   {
     id: "PRV-2001",
     businessName: "Happy Paws Spa",
@@ -179,246 +86,132 @@ export const MOCK_ADMIN_PROVIDERS: AdminProviderAccount[] = [
     },
     violations: [],
   },
-  {
-    id: "PRV-2002",
-    businessName: "VetCare 24h",
-    ownerName: "Huy Tran",
-    email: "admin@vetcare24h.vn",
-    phone: "+84 28 3822 1234",
-    providerType: "CLINIC",
-    verificationStatus: "VERIFIED",
-    status: "ACTIVE",
-    joinedAt: "2026-01-04",
-    servicesCount: 9,
-    bookingsCount: 218,
-    rating: 4.7,
-    revenueVnd: 27600000,
-    balance: {
-      availableBalance: 3100000,
-      reservedBalance: 840000,
-      debtBalance: 450000,
-      safetyBuffer: 1200000,
-      currency: "VND",
-      lastUpdatedAt: "2026-06-14 08:10",
-    },
-    trustScore: {
-      score: 81,
-      riskLevel: "WATCH",
-      completionRate: 91,
-      noShowRate: 3.6,
-      disputeRate: 2.4,
-      cashAbnormalityRate: 1.8,
-      lastCalculatedAt: "2026-06-14",
-    },
-    violations: [
-      {
-        id: "VIO-1202",
-        type: "REPORT",
-        note: "Late response to service quality report.",
-        createdAt: "2026-06-10",
-        severity: "LOW",
-      },
-    ],
-  },
-  {
-    id: "PRV-2003",
-    businessName: "Paws & Claws Spa",
-    ownerName: "Mai Do",
-    email: "spa@pawsnclaws.com",
-    phone: "+84 93 456 7890",
-    providerType: "GROOMING",
-    verificationStatus: "PENDING",
-    status: "SUSPENDED",
-    joinedAt: "2026-02-26",
-    servicesCount: 7,
-    bookingsCount: 94,
-    rating: 4.2,
-    revenueVnd: 12300000,
-    banReason: "Unresolved service quality reports",
-    balance: {
-      availableBalance: 520000,
-      reservedBalance: 630000,
-      debtBalance: 1850000,
-      safetyBuffer: 1500000,
-      currency: "VND",
-      lastUpdatedAt: "2026-06-13 18:45",
-    },
-    trustScore: {
-      score: 58,
-      riskLevel: "RESTRICTED",
-      completionRate: 76,
-      noShowRate: 8.5,
-      disputeRate: 7.2,
-      cashAbnormalityRate: 5.1,
-      lastCalculatedAt: "2026-06-14",
-    },
-    violations: [
-      {
-        id: "VIO-1301",
-        type: "DISPUTE",
-        note: "Two unresolved disputes in the last 30 days.",
-        createdAt: "2026-06-11",
-        severity: "HIGH",
-      },
-      {
-        id: "VIO-1294",
-        type: "CONTENT_POLICY",
-        note: "Uploaded pricing image did not match listed package.",
-        createdAt: "2026-06-08",
-        severity: "MEDIUM",
-      },
-    ],
-  },
-  {
-    id: "PRV-2004",
-    businessName: "Pet Hotel & Daycare",
-    ownerName: "Quynh Pham",
-    email: "book@pethotel.com",
-    phone: "+84 91 888 5555",
-    providerType: "PET_HOTEL",
-    verificationStatus: "REJECTED",
-    status: "ACTIVE",
-    joinedAt: "2026-03-03",
-    servicesCount: 5,
-    bookingsCount: 71,
-    rating: 4.1,
-    revenueVnd: 9800000,
-    balance: {
-      availableBalance: 1420000,
-      reservedBalance: 380000,
-      debtBalance: 0,
-      safetyBuffer: 1000000,
-      currency: "VND",
-      lastUpdatedAt: "2026-06-12 14:00",
-    },
-    trustScore: {
-      score: 73,
-      riskLevel: "WATCH",
-      completionRate: 84,
-      noShowRate: 4.8,
-      disputeRate: 3.9,
-      cashAbnormalityRate: 1.1,
-      lastCalculatedAt: "2026-06-14",
-    },
-    violations: [
-      {
-        id: "VIO-1280",
-        type: "NO_SHOW",
-        note: "No-show report rejected after pet owner evidence review.",
-        createdAt: "2026-06-03",
-        severity: "MEDIUM",
-      },
-    ],
-  },
-  {
-    id: "PRV-2005",
-    businessName: "Animal Wellness Center",
-    ownerName: "Linh Vo",
-    email: "info@animalwellness.vn",
-    phone: "+84 28 3844 5678",
-    providerType: "CLINIC",
-    verificationStatus: "VERIFIED",
-    status: "ACTIVE",
-    joinedAt: "2026-04-15",
-    servicesCount: 11,
-    bookingsCount: 126,
-    rating: 4.8,
-    revenueVnd: 18100000,
-    balance: {
-      availableBalance: 4800000,
-      reservedBalance: 710000,
-      debtBalance: 0,
-      safetyBuffer: 1200000,
-      currency: "VND",
-      lastUpdatedAt: "2026-06-14 10:20",
-    },
-    trustScore: {
-      score: 89,
-      riskLevel: "LOW",
-      completionRate: 95,
-      noShowRate: 1.9,
-      disputeRate: 1.6,
-      cashAbnormalityRate: 0.7,
-      lastCalculatedAt: "2026-06-14",
-    },
-    violations: [],
-  },
-  {
-    id: "PRV-2006",
-    businessName: "Furry Friends Clinic",
-    ownerName: "Nhi Huynh",
-    email: "care@furryfriends.vn",
-    phone: "+84 28 3512 6789",
-    providerType: "CLINIC",
-    verificationStatus: "PENDING",
-    status: "ACTIVE",
-    joinedAt: "2026-05-09",
-    servicesCount: 4,
-    bookingsCount: 38,
-    rating: 4.5,
-    revenueVnd: 5200000,
-    balance: {
-      availableBalance: 980000,
-      reservedBalance: 210000,
-      debtBalance: 0,
-      safetyBuffer: 1000000,
-      currency: "VND",
-      lastUpdatedAt: "2026-06-14 07:15",
-    },
-    trustScore: {
-      score: 78,
-      riskLevel: "WATCH",
-      completionRate: 88,
-      noShowRate: 3.2,
-      disputeRate: 2.8,
-      cashAbnormalityRate: 2.1,
-      lastCalculatedAt: "2026-06-14",
-    },
-    violations: [],
-  },
 ];
 
-export const adminUserKeys = {
-  all: ["admin", "users"] as const,
-  lists: () => [...adminUserKeys.all, "list"] as const,
-  providers: () => [...adminUserKeys.all, "providers"] as const,
-  detail: (id: string) => [...adminUserKeys.all, "detail", id] as const,
-};
+function buildUserListParams(params: AdminUserListParams) {
+  const parsed = adminUserListParamsSchema.parse(params);
+  const queryParams: Record<string, string | number> = {
+    page: parsed.page,
+    pageSize: parsed.pageSize,
+  };
 
-export function useAdminUsers() {
-  return useQuery<AdminUserAccount[]>({
-    queryKey: adminUserKeys.lists(),
+  if (parsed.search?.trim()) {
+    queryParams.filters = JSON.stringify({ userName: parsed.search.trim() });
+  }
+
+  if (parsed.role) queryParams.role = parsed.role;
+  if (parsed.status) queryParams.status = parsed.status;
+
+  return queryParams;
+}
+
+export function useAdminUsers(params: AdminUserListParams) {
+  const parsedParams = adminUserListParamsSchema.parse(params);
+
+  return useQuery<AdminUserList>({
+    queryKey: queryKeys.adminUsers.list(parsedParams),
     queryFn: async () => {
-      const response = await api.get<AdminUserAccount[]>("/admin/users");
-      return response.data;
+      const response = await api.get<ApiResponse<AdminUserList>>(
+        API_ENDPOINTS.USERS.LIST,
+        { params: buildUserListParams(parsedParams) },
+      );
+      return adminUserListSchema.parse(response.data.data);
     },
-    initialData: MOCK_ADMIN_USERS,
-    enabled: false,
+    keepPreviousData: true,
+  });
+}
+
+export function useAdminUser(userId: string) {
+  return useQuery<AdminUser>({
+    queryKey: queryKeys.adminUsers.detail(userId),
+    queryFn: async () => {
+      const response = await api.get<ApiResponse<AdminUser>>(
+        API_ENDPOINTS.USERS.DETAIL(userId),
+      );
+      return adminUserSchema.parse(response.data.data);
+    },
+    enabled: Boolean(userId),
+  });
+}
+
+export function useCreateAdminUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: AdminUserPayload) => {
+      const parsedPayload = adminUserPayloadSchema.parse(payload);
+      const response = await api.post<ApiResponse<AdminUser>>(
+        API_ENDPOINTS.USERS.CREATE,
+        parsedPayload,
+      );
+      return adminUserSchema.parse(response.data.data);
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
+    },
+  });
+}
+
+export function useUpdateAdminUser(userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: UpdateAdminUserPayload) => {
+      const parsedPayload = updateAdminUserPayloadSchema.parse(payload);
+      const response = await api.put<ApiResponse<AdminUser>>(
+        API_ENDPOINTS.USERS.UPDATE(userId),
+        parsedPayload,
+      );
+      return adminUserSchema.parse(response.data.data);
+    },
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.adminUsers.detail(user.id), user);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
+    },
+  });
+}
+
+export function useDeactivateAdminUser() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userId: string) => {
+      const response = await api.delete<ApiResponse<AdminUser>>(
+        API_ENDPOINTS.USERS.DELETE(userId),
+      );
+      return adminUserSchema.parse(response.data.data);
+    },
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.adminUsers.detail(user.id), user);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
+    },
+  });
+}
+
+export function useUpdateAdminUserRole(userId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payload: UpdateAdminUserRolePayload) => {
+      const parsedPayload = updateAdminUserRoleSchema.parse(payload);
+      const response = await api.patch<ApiResponse<AdminUser>>(
+        API_ENDPOINTS.USERS.UPDATE_ROLE(userId),
+        parsedPayload,
+      );
+      return adminUserSchema.parse(response.data.data);
+    },
+    onSuccess: (user) => {
+      queryClient.setQueryData(queryKeys.adminUsers.detail(user.id), user);
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
+    },
   });
 }
 
 export function useAdminProviders() {
   return useQuery<AdminProviderAccount[]>({
-    queryKey: adminUserKeys.providers(),
-    queryFn: async () => {
-      const response =
-        await api.get<AdminProviderAccount[]>("/admin/providers");
-      return response.data;
-    },
+    queryKey: ["admin", "users", "providers"],
+    queryFn: async () => MOCK_ADMIN_PROVIDERS,
     initialData: MOCK_ADMIN_PROVIDERS,
     enabled: false,
-  });
-}
-
-export function useUpdateUserStatus() {
-  return useMutation({
-    mutationFn: async (payload: AccountStatusActionData) => {
-      const parsedPayload = accountStatusActionSchema.parse(payload);
-      const response = await api.patch<{ success: boolean }>(
-        `/admin/accounts/${parsedPayload.accountId}/status`,
-        parsedPayload,
-      );
-      return response.data;
-    },
   });
 }

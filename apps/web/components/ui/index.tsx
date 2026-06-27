@@ -2,6 +2,7 @@ export * from "./action-menu";
 export * from "./button";
 export * from "./custom-select";
 export * from "./data-table";
+export * from "./feedback-provider";
 export * from "./pagination";
 export * from "./page-header";
 export * from "./password-input";

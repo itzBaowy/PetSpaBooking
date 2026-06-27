@@ -490,3 +490,137 @@ Notes:
 - Added mock configuration for minimum deposit and warning/restriction thresholds.
 - Changes are scoped to Admin and do not alter Provider/Customer operations.
 - Localized audit-log actor roles, action filters, mock names/notes, and pagination labels to Vietnamese; audit-log filters now work against mock data.
+
+## Feature: Auth Provider Verification FE Refactor
+
+Role: Auth / Provider
+Status: Done
+
+Files created:
+- apis/auth/hooks/use-provider-registration-draft.ts
+- apis/auth/hooks/use-identity-ocr.ts
+
+Files modified:
+- apis/auth/components/provider-verification-form.tsx
+- apis/auth/queries.ts
+- apis/banks/queries.ts
+- apis/provider/verification/queries.ts
+- app/(auth)/login/page.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+
+Components reused:
+- Button
+- Input
+- PasswordInput
+- CustomSelect
+
+API endpoints used:
+- POST /auth/register
+- GET /auth/get-info
+- GET /banks
+- GET /providers/me
+- POST /providers/register
+- GET /providers/me/documents
+- POST /providers/me/documents
+
+Query keys used:
+- ["auth", "me"]
+- ["banks", "list"]
+- ["providerVerification", "me"]
+- ["providerVerification", "documents"]
+
+Notes:
+- Provider verification form now keeps feature-specific server calls in `apis/**/queries.ts` and routes them through `lib/axios.ts`.
+- Endpoint strings and query keys were moved into shared constants instead of being hardcoded in feature queries.
+- Registration draft persistence and CCCD OCR are now feature custom hooks, keeping the form component focused on UI flow.
+- The provider registration flow still stays under `app/(auth)` pages as routing-only composition.
+
+## Feature: Admin User Management API Integration
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/users/components/user-form-dialog.tsx
+- apis/admin/users/components/user-format.tsx
+- apis/admin/users/hooks/use-admin-user-list.ts
+- apis/admin/users/hooks/use-admin-user-detail.ts
+- apis/admin/users/hooks/use-admin-user-form.ts
+- apis/admin/users/user-helpers.ts
+
+Files modified:
+- apis/admin/users/schema.ts
+- apis/admin/users/queries.ts
+- apis/admin/users/components/user-table.tsx
+- apis/admin/users/components/user-detail.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+- lib/date.ts
+
+Components reused:
+- PageHeader
+- StatisticCard / StatisticCardGrid
+- DataTable
+- SearchInput
+- CustomSelect
+- Pagination
+- ActionMenu
+- Button / Input
+
+API endpoints used:
+- GET /users?page=&pageSize=&filters=&role=&status=
+- GET /users/:id
+- POST /users
+- PUT /users/:id
+- DELETE /users/:id
+- PATCH /users/:id/role
+
+Query keys used:
+- ["admin", "users", "list", params]
+- ["admin", "users", "detail", userId]
+
+Notes:
+- Admin user list now uses the backend `/users` contract instead of mock `/admin/users`.
+- List supports backend pagination, `filters` JSON search by `userName`, role filter, and status filter.
+- Added "Thêm người dùng" action in the page header; create/edit use the same dialog.
+- Delete action maps to BE soft delete, which sets user status to `INACTIVE`.
+- Provider management mock in `apis/admin/users` remains available for existing provider admin screens.
+- Refactored list/detail/form logic into feature custom hooks.
+- Moved user display helpers and select options into `apis/admin/users/user-helpers.ts`.
+- Moved reusable Vietnamese date formatting into `lib/date.ts`.
+
+## Feature: Admin Provider Management API Integration
+
+Role: Admin
+Status: Done
+
+Files created:
+- apis/admin/providers/schema.ts
+- apis/admin/providers/queries.ts
+- apis/admin/providers/provider-helpers.ts
+- apis/admin/providers/hooks/use-admin-provider-list.ts
+- apis/admin/providers/hooks/use-admin-provider-detail.ts
+- apis/admin/providers/components/provider-management.tsx
+- apis/admin/providers/components/provider-detail.tsx
+- apis/admin/providers/components/provider-status-badge.tsx
+
+Files modified:
+- app/(dashboard)/admin/providers/page.tsx
+- app/(dashboard)/admin/providers/[providerId]/page.tsx
+- app/(dashboard)/admin/verification/page.tsx
+- app/(dashboard)/admin/verification/[verificationId]/page.tsx
+- constants/api-endpoints.ts
+- constants/query-keys.ts
+
+API endpoints used:
+- GET /providers?page=&pageSize=&filters=&providerStatus=
+- GET /providers/:id
+- PATCH /providers/:id/approve
+- PATCH /providers/:id/reject
+- PATCH /providers/:id/suspend
+
+Notes:
+- Admin provider management and provider verification now share the same backend `/providers` admin API.
+- Verification page defaults to `PENDING_VERIFICATION` while provider management allows all provider statuses.
+- Provider detail now loads documents from `GET /providers/:id` and uses real approve/reject/suspend mutations.

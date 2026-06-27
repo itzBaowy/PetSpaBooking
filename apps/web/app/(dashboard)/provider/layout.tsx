@@ -1,7 +1,9 @@
+import { DashboardRoleGuard } from "@/components/guards";
+
 export default function ProviderLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <DashboardRoleGuard role="provider">{children}</DashboardRoleGuard>;
 }

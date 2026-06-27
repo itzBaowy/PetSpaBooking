@@ -1,19 +1,36 @@
 export interface User {
   id: string;
+  userName: string;
   email: string;
-  name: string;
-  role: "customer" | "provider" | "admin";
-  createdAt: string;
-  updatedAt: string;
+  phone: string;
+  fullName: string | null;
+  avatar: string | null;
+  role: "CUSTOMER" | "PENDING_PROVIDER" | "PROVIDER" | "ADMIN";
+  status: "ACTIVE" | "INACTIVE" | "BANNED" | string;
+  createAt: string;
+  updateAt: string;
 }
 
 export interface AuthToken {
   accessToken: string;
   refreshToken: string;
-  expiresIn: number;
 }
 
 export interface LoginResponse {
-  user: User;
-  token: AuthToken;
+  accessToken: string;
+  refreshToken: string;
+}
+
+export type RegisterResponse = LoginResponse;
+
+export interface LoginPayload {
+  userName: string;
+  password: string;
+}
+
+export interface RegisterPayload {
+  userName: string;
+  password: string;
+  email: string;
+  phone: string;
 }
