@@ -7,6 +7,13 @@ export const providerStatusLabels: Record<string, string> = {
   SUSPENDED: "Đang bị tạm ngưng",
 };
 
+export const providerStatusSchema = z.enum([
+  "PENDING_VERIFICATION",
+  "VERIFIED",
+  "REJECTED",
+  "SUSPENDED",
+]);
+
 export const providerDocumentTypeLabels: Record<string, string> = {
   business_license: "Giấy phép kinh doanh",
   id_card_front: "CCCD/CMND mặt trước",
@@ -47,7 +54,7 @@ export const providerInfoSchema = z.object({
   bankAccountName: z.string().nullable().optional(),
   lat: z.number().nullable(),
   lng: z.number().nullable(),
-  providerStatus: z.string(),
+  providerStatus: providerStatusSchema,
   depositStatus: z.string(),
   depositBalance: z.number(),
   walletBalance: z.number(),
@@ -58,6 +65,8 @@ export const providerInfoSchema = z.object({
 });
 
 export const providerRegistrationSchema = z.object({
+  userName: z.string().min(1, "Tên đăng nhập là bắt buộc"),
+  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự"),
   businessName: z.string().min(1, "Tên cơ sở là bắt buộc"),
   description: z.string().optional(),
   phone: z.string().min(1, "Số điện thoại là bắt buộc"),

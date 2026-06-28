@@ -55,13 +55,17 @@ export function useRegisterProviderApplication() {
   return useMutation({
     mutationFn: async (payload: ProviderRegistrationData) => {
       const parsedPayload = providerRegistrationSchema.parse(payload);
-      const response = await api.post<ApiResponse<ProviderInfo>>(
-        API_ENDPOINTS.PROVIDERS.REGISTER,
-        parsedPayload,
-      );
-      return providerInfoSchema.parse(response.data.data);
+      const response = await api.post<
+        ApiResponse<{ tokens: { accessToken: string; refreshToken: string }; provider: ProviderInfo }>
+      >(API_ENDPOINTS.PROVIDERS.REGISTER, parsedPayload);
+      
+      const { provider } = response.data.data;
+      return {
+        tokens: response.data.data.tokens,
+        provider: providerInfoSchema.parse(provider),
+      };
     },
-    onSuccess: (provider) => {
+    onSuccess: ({ provider }) => {
       queryClient.setQueryData(queryKeys.providerVerification.me(), provider);
     },
   });
