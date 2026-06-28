@@ -33,6 +33,16 @@ export const authController = {
         }
     },
 
+    async checkAvailability(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const result = await authService.checkAvailability(req);
+            const response = responseSuccess(result, `Availability checked successfully`);
+            res.status(response.statusCode).json(response);
+        } catch (error) {
+            next(error);
+        }
+    },
+
     async refreshToken(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const result = await authService.refreshToken(req);

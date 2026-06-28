@@ -81,9 +81,46 @@ export const authService = {
             throw new UnauthorizedException("User not found");
         }
 
-        return user;
+        const providerProfile = await prisma.providers.findUnique({
+            where: { userId },
+            select: {
+                id: true,
+                providerStatus: true,
+            },
+        });
+
+        return {
+            ...user,
+            providerProfileId: providerProfile?.id ?? null,
+            providerStatus: providerProfile?.providerStatus ?? null,
+            providerVerificationStatus: providerProfile?.providerStatus ?? null,
+        };
     },
     
+    async checkAvailability(req: Request) {
+        const { userName, email, phone } = req.query as { userName?: string; email?: string; phone?: string };
+        
+        if (userName) {
+            const exists = await prisma.users.findUnique({ where: { userName } });
+            if (exists) {
+                throw new BadRequestException("Tên đăng nhập đã tồn tại.");
+            }
+        }
+        if (email) {
+            const exists = await prisma.users.findUnique({ where: { email } });
+            if (exists) {
+                throw new BadRequestException("Email đã tồn tại.");
+            }
+        }
+        if (phone) {
+            const exists = await prisma.users.findUnique({ where: { phone } });
+            if (exists) {
+                throw new BadRequestException("Số điện thoại đã tồn tại.");
+            }
+        }
+        return { available: true };
+    },
+
     async refreshToken(req: Request) {
         const { refreshToken } = req.body as { refreshToken: string };
         const accessToken = req.headers.authorization?.split(" ")[1];
