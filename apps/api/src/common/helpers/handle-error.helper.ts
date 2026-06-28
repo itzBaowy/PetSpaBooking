@@ -16,7 +16,7 @@ export const appErorr = (
         err.message = "Invalid Token";
     }
     if (err instanceof jwt.TokenExpiredError) {
-        (err as unknown as Error & { code: number }).code = statusCodes.FORBIDDEN;
+        (err as unknown as Error & { code: number }).code = statusCodes.UNAUTHORIZED;
         err.message = "Token Expired";
     }
 
