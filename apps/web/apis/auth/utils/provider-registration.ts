@@ -1,12 +1,8 @@
-import axios from "axios";
+import { getErrorMessage } from "@/lib/error";
 import type { ProviderRegistrationFormState } from "../hooks/use-provider-registration-draft";
 
 export function getProviderRegistrationErrorMessage(error: unknown): string {
-  if (axios.isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data?.message ?? "Thao tác thất bại.";
-  }
-
-  return "Thao tác thất bại.";
+  return getErrorMessage(error, "Thao tác thất bại.");
 }
 
 export function validateProviderRegistrationStep(
@@ -17,9 +13,17 @@ export function validateProviderRegistrationStep(
     if (!form.userName.trim()) return "Vui lòng nhập tên đăng nhập.";
     if (!form.businessName.trim()) return "Vui lòng nhập tên doanh nghiệp.";
     if (!form.email.trim()) return "Vui lòng nhập email doanh nghiệp.";
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(form.email.trim())) {
+      return "Email doanh nghiệp không hợp lệ (ví dụ: example@gmail.com).";
+    }
     if (!form.phone.trim()) return "Vui lòng nhập số điện thoại.";
-    if (!form.password || form.password.length < 8) {
-      return "Mật khẩu phải có ít nhất 8 ký tự.";
+    const phoneRegex = /^[0-9]{9,11}$/;
+    if (!phoneRegex.test(form.phone.trim())) {
+      return "Số điện thoại không hợp lệ (chỉ chứa 9-11 chữ số).";
+    }
+    if (!form.password || form.password.length < 6) {
+      return "Mật khẩu phải có ít nhất 6 ký tự.";
     }
     if (form.password !== form.confirmPassword) {
       return "Mật khẩu xác nhận không khớp.";
