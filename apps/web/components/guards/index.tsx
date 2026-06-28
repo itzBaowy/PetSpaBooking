@@ -5,7 +5,7 @@ import { useEffect } from "react";
 import { useProfile } from "@/apis/auth/queries";
 import { useAuthStore } from "@/stores/auth-store";
 
-type AppRole = "ADMIN" | "PENDING_PROVIDER" | "PROVIDER" | "CUSTOMER";
+type AppRole = "ADMIN" | "PROVIDER" | "CUSTOMER";
 
 const routeRoleMap = {
   admin: "ADMIN",
@@ -14,7 +14,6 @@ const routeRoleMap = {
 
 const roleHomePath: Record<AppRole, string> = {
   ADMIN: "/admin",
-  PENDING_PROVIDER: "/provider-verification",
   PROVIDER: "/provider",
   CUSTOMER: "/",
 };
@@ -49,8 +48,22 @@ export function AuthGuard({
     const profile = profileQuery.data;
     if (!profile || !allowedRoles?.length) return;
 
-    if (!allowedRoles.includes(profile.role as AppRole)) {
-      router.replace(roleHomePath[profile.role as AppRole] ?? "/");
+    const roleAllowed = allowedRoles.includes(profile.role as AppRole);
+    const requiresVerifiedProvider = allowedRoles.includes("PROVIDER");
+    const providerAllowed =
+      !requiresVerifiedProvider ||
+      (profile.role === "PROVIDER" &&
+        profile.providerStatus === "VERIFIED");
+
+    if (!roleAllowed || !providerAllowed) {
+      if (profile.role === "PROVIDER") {
+        if (profile.providerStatus === "PENDING_VERIFICATION" || profile.providerStatus === "REJECTED") {
+          router.replace("/provider-verification");
+          return;
+        }
+      }
+
+      router.replace(roleHomePath[profile.role as AppRole] ?? "/login");
     }
   }, [allowedRoles, profileQuery.data, router]);
 
@@ -62,10 +75,16 @@ export function AuthGuard({
     );
   }
 
-  if (
-    allowedRoles?.length &&
-    !allowedRoles.includes(profileQuery.data?.role as AppRole)
-  ) {
+  const profile = profileQuery.data;
+  const roleAllowed =
+    !allowedRoles?.length ||
+    allowedRoles.includes(profile?.role as AppRole);
+  const providerAllowed =
+    !allowedRoles?.includes("PROVIDER") ||
+    (profile?.role === "PROVIDER" &&
+      profile.providerStatus === "VERIFIED");
+
+  if (!roleAllowed || !providerAllowed) {
     return (
       <div className="grid min-h-screen place-items-center bg-background text-sm font-semibold text-muted">
         Đang chuyển hướng theo quyền tài khoản...
