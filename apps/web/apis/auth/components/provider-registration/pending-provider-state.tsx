@@ -32,7 +32,7 @@ export function PendingProviderState({
       icon: "!",
       title: "Hồ sơ nhà cung cấp đã bị từ chối",
       description:
-        "Vui lòng xem lý do từ chối bên dưới và cập nhật lại hồ sơ nếu cần.",
+        "Vui lòng xem lý do từ chối bên dưới và bạn cần đăng kí lại.",
     },
     SUSPENDED: {
       icon: "!",
