@@ -24,6 +24,7 @@ export function ProviderApplicationWizard() {
       {wizard.step === 1 && (
         <ProviderRegistrationAccountStep
           form={wizard.form}
+          hasExistingAccount={wizard.hasExistingAccount}
           onInputChange={wizard.handleInput}
         />
       )}

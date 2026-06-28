@@ -8,6 +8,7 @@ export function ProviderRegistrationAccountStep({
   onInputChange,
 }: {
   form: ProviderRegistrationFormState;
+  hasExistingAccount?: boolean;
   onInputChange: (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
@@ -57,7 +58,7 @@ export function ProviderRegistrationAccountStep({
           name="password"
           value={form.password}
           onChange={onInputChange}
-          placeholder="Tối thiểu 8 ký tự"
+          placeholder="Tối thiểu 6 ký tự"
         />
       </ProviderRegistrationField>
       <ProviderRegistrationField label="Xác nhận mật khẩu" required>
