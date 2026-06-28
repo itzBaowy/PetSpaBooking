@@ -32,7 +32,6 @@ const notifications = [
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Quản trị viên",
-  PENDING_PROVIDER: "Nhà cung cấp chờ duyệt",
   PROVIDER: "Nhà cung cấp dịch vụ",
   CUSTOMER: "Khách hàng",
 };

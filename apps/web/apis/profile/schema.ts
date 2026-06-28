@@ -4,7 +4,6 @@ export const profileRouteRoleSchema = z.enum(["admin", "provider"]);
 
 export const profileRoleSchema = z.enum([
   "ADMIN",
-  "PENDING_PROVIDER",
   "PROVIDER",
   "CUSTOMER",
 ]);
@@ -20,6 +19,23 @@ export const profileSchema = z.object({
   avatar: z.string().nullable(),
   role: profileRoleSchema,
   status: profileStatusSchema.or(z.string()),
+  providerProfileId: z.string().nullable(),
+  providerStatus: z
+    .enum([
+      "PENDING_VERIFICATION",
+      "VERIFIED",
+      "REJECTED",
+      "SUSPENDED",
+    ])
+    .nullable(),
+  providerVerificationStatus: z
+    .enum([
+      "PENDING_VERIFICATION",
+      "VERIFIED",
+      "REJECTED",
+      "SUSPENDED",
+    ])
+    .nullable(),
   createAt: z.string().min(1),
   updateAt: z.string().min(1),
 });

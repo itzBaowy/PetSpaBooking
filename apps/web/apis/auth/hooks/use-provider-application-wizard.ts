@@ -9,12 +9,13 @@ import {
   useUploadProviderDocument,
 } from "@/apis/provider/verification/queries";
 import { useAuthStore } from "@/stores/auth-store";
-import { useRegister } from "../queries";
 import { useIdentityOcr } from "./use-identity-ocr";
 import {
   type ProviderRegistrationFormState,
   useProviderRegistrationDraft,
 } from "./use-provider-registration-draft";
+import { api } from "@/lib/axios";
+import { getErrorMessage } from "@/lib/error";
 import {
   getProviderDocumentPayloads,
   getProviderRegistrationErrorMessage,
@@ -23,7 +24,7 @@ import {
 } from "../utils/provider-registration";
 
 export function useProviderApplicationWizard() {
-  const registerMutation = useRegister();
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const registerProviderMutation = useRegisterProviderApplication();
   const uploadDocumentMutation = useUploadProviderDocument();
   const bankQuery = useBanks();
@@ -36,9 +37,9 @@ export function useProviderApplicationWizard() {
   const [formError, setFormError] = useState("");
 
   const isSubmitting =
-    registerMutation.isLoading ||
     registerProviderMutation.isLoading ||
-    uploadDocumentMutation.isLoading;
+    uploadDocumentMutation.isLoading ||
+    isCheckingAvailability;
 
   const bankOptions = useMemo(
     () => [
@@ -104,11 +105,26 @@ export function useProviderApplicationWizard() {
     return validateProviderRegistrationStep(form, targetStep);
   }
 
-  function goNext() {
+  async function goNext() {
     const message = validateStep();
     if (message) {
       setFormError(message);
       return;
+    }
+
+    if (step === 1) {
+      setIsCheckingAvailability(true);
+      setFormError("");
+      try {
+        await api.get(
+          `/auth/check-availability?userName=${encodeURIComponent(form.userName)}&email=${encodeURIComponent(form.email)}&phone=${encodeURIComponent(form.phone)}`
+        );
+      } catch (error) {
+        setFormError(getErrorMessage(error, "Thông tin đăng ký đã tồn tại trong hệ thống."));
+        return;
+      } finally {
+        setIsCheckingAvailability(false);
+      }
     }
 
     setFormError("");
@@ -136,15 +152,21 @@ export function useProviderApplicationWizard() {
     }
 
     try {
-      const tokens = await registerMutation.mutateAsync({
-        userName: form.userName,
-        email: form.email,
-        phone: form.phone,
-        password: form.password,
-      });
-      setTokens(tokens);
+      setIsCheckingAvailability(true);
+      await api.get(
+        `/auth/check-availability?userName=${encodeURIComponent(form.userName)}&email=${encodeURIComponent(form.email)}&phone=${encodeURIComponent(form.phone)}`
+      );
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Thông tin đăng ký đã tồn tại trong hệ thống."));
+      return;
+    } finally {
+      setIsCheckingAvailability(false);
+    }
 
-      await registerProviderMutation.mutateAsync({
+    try {
+      const { tokens } = await registerProviderMutation.mutateAsync({
+        userName: form.userName,
+        password: form.password,
         businessName: form.businessName,
         email: form.email,
         phone: form.phone,
@@ -160,6 +182,9 @@ export function useProviderApplicationWizard() {
         identityAddress: form.identityAddress,
       });
 
+      // Gán tạm token vừa sinh để upload giấy tờ
+      setTokens(tokens);
+
       await Promise.all(
         getProviderDocumentPayloads(form)
           .filter(([, imageUrl]) => Boolean(imageUrl))
@@ -169,7 +194,7 @@ export function useProviderApplicationWizard() {
       );
 
       clearDraft();
-      clearTokens();
+      clearTokens(); // Đăng xuất và điều hướng về trang Login
       router.replace("/login?providerRegistered=1");
     } catch (error) {
       setFormError(getProviderRegistrationErrorMessage(error));
@@ -184,6 +209,7 @@ export function useProviderApplicationWizard() {
     bankOptions,
     reviewItems,
     identityOcrStatus: identityOcr.status,
+    hasExistingAccount: false,
     goBack,
     goNext,
     handleInput,

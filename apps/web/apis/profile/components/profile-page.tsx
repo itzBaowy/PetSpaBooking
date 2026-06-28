@@ -17,7 +17,6 @@ const routeRoleLabels: Record<ProfileRouteRole, string> = {
 
 const userRoleLabels: Record<string, string> = {
   ADMIN: "Quản trị viên",
-  PENDING_PROVIDER: "Nhà cung cấp chờ duyệt",
   PROVIDER: "Nhà cung cấp",
   CUSTOMER: "Khách hàng",
 };

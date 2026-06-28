@@ -7,7 +7,13 @@ async function cleanDatabase() {
     // Delete all records from each model
     // Order matters if there are relations (delete children before parents)
 
+    const deletedServices = await prisma.services.deleteMany({});
+    const deletedDocuments = await prisma.provider_documents.deleteMany({});
+    const deletedProviders = await prisma.providers.deleteMany({});
     const deletedUsers = await prisma.users.deleteMany({});
+    console.log(`Deleted ${deletedServices.count} service(s)`);
+    console.log(`Deleted ${deletedDocuments.count} provider document(s)`);
+    console.log(`Deleted ${deletedProviders.count} provider(s)`);
     console.log(`Deleted ${deletedUsers.count} user(s)`);
 
     console.log("\n🎉 Database cleaned successfully!");

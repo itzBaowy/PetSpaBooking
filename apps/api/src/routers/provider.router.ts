@@ -56,7 +56,7 @@ const providerRouter = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.post("/register", protect, providerController.register);
+providerRouter.post("/register", providerController.register);
 
 /**
  * @swagger

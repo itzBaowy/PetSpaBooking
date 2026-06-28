@@ -1,17 +1,9 @@
 "use client";
 
-import axios from "axios";
+import { getErrorMessage } from "@/lib/error";
 import { FormEvent, useState } from "react";
 import { useCreateAdminUser, useUpdateAdminUser } from "../queries";
 import type { AdminUser, AdminUserPayload } from "../schema";
-
-function getErrorMessage(error: unknown) {
-  if (axios.isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data?.message ?? "Thao tác thất bại.";
-  }
-
-  return "Thao tác thất bại.";
-}
 
 function buildInitialForm(user?: AdminUser): AdminUserPayload {
   return {
@@ -22,6 +14,7 @@ function buildInitialForm(user?: AdminUser): AdminUserPayload {
     avatar: user?.avatar ?? "",
     role: user?.role ?? "CUSTOMER",
     status: user?.status ?? "ACTIVE",
+    password: "",
   };
 }
 
@@ -49,11 +42,17 @@ export function useAdminUserForm({
     event.preventDefault();
     setError("");
 
+    if (!isEdit && (!form.password || form.password.length < 6)) {
+      setError("Mật khẩu phải có ít nhất 6 ký tự.");
+      return;
+    }
+
     try {
       const payload: AdminUserPayload = {
         ...form,
         fullName: form.fullName?.trim() || undefined,
         avatar: form.avatar?.trim() || undefined,
+        password: isEdit ? undefined : form.password,
       };
 
       if (isEdit) {
@@ -64,7 +63,7 @@ export function useAdminUserForm({
 
       onSuccess();
     } catch (submitError) {
-      setError(getErrorMessage(submitError));
+      setError(getErrorMessage(submitError, "Thao tác thất bại."));
     }
   }
 

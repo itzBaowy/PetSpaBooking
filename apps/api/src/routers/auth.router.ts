@@ -177,6 +177,7 @@ authRouter.get("/get-info", protect, authController.getInfo);
  *         description: Token không hợp lệ
  */
 authRouter.post("/refresh-token", authController.refreshToken);
+authRouter.get("/check-availability", authController.checkAvailability);
 
 export default authRouter;
 

@@ -44,6 +44,7 @@ export const adminUserPayloadSchema = z.object({
   avatar: z.string().optional(),
   role: adminUserRoleSchema.default("CUSTOMER"),
   status: adminUserStatusSchema.default("ACTIVE"),
+  password: z.string().min(6, "Mật khẩu phải có ít nhất 6 ký tự").optional(),
 });
 
 export const updateAdminUserPayloadSchema = adminUserPayloadSchema.partial();

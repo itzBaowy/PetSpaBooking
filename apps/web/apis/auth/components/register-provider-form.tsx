@@ -1,6 +1,6 @@
 "use client";
 
-import axios from "axios";
+import { getErrorMessage } from "@/lib/error";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
@@ -8,14 +8,6 @@ import { useRegister } from "@/apis/auth/queries";
 import { Button, Input, PasswordInput } from "@/components/ui";
 import { useAuthStore } from "@/stores/auth-store";
 import { registerProviderSchema } from "../schema";
-
-function getErrorMessage(error: unknown): string {
-  if (axios.isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data?.message ?? "Đăng ký thất bại.";
-  }
-
-  return "Đăng ký thất bại.";
-}
 
 export function RegisterProviderForm() {
   const router = useRouter();
@@ -52,7 +44,7 @@ export function RegisterProviderForm() {
       setTokens(tokens);
       router.push("/provider-verification");
     } catch (error) {
-      setFormError(getErrorMessage(error));
+      setFormError(getErrorMessage(error, "Đăng ký thất bại."));
     }
   }
 

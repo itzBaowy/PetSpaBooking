@@ -95,20 +95,27 @@ export const userService = {
     },
 
     async create(req: Request) {
-        const { userName, email, phone, fullName, avatar, role, status } =
+        const { userName, email, phone, fullName, avatar, role, status, password } =
             req.body as {
                 userName: string;
                 email: string;
                 phone: string;
+                password: string;
                 fullName?: string;
                 avatar?: string;
                 role?: string;
                 status?: string;
             };
 
-        if (!userName || !email || !phone) {
+        if (!userName || !email || !phone || !password) {
             throw new BadRequestException(
-                "userName, email, and phone are required"
+                "userName, email, phone, and password are required"
+            );
+        }
+
+        if (password.length < 6) {
+            throw new BadRequestException(
+                "Password must be at least 6 characters"
             );
         }
 
@@ -135,10 +142,9 @@ export const userService = {
         if (existByEmail) throw new BadRequestException("Email already exists");
         if (existByPhone) throw new BadRequestException("Phone already exists");
 
-        // Admin tạo user không cần password — tự set random hoặc require
+        // Hash password do admin cung cấp
         const bcrypt = await import("bcrypt");
-        const tempPassword = Math.random().toString(36).slice(-10);
-        const hashedPassword = bcrypt.hashSync(tempPassword, 10);
+        const hashedPassword = bcrypt.hashSync(password, 10);
 
         const newUser = await prisma.users.create({
             data: {

@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, CustomSelect, Input } from "@/components/ui";
+import { Button, CustomSelect, Input, PasswordInput } from "@/components/ui";
 import { useAdminUserForm } from "../hooks/use-admin-user-form";
 import type { AdminUser } from "../schema";
 import { assignableRoleOptions, statusSelectOptions } from "../user-helpers";
@@ -37,8 +37,9 @@ function UserFormDialogContent({
               {formState.isEdit ? "Cập nhật người dùng" : "Thêm người dùng"}
             </h2>
             <p className="mt-1 text-sm text-muted">
-              Admin tạo người dùng không cần nhập mật khẩu; BE sẽ tự sinh mật
-              khẩu tạm thời.
+              {formState.isEdit
+                ? "Cập nhật thông tin chi tiết của người dùng."
+                : "Nhập thông tin chi tiết để tạo tài khoản người dùng mới."}
             </p>
           </div>
           <button
@@ -119,6 +120,18 @@ function UserFormDialogContent({
                 }
               />
             </Field>
+            {!formState.isEdit && (
+              <Field label="Mật khẩu" required className="md:col-span-2">
+                <PasswordInput
+                  required
+                  value={formState.form.password ?? ""}
+                  onChange={(event) =>
+                    formState.updateField("password", event.target.value)
+                  }
+                  placeholder="Nhập mật khẩu cho tài khoản mới (tối thiểu 6 ký tự)"
+                />
+              </Field>
+            )}
             <Field label="Avatar URL" className="md:col-span-2">
               <Input
                 value={formState.form.avatar ?? ""}
