@@ -14,48 +14,62 @@ datasource db {
 }
 
 model users {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userName  String   @unique
-  password  String
-  phone     String   @unique
-  email     String   @unique
-  fullName  String?
-  avatar    String?
-  role      String   @default("CUSTOMER")
-  status    String   @default("ACTIVE")
-  createAt  DateTime @default(now())
-  updateAt  DateTime @updatedAt
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  userName String    @unique
+  password String
+  phone    String    @unique
+  email    String    @unique
+  fullName String?
+  avatar   String?
+  role     String    @default("CUSTOMER")
+  status   String    @default("ACTIVE")
+  createAt DateTime  @default(now())
+  updateAt DateTime  @updatedAt
+  reviews  reviews[]
 }
 
 model providers {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId           String   @unique @db.ObjectId
-  businessName     String
-  slug             String   @unique
-  description      String?
-  avatarUrl        String?
-  coverImageUrl    String?
-  phone            String?
-  email            String?
-  address          String?
-  taxCode          String?
-  identityNumber   String?
-  identityFullName String?
-  identityDob      String?
-  identityAddress  String?
-  bankCode         String?
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String  @unique @db.ObjectId
+  businessName  String
+  slug          String  @unique
+  description   String?
+  avatarUrl     String?
+  coverImageUrl String?
+  phone         String?
+  email         String?
+
+  address  String?
+  ward     String?
+  district String?
+  province String?
+
+  taxCode           String?
+  identityNumber    String?
+  identityFullName  String?
+  identityDob       String?
+  identityAddress   String?
+  bankCode          String?
   bankAccountNumber String?
-  bankAccountName  String?
-  lat              Float?
-  lng              Float?
-  providerStatus   String   @default("PENDING_VERIFICATION")
-  depositStatus    String   @default("NOT_PAID")
-  depositBalance   Float    @default(0)
-  walletBalance    Float    @default(0)
-  cancellationRate Float    @default(0)
-  adminNote        String?
-  createAt         DateTime @default(now())
-  updateAt         DateTime @updatedAt
+  bankAccountName   String?
+  lat               Float?
+  lng               Float?
+  providerStatus    String  @default("PENDING_VERIFICATION")
+  depositStatus     String  @default("NOT_PAID")
+  depositBalance    Float   @default(0)
+  walletBalance     Float   @default(0)
+  cancellationRate  Float   @default(0)
+  adminNote         String?
+
+  payOnline Boolean @default(true)
+  payCash   Boolean @default(true)
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  services     services[]
+  reviews      reviews[]
+  workingHours working_hours[]
 }
 
 model provider_documents {
@@ -74,12 +88,42 @@ model services {
   providerId      String   @db.ObjectId
   name            String
   description     String?
+  longDescription String   @default("")
   price           Float
   duration        Int
   category        String   @default("OTHER")
   imageUrls       String[]
+
+  targetPets String[] @default([])
+  benefits   String[] @default([])
+
   isActive        Boolean  @default(true)
   isHiddenByAdmin Boolean  @default(false)
   createAt        DateTime @default(now())
   updateAt        DateTime @updatedAt
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model reviews {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  providerId String   @db.ObjectId
+  userId     String   @db.ObjectId
+  rating     Int
+  comment    String?
+  createAt   DateTime @default(now())
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  user     users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model working_hours {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  providerId String  @db.ObjectId
+  dayOfWeek  Int
+  openTime   String
+  closeTime  String
+  isClosed   Boolean @default(false)
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
 }
