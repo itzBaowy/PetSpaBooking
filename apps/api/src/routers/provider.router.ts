@@ -1,5 +1,6 @@
 import express from "express";
 import { providerController } from "../controllers/provider.controller.ts";
+import { mobileProviderController } from "../controllers/mobile-controllers/provider.controller.ts";
 import { protect } from "../middlewares/protect.middleware.ts";
 import { checkRole } from "../middlewares/authorization.middleware.ts";
 
@@ -181,7 +182,11 @@ providerRouter.get("/me/documents", protect, providerController.getMyDocuments);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.post("/me/documents", protect, providerController.uploadDocument);
+providerRouter.post(
+  "/me/documents",
+  protect,
+  providerController.uploadDocument,
+);
 
 /**
  * @swagger
@@ -226,7 +231,11 @@ providerRouter.post("/me/documents", protect, providerController.uploadDocument)
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.delete("/me/documents/:docId", protect, providerController.deleteDocument);
+providerRouter.delete(
+  "/me/documents/:docId",
+  protect,
+  providerController.deleteDocument,
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN endpoints
@@ -316,7 +325,12 @@ providerRouter.get("/", protect, checkRole("ADMIN"), providerController.getAll);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.get("/:id", protect, checkRole("ADMIN"), providerController.getById);
+providerRouter.get(
+  "/:id",
+  protect,
+  checkRole("ADMIN"),
+  providerController.getById,
+);
 
 /**
  * @swagger
@@ -358,7 +372,12 @@ providerRouter.get("/:id", protect, checkRole("ADMIN"), providerController.getBy
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.patch("/:id/approve", protect, checkRole("ADMIN"), providerController.approve);
+providerRouter.patch(
+  "/:id/approve",
+  protect,
+  checkRole("ADMIN"),
+  providerController.approve,
+);
 
 /**
  * @swagger
@@ -399,7 +418,12 @@ providerRouter.patch("/:id/approve", protect, checkRole("ADMIN"), providerContro
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.patch("/:id/reject", protect, checkRole("ADMIN"), providerController.reject);
+providerRouter.patch(
+  "/:id/reject",
+  protect,
+  checkRole("ADMIN"),
+  providerController.reject,
+);
 
 /**
  * @swagger
@@ -441,6 +465,11 @@ providerRouter.patch("/:id/reject", protect, checkRole("ADMIN"), providerControl
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.patch("/:id/suspend", protect, checkRole("ADMIN"), providerController.suspend);
+providerRouter.patch(
+  "/:id/suspend",
+  protect,
+  checkRole("ADMIN"),
+  providerController.suspend,
+);
 
 export default providerRouter;
