@@ -3,6 +3,8 @@ import prisma from "../../../connect.prisma.ts";
 import { Request, Response } from "express";
 import { getQueryString } from "../../common/helpers/paramHelper.ts";
 import { ServiceDetailResponse } from "../../types/mobile-types/service.types.ts";
+import { BadRequestException } from "../../common/helpers/exception.helper.ts";
+import { ObjectId } from "mongodb";
 
 export const mobileServiceServices = {
   async getAllServiceByProviderId(req: Request, res: Response) {
@@ -22,6 +24,14 @@ export const mobileServiceServices = {
   async getDetailServiceById(req: Request) {
     const { serviceId } = req.params;
     const _id = getQueryString(serviceId);
+
+    if (!_id) {
+      throw new BadRequestException("Service ID is required");
+    }
+
+    if (!ObjectId.isValid(_id)) {
+      throw new BadRequestException("Invalid service ID format");
+    }
 
     const service = await prisma.services.findUnique({
       where: { id: _id },

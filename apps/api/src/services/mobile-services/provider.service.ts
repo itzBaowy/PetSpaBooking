@@ -9,7 +9,11 @@ import {
 } from "../../common/helpers/provider.helper.ts";
 import { getQueryString } from "../../common/helpers/paramHelper.ts";
 import { ProviderItem } from "../../types/mobile-types/provider.types.ts";
-import { NotFoundException } from "../../common/helpers/exception.helper.ts";
+import {
+  BadRequestException,
+  NotFoundException,
+} from "../../common/helpers/exception.helper.ts";
+import { ObjectId } from "mongodb";
 
 export const mobileProviderServices = {
   async getAllProviders(req: Request) {
@@ -131,15 +135,28 @@ export const mobileProviderServices = {
     );
 
     const { providerId } = req.params;
+    const _providerId = getQueryString(providerId);
 
-    where.providerId = providerId;
+    if (!_providerId) {
+      throw new BadRequestException("Provider ID is required");
+    }
+
+    if (!ObjectId.isValid(_providerId)) {
+      throw new BadRequestException("Invalid provider ID format");
+    }
+
+    where.providerId = _providerId;
 
     const [total, reviews] = await Promise.all([
       prisma.reviews.count({ where: where }),
       prisma.reviews.findMany({
         where: where,
         include: {
-          user: true,
+          customers: {
+            include: {
+              users: true,
+            },
+          },
         },
         skip: index,
         take: pageSize,
@@ -156,9 +173,9 @@ export const mobileProviderServices = {
       comment: review.comment,
       createdAt: review.createAt.toISOString(),
       user: {
-        id: review.user.id,
-        name: review.user.fullName,
-        avatarUrl: review.user.avatar,
+        id: review.customers.users.id,
+        name: review.customers.users.fullName,
+        avatarUrl: review.customers.users.avatar,
       },
     }));
 
@@ -169,6 +186,14 @@ export const mobileProviderServices = {
     const { providerId } = req.params;
     const { userLat, userLng } = req.query;
     const _id = getQueryString(providerId);
+
+    if (!_id) {
+      throw new BadRequestException("Provider ID is required");
+    }
+
+    if (!ObjectId.isValid(_id)) {
+      throw new BadRequestException("Invalid provider ID format");
+    }
 
     const provider = await prisma.providers.findUnique({
       where: { id: _id },
