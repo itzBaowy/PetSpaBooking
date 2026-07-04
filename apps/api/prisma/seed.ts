@@ -96,6 +96,7 @@ const providerCases = [
 async function main() {
   const password = await bcrypt.hash(TEST_PASSWORD, 10);
   const usersByName = new Map<string, { id: string }>();
+  const customersByName = new Map<string, { id: string }>();
 
   for (const user of testUsers) {
     const savedUser = await prisma.users.upsert({
@@ -116,6 +117,19 @@ async function main() {
     });
 
     usersByName.set(user.userName, savedUser);
+
+    if (user.role === "CUSTOMER") {
+      const customer = await prisma.customers.upsert({
+        where: { userId: savedUser.id },
+        update: {},
+        create: {
+          userId: savedUser.id,
+          location: "TP. Hồ Chí Minh",
+        },
+        select: { id: true },
+      });
+      customersByName.set(user.userName, customer);
+    }
   }
 
   for (const providerCase of providerCases) {
@@ -294,7 +308,7 @@ async function main() {
     });
   }
 
-  const customer = usersByName.get("customer_test");
+  const customer = customersByName.get("customer_test");
   const verifiedProvider = usersByName.get("provider_test");
   if (customer && verifiedProvider) {
     const provider = await prisma.providers.findUnique({
@@ -308,7 +322,7 @@ async function main() {
         data: [
           {
             providerId: provider.id,
-            userId: customer.id,
+            customerId: customer.id,
             rating: 5,
             comment:
               "Dịch vụ rất chuyên nghiệp, thú cưng của tôi rất hài lòng.",
@@ -316,6 +330,73 @@ async function main() {
         ],
       });
     }
+  }
+
+  if (customer) {
+    await prisma.pets.deleteMany({ where: { customerId: customer.id } });
+    await prisma.pets.create({
+      data: {
+        customerId: customer.id,
+        name: "Bella",
+        breed: "Golden Retriever",
+        gender: "Cái",
+        ageLabel: "3 tuổi",
+        imageUrl:
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuCMBwJa2m0SA3QeppmAcW22QRlks3aUTNMP6sQkr3svQjcq7Al3Gae-aT8EjW5VpHUM5pi8BzCYnRzRt4fru9hRL90W6qoZehEa1m0B6DSvkfHVXFAbCSjABH4XBiiFvkImjWEirAqaUp5Tb0OaGLC0KQWWqVaT-FZtYLS4Pab5Uu3PsxvwSGp42zKzfgFGFj3t4PP6TmfLXGORUlzC27dKBAKWlP00IoleZnKjpruTFk17BGlBusmsXfgxuQwvikKhR-0lx4t5el1F",
+        status: "active",
+        weight: "30 kg",
+        height: "55 cm",
+        color: "Vàng kim",
+        photos: [
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuCMBwJa2m0SA3QeppmAcW22QRlks3aUTNMP6sQkr3svQjcq7Al3Gae-aT8EjW5VpHUM5pi8BzCYnRzRt4fru9hRL90W6qoZehEa1m0B6DSvkfHVXFAbCSjABH4XBiiFvkImjWEirAqaUp5Tb0OaGLC0KQWWqVaT-FZtYLS4Pab5Uu3PsxvwSGp42zKzfgFGFj3t4PP6TmfLXGORUlzC27dKBAKWlP00IoleZnKjpruTFk17BGlBusmsXfgxuQwvikKhR-0lx4t5el1F",
+        ],
+        nextVaccineDate: "12 Th12, 2024",
+        healthReminder: {
+          title: "Tiêm phòng dại",
+          date: "12 Th12, 2024",
+        },
+        medicalRecords: [
+          {
+            id: "rec_bella_1",
+            title: "Khám định kỳ",
+            description: "Sức khỏe tốt, phát triển bình thường.",
+            date: "10 Th10, 2024",
+          },
+        ],
+      },
+    });
+
+    await prisma.pets.create({
+      data: {
+        customerId: customer.id,
+        name: "Luna",
+        breed: "Mèo Xiêm",
+        gender: "Cái",
+        ageLabel: "2 tuổi",
+        imageUrl:
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuB9kpYBJk2Ua805d2WQOxXLrinqXV7BFTigb1GyWgHyezLochchY-TKbt1oOEKo4XuYIcZDJRFvJvlFFScCrXZLncseUC5WoTgUes2QH_C6a_m-MeCDOZKzYAFUtRWD0XzqP7vFgZCfJWTiokXwyGKls7tH31q3NqaDjvM_jMetDwT5A-zFhW7FK0YVRuvnQxwALOXgqcreJIl4d0rd0PjBKKBV7AowQoAHLwNAQbMoC6sK9CGx3Ybgz8_5IIkOUWP5GJFQ552rJpLr",
+        status: "active",
+        weight: "4 kg",
+        height: "25 cm",
+        color: "Trắng xám",
+        photos: [
+          "https://lh3.googleusercontent.com/aida-public/AB6AXuB9kpYBJk2Ua805d2WQOxXLrinqXV7BFTigb1GyWgHyezLochchY-TKbt1oOEKo4XuYIcZDJRFvJvlFFScCrXZLncseUC5WoTgUes2QH_C6a_m-MeCDOZKzYAFUtRWD0XzqP7vFgZCfJWTiokXwyGKls7tH31q3NqaDjvM_jMetDwT5A-zFhW7FK0YVRuvnQxwALOXgqcreJIl4d0rd0PjBKKBV7AowQoAHLwNAQbMoC6sK9CGx3Ybgz8_5IIkOUWP5GJFQ552rJpLr",
+        ],
+        nextVaccineDate: "05 Th1, 2025",
+        healthReminder: {
+          title: "Tẩy giun định kỳ",
+          date: "05 Th1, 2025",
+        },
+        medicalRecords: [
+          {
+            id: "rec_luna_1",
+            title: "Tiêm vắc xin 4 bệnh",
+            description: "Đã tiêm mũi 3 đầy đủ.",
+            date: "15 Th08, 2024",
+          },
+        ],
+      },
+    });
   }
 
   console.table(

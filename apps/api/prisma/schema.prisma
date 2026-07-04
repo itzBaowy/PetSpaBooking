@@ -14,18 +14,28 @@ datasource db {
 }
 
 model users {
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userName  String     @unique
+  password  String
+  phone     String     @unique
+  email     String     @unique
+  fullName  String?
+  avatar    String?
+  role      String     @default("CUSTOMER")
+  status    String     @default("ACTIVE")
+  createAt  DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
+  customers customers?
+}
+
+model customers {
   id       String    @id @default(auto()) @map("_id") @db.ObjectId
-  userName String    @unique
-  password String
-  phone    String    @unique
-  email    String    @unique
-  fullName String?
-  avatar   String?
-  role     String    @default("CUSTOMER")
-  status   String    @default("ACTIVE")
-  createAt DateTime  @default(now())
-  updateAt DateTime  @updatedAt
+  userId   String    @unique @db.ObjectId
+  location String
+  pets     pets[]
   reviews  reviews[]
+
+  users users @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model providers {
@@ -67,9 +77,10 @@ model providers {
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
 
-  services     services[]
-  reviews      reviews[]
-  workingHours working_hours[]
+  services          services[]
+  reviews           reviews[]
+  workingHours      working_hours[]
+  providerDocuments provider_documents[]
 }
 
 model provider_documents {
@@ -81,6 +92,8 @@ model provider_documents {
   adminNote    String?
   createAt     DateTime @default(now())
   updateAt     DateTime @updatedAt
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
 }
 
 model services {
@@ -108,13 +121,13 @@ model services {
 model reviews {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
   providerId String   @db.ObjectId
-  userId     String   @db.ObjectId
+  customerId String   @db.ObjectId
   rating     Int
   comment    String?
   createAt   DateTime @default(now())
 
-  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
-  user     users     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider  providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  customers customers @relation(fields: [customerId], references: [id])
 }
 
 model working_hours {
@@ -126,4 +139,41 @@ model working_hours {
   isClosed   Boolean @default(false)
 
   provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model pets {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerId      String   @db.ObjectId
+  name            String
+  breed           String
+  gender          String
+  ageLabel        String
+  imageUrl        String
+  status          String
+  weight          String
+  height          String
+  color           String
+  criticalNote    String?
+  nextVaccineDate String?
+  photos          String[] @default([])
+
+  healthReminder HealthReminder?
+  medicalRecords MedicalRecord[]
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  customers customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+type HealthReminder {
+  title String
+  date  String
+}
+
+type MedicalRecord {
+  id          String
+  title       String
+  description String
+  date        String
 }

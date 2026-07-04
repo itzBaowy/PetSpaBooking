@@ -6,6 +6,7 @@ import serviceRouter from "./service.router.ts";
 import bankRouter from "./bank.router.ts";
 import providerRouterMobile from "./mobile-router/provider-mobile.router.ts";
 import mobileServiceRouter from "./mobile-router/service-mobile.router.ts";
+import mobilePetRouter from "./mobile-router/pet-mobile.router.ts";
 
 const rootRouter = express.Router();
 
@@ -14,6 +15,11 @@ rootRouter.use("/users", userRouter);
 rootRouter.use("/providers", providerRouter);
 rootRouter.use("/services", serviceRouter);
 rootRouter.use("/banks", bankRouter);
-rootRouter.use("/mobile", providerRouterMobile, mobileServiceRouter);
+rootRouter.use(
+  "/mobile",
+  providerRouterMobile,
+  mobileServiceRouter,
+  mobilePetRouter,
+);
 
 export default rootRouter;
