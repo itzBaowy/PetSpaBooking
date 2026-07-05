@@ -4,11 +4,13 @@ import { FormEvent } from "react";
 import { useMyProviderInfo } from "@/apis/provider/verification/queries";
 import { providerStatusLabels } from "@/apis/provider/verification/schema";
 import { PageHeader } from "@/components/ui/page-header";
+import { getAvatarInitials } from "@/components/ui/avatar";
 import { useToast } from "@/components/ui/feedback-provider";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
 import { profileUpdateSchema } from "../schema";
 import { useProfile } from "../queries";
 import type { ProfileRouteRole } from "../schema";
+import { AvatarUploader } from "./avatar-uploader";
 
 const routeRoleLabels: Record<ProfileRouteRole, string> = {
   admin: "Quản trị viên",
@@ -50,16 +52,6 @@ function formatCurrency(value: number): string {
     currency: "VND",
     maximumFractionDigits: 0,
   }).format(value);
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 }
 
 export function ProfilePage({ role }: { role: ProfileRouteRole }) {
@@ -108,8 +100,8 @@ export function ProfilePage({ role }: { role: ProfileRouteRole }) {
 
   const provider = providerQuery.data;
   const displayName = profile.fullName || profile.userName;
-  const avatar = role === "provider" ? provider?.avatarUrl || profile.avatar : profile.avatar;
-  const initials = getInitials(displayName || profile.email);
+  const avatar = profile.avatar;
+  const initials = getAvatarInitials(displayName || profile.email);
 
   return (
     <div className="w-full max-w-full space-y-6 p-6">
@@ -135,18 +127,11 @@ export function ProfilePage({ role }: { role: ProfileRouteRole }) {
         <div className="grid gap-6 xl:grid-cols-[0.8fr_1.2fr]">
           <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
             <div className="flex flex-col items-center text-center">
-              <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-2xl bg-blue-600 text-3xl font-extrabold text-white shadow-sm">
-                {avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={avatar}
-                    alt={displayName}
-                    className="h-full w-full object-cover"
-                  />
-                ) : (
-                  initials
-                )}
-              </div>
+              <AvatarUploader
+                avatar={avatar}
+                displayName={displayName}
+                initials={initials}
+              />
               <h2 className="mt-4 text-xl font-extrabold text-gray-950">
                 {displayName}
               </h2>

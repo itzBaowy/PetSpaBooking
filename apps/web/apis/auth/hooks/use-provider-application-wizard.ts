@@ -8,8 +8,11 @@ import {
   useRegisterProviderApplication,
   useUploadProviderDocument,
 } from "@/apis/provider/verification/queries";
-import { useAuthStore } from "@/stores/auth-store";
 import { useIdentityOcr } from "./use-identity-ocr";
+import {
+  type ProviderMediaField,
+  useProviderRegistrationMedia,
+} from "./use-provider-registration-media";
 import {
   type ProviderRegistrationFormState,
   useProviderRegistrationDraft,
@@ -17,7 +20,6 @@ import {
 import { api } from "@/lib/axios";
 import { getErrorMessage } from "@/lib/error";
 import {
-  getProviderDocumentPayloads,
   getProviderRegistrationErrorMessage,
   getProviderRegistrationReviewItems,
   validateProviderRegistrationStep,
@@ -29,11 +31,10 @@ export function useProviderApplicationWizard() {
   const uploadDocumentMutation = useUploadProviderDocument();
   const bankQuery = useBanks();
   const router = useRouter();
-  const setTokens = useAuthStore((state) => state.setTokens);
-  const clearTokens = useAuthStore((state) => state.clearTokens);
   const { form, setForm, step, setStep, updateField, clearDraft } =
     useProviderRegistrationDraft();
   const identityOcr = useIdentityOcr();
+  const media = useProviderRegistrationMedia();
   const [formError, setFormError] = useState("");
 
   const isSubmitting =
@@ -75,17 +76,22 @@ export function useProviderApplicationWizard() {
   ) {
     const file = event.target.files?.[0];
 
-    if (name === "businessImages") {
+    try {
+      const previews = await media.selectFiles(
+        name as ProviderMediaField,
+        event.target.files,
+      );
       updateField(
         name,
-        Array.from(event.target.files ?? []).map(
-          (selectedFile) => selectedFile.name,
-        ),
+        name === "businessImages" ? previews : previews[0] ?? "",
+      );
+      setFormError("");
+    } catch (error) {
+      setFormError(
+        error instanceof Error ? error.message : "Không thể đọc ảnh đã chọn.",
       );
       return;
     }
-
-    updateField(name, file?.name ?? "");
 
     if (file && name === "idCardFront") {
       const parsed = await identityOcr.scan(file);
@@ -182,19 +188,17 @@ export function useProviderApplicationWizard() {
         identityAddress: form.identityAddress,
       });
 
-      // Gán tạm token vừa sinh để upload giấy tờ
-      setTokens(tokens);
-
+      // Upload tài liệu bằng token tạm vừa nhận từ kết quả đăng ký
       await Promise.all(
-        getProviderDocumentPayloads(form)
-          .filter(([, imageUrl]) => Boolean(imageUrl))
-          .map(([documentType, imageUrl]) =>
-            uploadDocumentMutation.mutateAsync({ documentType, imageUrl }),
-          ),
+        media.documentUploads.map((payload) =>
+          uploadDocumentMutation.mutateAsync({
+            ...payload,
+            token: tokens.accessToken,
+          }),
+        ),
       );
 
       clearDraft();
-      clearTokens(); // Đăng xuất và điều hướng về trang Login
       router.replace("/login?providerRegistered=1");
     } catch (error) {
       setFormError(getProviderRegistrationErrorMessage(error));
@@ -210,6 +214,8 @@ export function useProviderApplicationWizard() {
     reviewItems,
     identityOcrStatus: identityOcr.status,
     hasExistingAccount: false,
+    mediaPreviews: media.previews,
+    cropper: media.cropper,
     goBack,
     goNext,
     handleInput,

@@ -13,6 +13,7 @@ export function ProviderRegistrationVerificationStep({
   form,
   bankOptions,
   identityOcrStatus,
+  previews,
   onInputChange,
   onFileChange,
   onFieldChange,
@@ -20,6 +21,12 @@ export function ProviderRegistrationVerificationStep({
   form: ProviderRegistrationFormState;
   bankOptions: SelectOption[];
   identityOcrStatus?: string;
+  previews: {
+    idCardFront: string[];
+    idCardBack: string[];
+    businessLicense: string[];
+    businessImages: string[];
+  };
   onInputChange: (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => void;
@@ -38,12 +45,14 @@ export function ProviderRegistrationVerificationStep({
         <ProviderRegistrationField label="CCCD/CMND mặt trước" required>
           <ProviderRegistrationUploadBox
             fileName={form.idCardFront}
+            previewUrls={previews.idCardFront}
             onChange={(event) => onFileChange(event, "idCardFront")}
           />
         </ProviderRegistrationField>
         <ProviderRegistrationField label="CCCD/CMND mặt sau" required>
           <ProviderRegistrationUploadBox
             fileName={form.idCardBack}
+            previewUrls={previews.idCardBack}
             onChange={(event) => onFileChange(event, "idCardBack")}
           />
         </ProviderRegistrationField>
@@ -84,6 +93,7 @@ export function ProviderRegistrationVerificationStep({
         <ProviderRegistrationField label="Giấy đăng ký kinh doanh" required>
           <ProviderRegistrationUploadBox
             fileName={form.businessLicense}
+            previewUrls={previews.businessLicense}
             onChange={(event) => onFileChange(event, "businessLicense")}
           />
         </ProviderRegistrationField>
@@ -104,6 +114,7 @@ export function ProviderRegistrationVerificationStep({
           <ProviderRegistrationUploadBox
             multiple
             fileNames={form.businessImages}
+            previewUrls={previews.businessImages}
             onChange={(event) => onFileChange(event, "businessImages")}
           />
         </ProviderRegistrationField>

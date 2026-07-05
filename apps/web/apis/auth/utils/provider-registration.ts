@@ -69,22 +69,6 @@ export function getProviderRegistrationReviewItems(
     ["Họ tên trên CCCD", form.identityFullName],
     ["Ngày sinh", form.identityDob],
     ["Địa chỉ trên CCCD", form.identityAddress],
-    ["CCCD mặt trước", form.idCardFront],
-    ["CCCD mặt sau", form.idCardBack],
-    ["Giấy đăng ký kinh doanh", form.businessLicense],
     ["Mã số thuế", form.taxCode],
-    ["Ảnh doanh nghiệp", form.businessImages.join(", ")],
   ];
-}
-
-export function getProviderDocumentPayloads(
-  form: ProviderRegistrationFormState,
-) {
-  return [
-    ["id_card_front", form.idCardFront],
-    ["id_card_back", form.idCardBack],
-    ["business_license", form.businessLicense],
-    ["tax_code", form.taxCode],
-    ...form.businessImages.map((imageUrl) => ["other", imageUrl] as const),
-  ] as const;
 }

@@ -1,4 +1,5 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/constants/query-keys";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
 import { useAuthStore } from "@/stores/auth-store";
@@ -23,5 +24,28 @@ export function useProfile() {
       return profileSchema.parse(response.data.data);
     },
     enabled: Boolean(accessToken),
+  });
+}
+
+export function useUploadProfileAvatar() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("avatar", file);
+      const response = await api.post<ApiResponse<Profile>>(
+        API_ENDPOINTS.USERS.AVATAR,
+        formData,
+        { headers: { "Content-Type": "multipart/form-data" } },
+      );
+      return profileSchema.parse(response.data.data);
+    },
+    onSuccess: (profile) => {
+      queryClient.setQueryData(profileKeys.me(), profile);
+      queryClient.setQueryData(queryKeys.auth.me(), profile);
+      void queryClient.invalidateQueries({ queryKey: profileKeys.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
+    },
   });
 }

@@ -1,4 +1,5 @@
 export * from "./action-menu";
+export * from "./avatar";
 export * from "./button";
 export * from "./custom-select";
 export * from "./data-table";
@@ -9,3 +10,4 @@ export * from "./password-input";
 export * from "./search-input";
 export * from "./statistic-card";
 export * from "./input";
+export * from "./image-crop-dialog";
