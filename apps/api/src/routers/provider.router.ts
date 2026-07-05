@@ -3,6 +3,7 @@ import { providerController } from "../controllers/provider.controller.ts";
 import { mobileProviderController } from "../controllers/mobile-controllers/provider.controller.ts";
 import { protect } from "../middlewares/protect.middleware.ts";
 import { checkRole } from "../middlewares/authorization.middleware.ts";
+import { uploadMemory } from "../common/multer/memory.multer.ts";
 
 const providerRouter = express.Router();
 
@@ -153,14 +154,14 @@ providerRouter.get("/me/documents", protect, providerController.getMyDocuments);
  * /api/providers/me/documents:
  *   post:
  *     summary: Upload a verification document image
- *     description: Frontend uploads image to Cloudinary first, then sends the URL here.
+ *     description: Uploads an image file to Cloudinary and stores its secure URL.
  *     tags: [Providers]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/UploadDocumentRequest'
  *     responses:
@@ -185,6 +186,7 @@ providerRouter.get("/me/documents", protect, providerController.getMyDocuments);
 providerRouter.post(
   "/me/documents",
   protect,
+  uploadMemory.single("file"),
   providerController.uploadDocument,
 );
 

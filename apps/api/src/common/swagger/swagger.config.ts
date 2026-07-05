@@ -499,7 +499,7 @@ export const swaggerOptions = {
 
         UploadDocumentRequest: {
           type: "object",
-          required: ["documentType", "imageUrl"],
+          required: ["documentType", "file"],
           properties: {
             documentType: {
               type: "string",
@@ -512,10 +512,10 @@ export const swaggerOptions = {
               ],
               example: "business_license",
             },
-            imageUrl: {
+            file: {
               type: "string",
-              example: "https://res.cloudinary.com/.../doc.jpg",
-              description: "Cloudinary URL after frontend upload",
+              format: "binary",
+              description: "Image uploaded by the frontend",
             },
           },
         },

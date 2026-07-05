@@ -7,6 +7,7 @@ import {
     UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
+import cloudinary from "../common/cloudinary/init.cloudinary.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VALID_PROVIDER_STATUSES = [
@@ -300,13 +301,12 @@ export const providerService = {
             throw new BadRequestException("Your account is already verified");
         }
 
-        const { documentType, imageUrl } = req.body as {
+        const { documentType } = req.body as {
             documentType?: string;
-            imageUrl?: string;
         };
 
-        if (!documentType || !imageUrl) {
-            throw new BadRequestException("documentType and imageUrl are required");
+        if (!documentType || !req.file) {
+            throw new BadRequestException("documentType and file are required");
         }
 
         if (!VALID_DOC_TYPES.includes(documentType as DocType)) {
@@ -315,11 +315,31 @@ export const providerService = {
             );
         }
 
+        const uploadResult = await new Promise<{ secure_url: string }>(
+            (resolve, reject) => {
+                cloudinary.uploader
+                    .upload_stream(
+                        {
+                            folder: "petlink/provider-documents",
+                            resource_type: "image",
+                        },
+                        (error, result) => {
+                            if (error || !result) {
+                                reject(error ?? new Error("Cloudinary upload failed"));
+                                return;
+                            }
+                            resolve({ secure_url: result.secure_url });
+                        },
+                    )
+                    .end(req.file!.buffer);
+            },
+        );
+
         const doc = await prisma.provider_documents.create({
             data: {
                 providerId: provider.id,
                 documentType,
-                imageUrl,
+                imageUrl: uploadResult.secure_url,
             },
             select: DOC_SELECT,
         });

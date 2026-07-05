@@ -7,7 +7,8 @@ import {
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import cloudinary from "../common/cloudinary/init.cloudinary.ts";
-const FOLDER_IMAGE =  "public/images";
+
+const FOLDER_IMAGE = "public/images";
 const USER_SELECT = {
     id: true,
     userName: true,
@@ -31,12 +32,10 @@ export const userService = {
     async getAll(req: Request) {
         const { page, pageSize, where, index } = buildQueryPrisma(req.query as Record<string, unknown>);
 
-        // Lọc theo role nếu có và hợp lệ
         if (req.query.role && VALID_ROLES.includes(req.query.role as UserRole)) {
             where.role = req.query.role;
         }
 
-        // Lọc theo status nếu có và hợp lệ
         if (req.query.status && VALID_STATUSES.includes(req.query.status as UserStatus)) {
             where.status = req.query.status;
         }
@@ -66,7 +65,6 @@ export const userService = {
         const payload = (req as Request & { user?: { userId?: string } }).user;
         const requesterId = payload?.userId;
 
-        // Chỉ admin hoặc chính user mới được xem
         const requester = await prisma.users.findUnique({
             where: { id: requesterId },
             select: { role: true },
@@ -132,7 +130,6 @@ export const userService = {
             );
         }
 
-        // Check unique
         const [existByUserName, existByEmail, existByPhone] = await Promise.all([
             prisma.users.findUnique({ where: { userName } }),
             prisma.users.findUnique({ where: { email } }),
@@ -143,7 +140,6 @@ export const userService = {
         if (existByEmail) throw new BadRequestException("Email already exists");
         if (existByPhone) throw new BadRequestException("Phone already exists");
 
-        // Hash password do admin cung cấp
         const bcrypt = await import("bcrypt");
         const hashedPassword = bcrypt.hashSync(password, 10);
 
@@ -164,7 +160,6 @@ export const userService = {
         return newUser;
     },
 
-    // ── UPDATE (Admin: full | User: chỉ profile cá nhân) ────────────────
     async update(req: Request) {
         const id = req.params.id as string;
         const payload = (req as Request & { user?: { userId?: string } }).user;
@@ -188,7 +183,6 @@ export const userService = {
             );
         }
 
-        // Check user tồn tại
         const existing = await prisma.users.findUnique({ where: { id } });
         if (!existing) {
             throw new NotFoundException("User not found");
@@ -205,8 +199,6 @@ export const userService = {
                 status?: string;
             };
 
-        // Non-admin chỉ được update profile fields (fullName, avatar, phone)
-        // Admin được update tất cả
         const updateData: Record<string, unknown> = {};
 
         if (fullName !== undefined) updateData.fullName = fullName;
@@ -236,7 +228,6 @@ export const userService = {
             }
         }
 
-        // Check unique constraints khi update
         if (updateData.email && updateData.email !== existing.email) {
             const emailExist = await prisma.users.findUnique({
                 where: { email: updateData.email as string },
@@ -336,29 +327,38 @@ export const userService = {
             throw new NotFoundException("User not found");
         }
 
-        const uploadResult = await new Promise<any>((resolve, reject) => {
+        const uploadResult = await new Promise<{
+            public_id: string;
+            secure_url: string;
+        }>((resolve, reject) => {
             cloudinary.uploader.upload_stream(
                 { folder: FOLDER_IMAGE },
                 (error, result) => {
-                    if (error) {
+                    if (error || !result) {
                         return reject(error);
                     }
-                    resolve(result);
+                    resolve({
+                        public_id: result.public_id,
+                        secure_url: result.secure_url,
+                    });
                 }
             ).end(req.file!.buffer);
         });
 
-        await prisma.users.update({
-            where: {
-                id: userId,
-            },
-            data: {
-                avatar: uploadResult.public_id,
-            },
+        const updatedUser = await prisma.users.update({
+            where: { id: userId },
+            data: { avatar: uploadResult.secure_url },
+            select: USER_SELECT,
         });
 
-        if (currentUser.avatar && currentUser.avatar !== 'public/images/default_avatar') {
+        if (
+            currentUser.avatar &&
+            currentUser.avatar !== "public/images/default_avatar" &&
+            !currentUser.avatar.startsWith("http")
+        ) {
             cloudinary.uploader.destroy(currentUser.avatar);
         }
+
+        return updatedUser;
     },
 };
