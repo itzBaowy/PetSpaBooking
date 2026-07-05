@@ -361,4 +361,26 @@ export const userService = {
             cloudinary.uploader.destroy(currentUser.avatar);
         }
     },
+
+    async updateProfile(req: Request) {
+        const payload = (req as Request & { user?: { userId?: string } }).user;
+        const userId = payload?.userId; 
+
+        if (!userId) {
+            throw new BadRequestException("User not authenticated");
+        }
+
+        const { fullName, phone} = req.body as {
+            fullName?: string;
+            phone?: string;
+        };
+
+        const updated = await prisma.users.update({
+            where: { id: userId },
+            data: { fullName, phone },
+            select: USER_SELECT,
+        });
+
+        return updated;
+    }
 };

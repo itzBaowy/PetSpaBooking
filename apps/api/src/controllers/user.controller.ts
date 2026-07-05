@@ -72,4 +72,14 @@ export const userController = {
             next(error);
         }
     },
+
+    async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const result = await userService.updateProfile(req);
+            const response = responseSuccess(result, "User profile updated successfully");
+            res.status(response.statusCode).json(response);
+        } catch (error) {
+            next(error);
+        }
+    },
 };
