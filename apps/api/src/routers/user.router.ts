@@ -2,6 +2,7 @@ import express from "express";
 import { userController } from "../controllers/user.controller.ts";
 import { protect } from "../middlewares/protect.middleware.ts";
 import { checkRole } from "../middlewares/authorization.middleware.ts";
+import { uploadMemory } from "../common/multer/memory.multer.ts";
 
 const userRouter = express.Router();
 
@@ -393,4 +394,57 @@ userRouter.delete("/:id", protect, checkRole("ADMIN"), userController.remove);
  */
 userRouter.patch("/:id/role", protect, checkRole("ADMIN"), userController.updateRole);
 
+/**
+ * @swagger
+ * /api/users/avatar-cloud:
+ *   post:
+ *     summary: Upload user avatar
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - avatar
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *                 description: Avatar image file to upload
+ *     responses:
+ *       200:
+ *         description: Avatar uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/UserObject'
+ *       400:
+ *         description: Bad request (e.g., no file uploaded or invalid format)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+userRouter.post("/avatar-cloud", protect, uploadMemory.single("avatar"), userController.uploadAvatar);
 export default userRouter;

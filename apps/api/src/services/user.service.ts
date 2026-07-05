@@ -6,7 +6,8 @@ import {
     NotFoundException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
-
+import cloudinary from "../common/cloudinary/init.cloudinary.ts";
+const FOLDER_IMAGE =  "public/images";
 const USER_SELECT = {
     id: true,
     userName: true,
@@ -61,7 +62,7 @@ export const userService = {
     },
 
     async getById(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const payload = (req as Request & { user?: { userId?: string } }).user;
         const requesterId = payload?.userId;
 
@@ -165,7 +166,7 @@ export const userService = {
 
     // ── UPDATE (Admin: full | User: chỉ profile cá nhân) ────────────────
     async update(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const payload = (req as Request & { user?: { userId?: string } }).user;
         const requesterId = payload?.userId;
 
@@ -267,7 +268,7 @@ export const userService = {
     },
 
     async remove(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const user = await prisma.users.findUnique({ where: { id } });
         if (!user) {
@@ -288,7 +289,7 @@ export const userService = {
     },
 
     async updateRole(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { role } = req.body as { role?: string };
 
         if (!role) {
@@ -313,5 +314,51 @@ export const userService = {
         });
 
         return updated;
+    },
+
+    async avatarCloud(req: Request) {
+        if (!req.file) {
+            throw new BadRequestException("No file uploaded");
+        }
+
+        const payload = (req as Request & { user?: { userId?: string } }).user;
+        const userId = payload?.userId;
+        if (!userId) {
+            throw new BadRequestException("User not authenticated");
+        }
+
+        const currentUser = await prisma.users.findUnique({
+            where: { id: userId },
+            select: { avatar: true },
+        });
+
+        if (!currentUser) {
+            throw new NotFoundException("User not found");
+        }
+
+        const uploadResult = await new Promise<any>((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { folder: FOLDER_IMAGE },
+                (error, result) => {
+                    if (error) {
+                        return reject(error);
+                    }
+                    resolve(result);
+                }
+            ).end(req.file!.buffer);
+        });
+
+        await prisma.users.update({
+            where: {
+                id: userId,
+            },
+            data: {
+                avatar: uploadResult.public_id,
+            },
+        });
+
+        if (currentUser.avatar && currentUser.avatar !== 'public/images/default_avatar') {
+            cloudinary.uploader.destroy(currentUser.avatar);
+        }
     },
 };
