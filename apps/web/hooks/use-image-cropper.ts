@@ -33,6 +33,13 @@ export function useImageCropper() {
   }
 
   function cropFile(file: File, aspectRatio?: number) {
+    // Cancel any in-flight crop before starting a new one
+    if (pendingRef.current) {
+      URL.revokeObjectURL(pendingRef.current.sourceUrl);
+      pendingRef.current.resolve(null);
+      pendingRef.current = null;
+    }
+
     return new Promise<File | null>((resolve) => {
       const next = {
         file,

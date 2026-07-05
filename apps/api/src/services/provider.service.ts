@@ -65,6 +65,7 @@ const DOC_SELECT = {
     providerId: true,
     documentType: true,
     imageUrl: true,
+    cloudinaryPublicId: true,
     status: true,
     adminNote: true,
     createAt: true,
@@ -315,7 +316,19 @@ export const providerService = {
             );
         }
 
-        const uploadResult = await new Promise<{ secure_url: string }>(
+        // Defensive service-layer validation (belt-and-suspenders after multer fileFilter)
+        const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+        const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
+        if (!ALLOWED_MIME_TYPES.includes(req.file.mimetype)) {
+            throw new BadRequestException(
+                `Unsupported file type: ${req.file.mimetype}. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`,
+            );
+        }
+        if (req.file.size > MAX_FILE_SIZE) {
+            throw new BadRequestException("File size exceeds the 8 MB limit.");
+        }
+
+        const uploadResult = await new Promise<{ public_id: string; secure_url: string }>(
             (resolve, reject) => {
                 cloudinary.uploader
                     .upload_stream(
@@ -328,7 +341,10 @@ export const providerService = {
                                 reject(error ?? new Error("Cloudinary upload failed"));
                                 return;
                             }
-                            resolve({ secure_url: result.secure_url });
+                            resolve({
+                                public_id: result.public_id,
+                                secure_url: result.secure_url,
+                            });
                         },
                     )
                     .end(req.file!.buffer);
@@ -340,6 +356,7 @@ export const providerService = {
                 providerId: provider.id,
                 documentType,
                 imageUrl: uploadResult.secure_url,
+                cloudinaryPublicId: uploadResult.public_id,
             },
             select: DOC_SELECT,
         });
@@ -383,6 +400,13 @@ export const providerService = {
         }
 
         await prisma.provider_documents.delete({ where: { id: docId } });
+
+        // Clean up Cloudinary asset — log failures but don't block the response
+        if (doc.cloudinaryPublicId) {
+            cloudinary.uploader.destroy(doc.cloudinaryPublicId).catch((err: unknown) => {
+                console.error("[deleteDocument] Failed to destroy Cloudinary asset:", err);
+            });
+        }
 
         return { id: docId };
     },

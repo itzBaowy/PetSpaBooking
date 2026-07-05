@@ -16,6 +16,7 @@ const USER_SELECT = {
     phone: true,
     fullName: true,
     avatar: true,
+    avatarPublicId: true,
     role: true,
     status: true,
     createAt: true,
@@ -312,6 +313,18 @@ export const userService = {
             throw new BadRequestException("No file uploaded");
         }
 
+        // Defensive service-layer validation (belt-and-suspenders after multer fileFilter)
+        const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+        const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
+        if (!ALLOWED_MIME_TYPES.includes(req.file.mimetype)) {
+            throw new BadRequestException(
+                `Unsupported file type: ${req.file.mimetype}. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`,
+            );
+        }
+        if (req.file.size > MAX_FILE_SIZE) {
+            throw new BadRequestException("File size exceeds the 8 MB limit.");
+        }
+
         const payload = (req as Request & { user?: { userId?: string } }).user;
         const userId = payload?.userId;
         if (!userId) {
@@ -320,7 +333,7 @@ export const userService = {
 
         const currentUser = await prisma.users.findUnique({
             where: { id: userId },
-            select: { avatar: true },
+            select: { avatar: true, avatarPublicId: true },
         });
 
         if (!currentUser) {
@@ -335,7 +348,7 @@ export const userService = {
                 { folder: FOLDER_IMAGE },
                 (error, result) => {
                     if (error || !result) {
-                        return reject(error);
+                        return reject(error ?? new Error("Cloudinary upload failed"));
                     }
                     resolve({
                         public_id: result.public_id,
@@ -347,16 +360,18 @@ export const userService = {
 
         const updatedUser = await prisma.users.update({
             where: { id: userId },
-            data: { avatar: uploadResult.secure_url },
+            data: {
+                avatar: uploadResult.secure_url,
+                avatarPublicId: uploadResult.public_id,
+            },
             select: USER_SELECT,
         });
 
-        if (
-            currentUser.avatar &&
-            currentUser.avatar !== "public/images/default_avatar" &&
-            !currentUser.avatar.startsWith("http")
-        ) {
-            cloudinary.uploader.destroy(currentUser.avatar);
+        // Destroy the previous Cloudinary asset if we have its public_id stored
+        if (currentUser.avatarPublicId) {
+            cloudinary.uploader.destroy(currentUser.avatarPublicId).catch((err: unknown) => {
+                console.error("[avatarCloud] Failed to destroy old Cloudinary asset:", err);
+            });
         }
 
         return updatedUser;

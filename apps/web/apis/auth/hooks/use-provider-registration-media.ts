@@ -71,7 +71,7 @@ export function useProviderRegistrationMedia() {
   async function selectFiles(
     field: ProviderMediaField,
     fileList: FileList | null,
-  ) {
+  ): Promise<{ previews: string[]; files: File[] }> {
     const files = Array.from(fileList ?? []);
     const invalidFile = files.find(
       (file) =>
@@ -91,8 +91,11 @@ export function useProviderRegistrationMedia() {
       if (croppedFile) croppedFiles.push(croppedFile);
     }
 
-    if (croppedFiles.length === 0) return [];
-    return replacePreviews(field, croppedFiles);
+    // Crop was canceled — return empty without touching state
+    if (croppedFiles.length === 0) return { previews: [], files: [] };
+
+    const previews = replacePreviews(field, croppedFiles);
+    return { previews, files: croppedFiles };
   }
 
   const documentUploads = [
@@ -119,6 +122,7 @@ export function useProviderRegistrationMedia() {
   return {
     previews: media.previews,
     documentUploads,
+    singleFiles: media.singleFiles,
     selectFiles,
     cropper,
   };

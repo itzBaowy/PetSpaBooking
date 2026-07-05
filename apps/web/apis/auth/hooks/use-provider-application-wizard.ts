@@ -74,18 +74,13 @@ export function useProviderApplicationWizard() {
     event: ChangeEvent<HTMLInputElement>,
     name: keyof ProviderRegistrationFormState,
   ) {
-    const file = event.target.files?.[0];
+    let result: { previews: string[]; files: File[] };
 
     try {
-      const previews = await media.selectFiles(
+      result = await media.selectFiles(
         name as ProviderMediaField,
         event.target.files,
       );
-      updateField(
-        name,
-        name === "businessImages" ? previews : previews[0] ?? "",
-      );
-      setFormError("");
     } catch (error) {
       setFormError(
         error instanceof Error ? error.message : "Không thể đọc ảnh đã chọn.",
@@ -93,8 +88,23 @@ export function useProviderApplicationWizard() {
       return;
     }
 
-    if (file && name === "idCardFront") {
-      const parsed = await identityOcr.scan(file);
+    const { previews, files: croppedFiles } = result;
+
+    // Crop was canceled — clear the field and bail out (do not OCR)
+    if (previews.length === 0) {
+      updateField(name, name === "businessImages" ? [] : "");
+      return;
+    }
+
+    updateField(
+      name,
+      name === "businessImages" ? previews : previews[0] ?? "",
+    );
+    setFormError("");
+
+    // OCR the accepted cropped file so extracted data matches what will be uploaded
+    if (name === "idCardFront" && croppedFiles[0]) {
+      const parsed = await identityOcr.scan(croppedFiles[0]);
       if (!parsed) return;
 
       setForm((current) => ({

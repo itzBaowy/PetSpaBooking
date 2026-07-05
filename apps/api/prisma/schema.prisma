@@ -19,9 +19,10 @@ model users {
   password  String
   phone     String     @unique
   email     String     @unique
-  fullName  String?
-  avatar    String?    @default("public/images/default_avatar")
-  role      String     @default("CUSTOMER")
+  fullName       String?
+  avatar         String?    @default("public/images/default_avatar")
+  avatarPublicId String?
+  role           String     @default("CUSTOMER")
   status    String     @default("ACTIVE")
   createAt  DateTime   @default(now())
   updateAt  DateTime   @updatedAt
@@ -86,10 +87,11 @@ model providers {
 model provider_documents {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   providerId   String   @db.ObjectId
-  documentType String
-  imageUrl     String
-  status       String   @default("PENDING")
-  adminNote    String?
+  documentType       String
+  imageUrl           String
+  cloudinaryPublicId String?
+  status             String   @default("PENDING")
+  adminNote          String?
   createAt     DateTime @default(now())
   updateAt     DateTime @updatedAt
 
