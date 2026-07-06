@@ -358,10 +358,14 @@ export const userService = {
             ).end(req.file!.buffer);
         });
 
+        const relativeAvatarPath = uploadResult.secure_url.includes(FOLDER_IMAGE)
+            ? uploadResult.secure_url.substring(uploadResult.secure_url.indexOf(FOLDER_IMAGE))
+            : uploadResult.secure_url;
+
         const updatedUser = await prisma.users.update({
             where: { id: userId },
             data: {
-                avatar: uploadResult.secure_url,
+                avatar: relativeAvatarPath,
                 avatarPublicId: uploadResult.public_id,
             },
             select: USER_SELECT,
