@@ -19,7 +19,7 @@ export const profileSchema = z.object({
   avatar: z.string().nullable(),
   role: profileRoleSchema,
   status: profileStatusSchema.or(z.string()),
-  providerProfileId: z.string().nullable(),
+  providerProfileId: z.string().nullable().optional().default(null),
   providerStatus: z
     .enum([
       "PENDING_VERIFICATION",
@@ -27,7 +27,9 @@ export const profileSchema = z.object({
       "REJECTED",
       "SUSPENDED",
     ])
-    .nullable(),
+    .nullable()
+    .optional()
+    .default(null),
   providerVerificationStatus: z
     .enum([
       "PENDING_VERIFICATION",
@@ -35,7 +37,9 @@ export const profileSchema = z.object({
       "REJECTED",
       "SUSPENDED",
     ])
-    .nullable(),
+    .nullable()
+    .optional()
+    .default(null),
   createAt: z.string().min(1),
   updateAt: z.string().min(1),
 });

@@ -378,6 +378,19 @@ export const userService = {
             });
         }
 
-        return updatedUser;
+        const providerProfile = await prisma.providers.findUnique({
+            where: { userId },
+            select: {
+                id: true,
+                providerStatus: true,
+            },
+        });
+
+        return {
+            ...updatedUser,
+            providerProfileId: providerProfile?.id ?? null,
+            providerStatus: providerProfile?.providerStatus ?? null,
+            providerVerificationStatus: providerProfile?.providerStatus ?? null,
+        };
     },
 };
