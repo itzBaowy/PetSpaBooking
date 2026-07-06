@@ -112,8 +112,18 @@ function useProviderMutation() {
   const queryClient = useQueryClient();
 
   function syncProvider(provider: AdminProvider) {
-    queryClient.setQueryData(queryKeys.adminProviders.detail(provider.id), provider);
+    queryClient.setQueryData<AdminProviderDetail | null>(
+      queryKeys.adminProviders.detail(provider.id),
+      (old) => {
+        if (!old) return null;
+        return {
+          ...old,
+          ...provider,
+        };
+      },
+    );
     void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders.all });
+    void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders.detail(provider.id) });
     void queryClient.invalidateQueries({ queryKey: queryKeys.adminUsers.all });
     void queryClient.invalidateQueries({ queryKey: ["admin", "analytics"] });
   }

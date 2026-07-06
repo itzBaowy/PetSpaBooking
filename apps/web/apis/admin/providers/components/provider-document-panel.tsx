@@ -42,10 +42,10 @@ function getDocumentPreviewSrc(value: string) {
 }
 
 export function ProviderDocumentPanel({
-  documents,
+  documents = [],
   providerStatus,
 }: {
-  documents: ProviderDocument[];
+  documents?: ProviderDocument[];
   providerStatus: AdminProviderStatus;
 }) {
   const [selectedDocumentId, setSelectedDocumentId] = useState(
@@ -71,7 +71,8 @@ export function ProviderDocumentPanel({
     : fallbackPreview;
   const canPreviewImage = selectedDocument
     ? Boolean(selectedDocument.mimeType?.startsWith("image/")) ||
-      isImageDocument(getDocumentUrl(selectedDocument))
+      isImageDocument(getDocumentUrl(selectedDocument)) ||
+      /^(https?:)?\/\//i.test(getDocumentUrl(selectedDocument))
     : false;
   const selectedLabel = selectedDocument
     ? providerDocumentTypeLabels[selectedDocument.documentType] ??

@@ -75,11 +75,26 @@ export function useUploadProviderDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: UploadProviderDocumentData) => {
-      const parsedPayload = uploadProviderDocumentSchema.parse(payload);
+    mutationFn: async (
+      payload: UploadProviderDocumentData & { token?: string },
+    ) => {
+      const { token, ...uploadPayload } = payload;
+      const parsedPayload = uploadProviderDocumentSchema.parse(uploadPayload);
+      const formData = new FormData();
+      formData.append("documentType", parsedPayload.documentType);
+      formData.append("file", parsedPayload.file);
+      
+      const headers: Record<string, string> = {
+        "Content-Type": "multipart/form-data",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await api.post<ApiResponse<ProviderDocument>>(
         API_ENDPOINTS.PROVIDERS.MY_DOCUMENTS,
-        parsedPayload,
+        formData,
+        { headers },
       );
       return providerDocumentSchema.parse(response.data.data);
     },

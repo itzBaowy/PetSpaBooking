@@ -110,6 +110,17 @@ export function PendingProviderState({
                 <p className="mt-1 break-all text-xs text-muted">
                   {document.imageUrl}
                 </p>
+                {document.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={document.imageUrl}
+                    alt={
+                      providerDocumentTypeLabels[document.documentType] ??
+                      document.documentType
+                    }
+                    className="mt-3 h-40 w-full rounded-lg border border-border-subtle bg-white object-contain"
+                  />
+                )}
                 <p className="mt-3 text-xs font-semibold text-brand">
                   Trạng thái: {document.status}
                 </p>

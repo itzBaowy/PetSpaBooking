@@ -84,7 +84,10 @@ export const providerRegistrationSchema = z.object({
 
 export const uploadProviderDocumentSchema = z.object({
   documentType: z.string().min(1),
-  imageUrl: z.string().min(1),
+  file: z.custom<File>(
+    (value) => typeof File !== "undefined" && value instanceof File,
+    "Ảnh tài liệu không hợp lệ",
+  ),
 });
 
 export type ProviderInfo = z.infer<typeof providerInfoSchema>;

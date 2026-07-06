@@ -65,9 +65,10 @@ function readProviderDraft(): ProviderRegistrationFormState {
     return {
       ...initialProviderRegistrationForm,
       ...parsedDraft,
-      businessImages:
-        parsedDraft.businessImages ??
-        (parsedDraft.businessImage ? [parsedDraft.businessImage] : []),
+      idCardFront: "",
+      idCardBack: "",
+      businessLicense: "",
+      businessImages: [],
     };
   } catch {
     return initialProviderRegistrationForm;
@@ -86,9 +87,16 @@ export function useProviderRegistrationDraft() {
   const [form, setForm] = useState(readProviderDraft);
 
   useEffect(() => {
+    const serializableForm = {
+      ...form,
+      idCardFront: "",
+      idCardBack: "",
+      businessLicense: "",
+      businessImages: [],
+    };
     window.sessionStorage.setItem(
       providerRegisterDraftKey,
-      JSON.stringify(form),
+      JSON.stringify(serializableForm),
     );
     window.sessionStorage.setItem(providerRegisterStepKey, String(step));
   }, [form, step]);
