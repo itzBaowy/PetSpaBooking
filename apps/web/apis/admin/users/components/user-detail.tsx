@@ -8,7 +8,9 @@ import { formatVietnameseDateTime } from "@/lib/date";
 import { useAdminUserDetail } from "../hooks/use-admin-user-detail";
 import { roleLabels, statusLabels } from "../schema";
 import { getUserDisplayName } from "../user-helpers";
+import { UserAccountCard } from "./user-account-card";
 import { UserFormDialog } from "./user-form-dialog";
+import { UserPetsPanel } from "./user-pets-panel";
 
 export function UserDetail({ userId }: { userId: string }) {
   const state = useAdminUserDetail(userId);
@@ -42,17 +44,6 @@ export function UserDetail({ userId }: { userId: string }) {
       </div>
     );
   }
-
-  const detailItems = [
-    ["Tên đăng nhập", account.userName],
-    ["Họ tên", account.fullName ?? "Chưa cập nhật"],
-    ["Email", account.email],
-    ["Số điện thoại", account.phone],
-    ["Vai trò", roleLabels[account.role]],
-    ["Trạng thái", statusLabels[account.status]],
-    ["Avatar", account.avatar ?? "Không có"],
-    ["Cập nhật lần cuối", formatVietnameseDateTime(account.updateAt)],
-  ];
 
   return (
     <div className="w-full max-w-full space-y-6 p-6">
@@ -105,21 +96,8 @@ export function UserDetail({ userId }: { userId: string }) {
         />
       </StatisticCardGrid>
 
-      <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
-        <h2 className="text-lg font-bold text-gray-950">Chi tiết tài khoản</h2>
-        <div className="mt-5 grid gap-4 md:grid-cols-2">
-          {detailItems.map(([label, value]) => (
-            <div key={label} className="rounded-xl bg-gray-50 p-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
-                {label}
-              </p>
-              <p className="mt-1 break-words text-sm font-semibold text-gray-900">
-                {value}
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
+      <UserAccountCard user={account} />
+      <UserPetsPanel user={account} />
 
       <UserFormDialog
         open={state.isEditOpen}

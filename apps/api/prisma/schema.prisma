@@ -21,7 +21,6 @@ model users {
   email     String     @unique
   fullName       String?
   avatar         String?    @default("public/images/default_avatar")
-  avatarPublicId String?
   role           String     @default("CUSTOMER")
   status    String     @default("ACTIVE")
   createAt  DateTime   @default(now())
