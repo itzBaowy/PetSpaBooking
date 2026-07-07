@@ -156,7 +156,7 @@ export function ProfilePage({ role }: { role: ProfileRouteRole }) {
           </div>
 
           <div className="space-y-6">
-            <StatisticCardGrid columns={3}>
+            <StatisticCardGrid columns={2}>
               <StatisticCard
                 title="Vai trò"
                 value={userRoleLabels[profile.role] ?? profile.role}
@@ -166,11 +166,6 @@ export function ProfilePage({ role }: { role: ProfileRouteRole }) {
                 title="Trạng thái tài khoản"
                 value={statusLabels[profile.status] ?? profile.status}
                 tone="green"
-              />
-              <StatisticCard
-                title="Nguồn dữ liệu"
-                value={role === "provider" ? "get-info + provider" : "get-info"}
-                tone="purple"
               />
             </StatisticCardGrid>
 

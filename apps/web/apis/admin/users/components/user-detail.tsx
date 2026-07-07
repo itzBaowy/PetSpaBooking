@@ -18,7 +18,7 @@ export function UserDetail({ userId }: { userId: string }) {
 
   if (state.userQuery.isLoading) {
     return (
-      <div className="grid min-h-[420px] place-items-center text-sm font-semibold text-muted">
+      <div className="grid min-h-105 place-items-center text-sm font-semibold text-muted">
         Đang tải thông tin người dùng...
       </div>
     );
