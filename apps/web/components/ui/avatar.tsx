@@ -37,6 +37,24 @@ export function Avatar({
   onEdit?: () => void;
   className?: string;
 }) {
+  const getFullSrc = (url?: string | null) => {
+    if (!url) return undefined;
+    if (
+      url.startsWith("http://") ||
+      url.startsWith("https://") ||
+      url.startsWith("data:") ||
+      url.startsWith("blob:")
+    ) {
+      return url;
+    }
+    const baseUrl = process.env.NEXT_PUBLIC_CLOUDINARY_URL || "";
+    const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanPath = url.startsWith("/") ? url : `/${url}`;
+    return `${cleanBase}${cleanPath}`;
+  };
+
+  const fullSrc = getFullSrc(src);
+
   return (
     <span
       className={cn(
@@ -45,9 +63,9 @@ export function Avatar({
         className,
       )}
     >
-      {src ? (
+      {fullSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={src} alt={alt} className="h-full w-full rounded-[inherit] object-cover" />
+        <img src={fullSrc} alt={alt} className="h-full w-full rounded-[inherit] object-cover" />
       ) : (
         fallback
       )}

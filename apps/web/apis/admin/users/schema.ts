@@ -7,6 +7,30 @@ export const adminUserStatusSchema = z.enum([
   "BANNED",
 ]);
 
+export const adminUserPetSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  breed: z.string(),
+  gender: z.string(),
+  ageLabel: z.string(),
+  imageUrl: z.string(),
+  status: z.string(),
+  weight: z.string(),
+  height: z.string(),
+  color: z.string(),
+  criticalNote: z.string().nullable(),
+  nextVaccineDate: z.string().nullable(),
+  photos: z.array(z.string()),
+  createAt: z.string(),
+  updateAt: z.string(),
+});
+
+export const adminUserCustomerSchema = z.object({
+  id: z.string(),
+  location: z.string(),
+  pets: z.array(adminUserPetSchema),
+});
+
 export const adminUserSchema = z.object({
   id: z.string(),
   userName: z.string(),
@@ -18,6 +42,7 @@ export const adminUserSchema = z.object({
   status: adminUserStatusSchema,
   createAt: z.string(),
   updateAt: z.string(),
+  customers: adminUserCustomerSchema.nullable().optional(),
 });
 
 export const adminUserListSchema = z.object({
@@ -107,6 +132,8 @@ export const statusLabels: Record<AdminUserStatus, string> = {
 
 export type AdminUserRole = z.infer<typeof adminUserRoleSchema>;
 export type AdminUserStatus = z.infer<typeof adminUserStatusSchema>;
+export type AdminUserPet = z.infer<typeof adminUserPetSchema>;
+export type AdminUserCustomer = z.infer<typeof adminUserCustomerSchema>;
 export type AdminUser = z.infer<typeof adminUserSchema>;
 export type AdminUserList = z.infer<typeof adminUserListSchema>;
 export type AdminUserListParams = z.infer<typeof adminUserListParamsSchema>;

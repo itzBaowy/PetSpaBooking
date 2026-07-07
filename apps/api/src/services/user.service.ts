@@ -9,18 +9,47 @@ import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts
 import cloudinary from "../common/cloudinary/init.cloudinary.ts";
 
 const FOLDER_IMAGE = "public/images";
-const USER_SELECT = {
+const USER_LIST_SELECT = {
     id: true,
     userName: true,
     email: true,
     phone: true,
     fullName: true,
     avatar: true,
-    avatarPublicId: true,
     role: true,
     status: true,
     createAt: true,
     updateAt: true,
+} as const;
+
+const USER_DETAIL_SELECT = {
+    ...USER_LIST_SELECT,
+    customers: {
+        select: {
+            id: true,
+            location: true,
+            pets: {
+                select: {
+                    id: true,
+                    name: true,
+                    breed: true,
+                    gender: true,
+                    ageLabel: true,
+                    imageUrl: true,
+                    status: true,
+                    weight: true,
+                    height: true,
+                    color: true,
+                    criticalNote: true,
+                    nextVaccineDate: true,
+                    photos: true,
+                    createAt: true,
+                    updateAt: true,
+                },
+                orderBy: { createAt: "desc" },
+            },
+        },
+    },
 } as const;
 
 const VALID_STATUSES = ["ACTIVE", "INACTIVE", "BANNED"] as const;
@@ -28,6 +57,27 @@ const VALID_ROLES = ["CUSTOMER", "ADMIN", "PROVIDER"] as const;
 
 type UserStatus = (typeof VALID_STATUSES)[number];
 type UserRole = (typeof VALID_ROLES)[number];
+
+function getCloudinaryPublicId(avatar?: string | null) {
+    if (!avatar) return null;
+
+    let path = avatar;
+    try {
+        if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+            const pathname = new URL(avatar).pathname;
+            const uploadIndex = pathname.indexOf("/upload/");
+            path = uploadIndex >= 0 ? pathname.slice(uploadIndex + "/upload/".length) : pathname;
+            path = path.replace(/^v\d+\//, "");
+        }
+    } catch {
+        path = avatar;
+    }
+
+    path = path.replace(/^\/+/, "").replace(/^v\d+\//, "");
+    if (!path.startsWith(`${FOLDER_IMAGE}/`)) return null;
+
+    return path.replace(/\.[^/.]+$/, "");
+}
 
 export const userService = {
     async getAll(req: Request) {
@@ -45,7 +95,7 @@ export const userService = {
             prisma.users.count({ where }),
             prisma.users.findMany({
                 where,
-                select: USER_SELECT,
+                select: USER_LIST_SELECT,
                 skip: index,
                 take: pageSize,
                 orderBy: { createAt: "desc" },
@@ -84,7 +134,7 @@ export const userService = {
 
         const user = await prisma.users.findUnique({
             where: { id },
-            select: USER_SELECT,
+            select: USER_DETAIL_SELECT,
         });
 
         if (!user) {
@@ -155,7 +205,7 @@ export const userService = {
                 role: role ?? "CUSTOMER",
                 status: status ?? "ACTIVE",
             },
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return newUser;
@@ -253,7 +303,7 @@ export const userService = {
         const updated = await prisma.users.update({
             where: { id },
             data: updateData,
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return updated;
@@ -274,7 +324,7 @@ export const userService = {
         const updated = await prisma.users.update({
             where: { id },
             data: { status: "INACTIVE" },
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return updated;
@@ -302,7 +352,7 @@ export const userService = {
         const updated = await prisma.users.update({
             where: { id },
             data: { role },
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return updated;
@@ -333,7 +383,7 @@ export const userService = {
 
         const currentUser = await prisma.users.findUnique({
             where: { id: userId },
-            select: { avatar: true, avatarPublicId: true },
+            select: { avatar: true },
         });
 
         if (!currentUser) {
@@ -358,22 +408,38 @@ export const userService = {
             ).end(req.file!.buffer);
         });
 
+        const relativeAvatarPath = uploadResult.secure_url.includes(FOLDER_IMAGE)
+            ? uploadResult.secure_url.substring(uploadResult.secure_url.indexOf(FOLDER_IMAGE))
+            : uploadResult.secure_url;
+
         const updatedUser = await prisma.users.update({
             where: { id: userId },
             data: {
-                avatar: uploadResult.secure_url,
-                avatarPublicId: uploadResult.public_id,
+                avatar: relativeAvatarPath,
             },
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
-        // Destroy the previous Cloudinary asset if we have its public_id stored
-        if (currentUser.avatarPublicId) {
-            cloudinary.uploader.destroy(currentUser.avatarPublicId).catch((err: unknown) => {
+        const oldPublicId = getCloudinaryPublicId(currentUser.avatar);
+        if (oldPublicId) {
+            cloudinary.uploader.destroy(oldPublicId).catch((err: unknown) => {
                 console.error("[avatarCloud] Failed to destroy old Cloudinary asset:", err);
             });
         }
 
-        return updatedUser;
+        const providerProfile = await prisma.providers.findUnique({
+            where: { userId },
+            select: {
+                id: true,
+                providerStatus: true,
+            },
+        });
+
+        return {
+            ...updatedUser,
+            providerProfileId: providerProfile?.id ?? null,
+            providerStatus: providerProfile?.providerStatus ?? null,
+            providerVerificationStatus: providerProfile?.providerStatus ?? null,
+        };
     },
 };
