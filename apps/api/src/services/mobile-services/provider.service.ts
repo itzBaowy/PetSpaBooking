@@ -12,8 +12,16 @@ import { ProviderItem } from "../../types/mobile-types/provider.types.ts";
 import {
   BadRequestException,
   NotFoundException,
+  UnauthorizedException,
 } from "../../common/helpers/exception.helper.ts";
 import { ObjectId } from "mongodb";
+
+function getRequesterId(req: Request): string {
+  const userId = (req as Request & { user?: { userId?: string } }).user
+    ?.userId;
+  if (!userId) throw new UnauthorizedException("Unauthorized");
+  return userId;
+}
 
 export const mobileProviderServices = {
   async getAllProviders(req: Request) {
@@ -21,24 +29,40 @@ export const mobileProviderServices = {
       req.query as Record<string, unknown>,
     );
 
-    const { userLat, userLng } = req.query;
+    const { userLat, userLng, category } = req.query;
 
-    where.isActive = true;
-    where.isHiddenByAdmin = false;
+    const providerWhere = {
+      ...where,
+      providerStatus: "VERIFIED",
+    };
 
-    const rawProviders = await prisma.providers.findMany({
-      include: {
-        services: {
-          where: where,
+    const serviceWhere: Record<string, unknown> = {
+      isActive: true,
+      isHiddenByAdmin: false,
+    };
+
+    if (typeof category === "string" && category) {
+      serviceWhere.category = category;
+    }
+
+    const [totalItems, rawProviders] = await Promise.all([
+      prisma.providers.count({ where: providerWhere }),
+      prisma.providers.findMany({
+        where: providerWhere,
+        include: {
+          services: {
+            where: serviceWhere,
+          },
+          reviews: true,
+          workingHours: true,
         },
-        reviews: true,
-        workingHours: true,
-      },
-      skip: index,
-      take: pageSize,
-    });
+        skip: index,
+        take: pageSize,
+        orderBy: { createAt: "desc" },
+      }),
+    ]);
 
-    return rawProviders.map((provider) => {
+    const items = rawProviders.map((provider) => {
       const totalReviews = provider.reviews.length;
       const averageRating =
         totalReviews > 0
@@ -68,65 +92,75 @@ export const mobileProviderServices = {
       const availability = checkAvailability(provider.workingHours);
 
       return {
-        page,
-        pageSize,
-        items: {
-          id: provider.id,
-          slug: provider.slug,
-          businessName: provider.businessName,
-          description: provider.description || "",
-          avatarUrl: provider.avatarUrl || "",
-          coverImageUrl: provider.coverImageUrl || "",
+        id: provider.id,
+        slug: provider.slug,
+        businessName: provider.businessName,
+        description: provider.description || "",
+        avatarUrl: provider.avatarUrl || "",
+        coverImageUrl: provider.coverImageUrl || "",
 
-          isVerified: provider.providerStatus === "APPROVED",
-          status: provider.providerStatus,
+        isVerified: provider.providerStatus === "VERIFIED",
+        status: provider.providerStatus,
 
-          location: {
-            address: provider.address || "",
-            ward: provider.ward || "",
-            district: provider.district || "",
-            province: provider.province || "",
-            coordinates: {
-              lat: provider.lat || 0,
-              lng: provider.lng || 0,
-            },
-            distanceKm: distance,
+        location: {
+          address: provider.address || "",
+          ward: provider.ward || "",
+          district: provider.district || "",
+          province: provider.province || "",
+          coordinates: {
+            lat: provider.lat || 0,
+            lng: provider.lng || 0,
           },
-
-          rating: {
-            average: Math.round(averageRating * 10) / 10,
-            totalReviews: totalReviews,
-          },
-
-          services: {
-            total: provider.services.length,
-            categories: uniqueCategories,
-            priceRange: {
-              min: minPrice,
-              max: maxPrice,
-              currency: "VND",
-            },
-            preview: provider.services.slice(0, 3).map((s) => ({
-              id: s.id,
-              name: s.name,
-              price: s.price,
-              durationMinutes: s.duration,
-              thumbnailUrl: s.imageUrls[0] || "",
-              description: s.description || undefined,
-            })),
-          },
-
-          availability: availability,
-
-          paymentMethods: {
-            online: provider.payOnline,
-            cash: provider.payCash,
-          },
-
-          createdAt: provider.createAt.toISOString(),
+          distanceKm: distance,
         },
+
+        rating: {
+          average: Math.round(averageRating * 10) / 10,
+          totalReviews: totalReviews,
+        },
+
+        services: {
+          total: provider.services.length,
+          categories: uniqueCategories,
+          priceRange: {
+            min: minPrice,
+            max: maxPrice,
+            currency: "VND",
+          },
+          preview: provider.services.slice(0, 3).map((s) => ({
+            id: s.id,
+            name: s.name,
+            price: s.price,
+            durationMinutes: s.duration,
+            thumbnailUrl: s.imageUrls[0] || "",
+            description: s.description || undefined,
+          })),
+        },
+
+        availability: availability,
+
+        paymentMethods: {
+          online: provider.payOnline,
+          cash: provider.payCash,
+        },
+
+        createdAt: provider.createAt.toISOString(),
       };
     });
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    return {
+      items,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   },
 
   async getReviewsByProviderId(req: Request) {
@@ -169,9 +203,12 @@ export const mobileProviderServices = {
 
     const responseReviews = reviews.map((review) => ({
       id: review.id,
+      bookingId: review.bookingId,
       rating: review.rating,
       comment: review.comment,
+      images: review.images,
       createdAt: review.createAt.toISOString(),
+      updatedAt: review.updateAt.toISOString(),
       user: {
         id: review.customers.users.id,
         name: review.customers.users.fullName,
@@ -198,13 +235,18 @@ export const mobileProviderServices = {
     const provider = await prisma.providers.findUnique({
       where: { id: _id },
       include: {
-        services: true,
+        services: {
+          where: {
+            isActive: true,
+            isHiddenByAdmin: false,
+          },
+        },
         reviews: true,
         workingHours: true,
       },
     });
 
-    if (!provider) {
+    if (!provider || provider.providerStatus !== "VERIFIED") {
       throw new NotFoundException("Provider not found");
     }
 
@@ -242,7 +284,7 @@ export const mobileProviderServices = {
       description: provider.description || "",
       avatarUrl: provider.avatarUrl || "",
       coverImageUrl: provider.coverImageUrl || "",
-      isVerified: provider.providerStatus === "APPROVED",
+      isVerified: provider.providerStatus === "VERIFIED",
       status: provider.providerStatus,
       location: {
         address: provider.address || "",
@@ -285,5 +327,70 @@ export const mobileProviderServices = {
     };
 
     return providerItem;
+  },
+
+  async getWallet(req: Request) {
+    const userId = getRequesterId(req);
+
+    const provider = await prisma.providers.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        walletBalance: true,
+        depositBalance: true,
+        depositStatus: true,
+      },
+    });
+
+    if (!provider) {
+      throw new NotFoundException("Provider profile not found");
+    }
+
+    return provider;
+  },
+
+  async getWalletTransactions(req: Request) {
+    const userId = getRequesterId(req);
+    const provider = await prisma.providers.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!provider) {
+      throw new NotFoundException("Provider profile not found");
+    }
+
+    const { page, pageSize, index, where } = buildQueryPrisma(
+      req.query as Record<string, unknown>,
+    );
+    where.providerId = provider.id;
+
+    if (typeof req.query.type === "string" && req.query.type) {
+      where.type = req.query.type;
+    }
+
+    const [totalItems, items] = await Promise.all([
+      prisma.wallet_transactions.count({ where }),
+      prisma.wallet_transactions.findMany({
+        where,
+        skip: index,
+        take: pageSize,
+        orderBy: { createAt: "desc" },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    return {
+      items,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
   },
 };

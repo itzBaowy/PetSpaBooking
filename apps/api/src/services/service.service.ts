@@ -19,6 +19,7 @@ const VALID_CATEGORIES = [
 ] as const;
 
 type Category = (typeof VALID_CATEGORIES)[number];
+const MIN_PROVIDER_DEPOSIT = 300_000;
 
 // ─── Select ───────────────────────────────────────────────────────────────────
 const SERVICE_SELECT = {
@@ -45,10 +46,24 @@ function getRequesterId(req: Request): string {
 }
 
 /** Lấy providerId từ userId, đảm bảo đã được VERIFIED */
+function getRouteParam(req: Request, name: string): string {
+  const value = req.params[name];
+  if (typeof value !== "string" || !value) {
+    throw new BadRequestException(`Invalid route parameter: ${name}`);
+  }
+
+  return value;
+}
+
 async function getVerifiedProviderId(userId: string): Promise<string> {
   const provider = await prisma.providers.findUnique({
     where: { userId },
-    select: { id: true, providerStatus: true },
+    select: {
+      id: true,
+      providerStatus: true,
+      depositStatus: true,
+      depositBalance: true,
+    },
   });
 
   if (!provider) {
@@ -60,6 +75,15 @@ async function getVerifiedProviderId(userId: string): Promise<string> {
   if (provider.providerStatus !== "VERIFIED") {
     throw new ForbiddenException(
       `Your provider account is not verified yet (status: ${provider.providerStatus}).`,
+    );
+  }
+
+  if (
+    provider.depositStatus !== "ACTIVE" ||
+    provider.depositBalance < MIN_PROVIDER_DEPOSIT
+  ) {
+    throw new ForbiddenException(
+      `Provider deposit must be ACTIVE and at least ${MIN_PROVIDER_DEPOSIT} VND before managing services.`,
     );
   }
 
@@ -169,7 +193,7 @@ export const serviceService = {
   async update(req: Request) {
     const userId = getRequesterId(req);
     const providerId = await getVerifiedProviderId(userId);
-    const { id } = req.params;
+    const id = getRouteParam(req, "id");
 
     const service = await prisma.services.findUnique({ where: { id } });
     if (!service) throw new NotFoundException("Service not found");
@@ -228,7 +252,7 @@ export const serviceService = {
   async toggle(req: Request) {
     const userId = getRequesterId(req);
     const providerId = await getVerifiedProviderId(userId);
-    const { id } = req.params;
+    const id = getRouteParam(req, "id");
 
     const service = await prisma.services.findUnique({ where: { id } });
     if (!service) throw new NotFoundException("Service not found");
@@ -249,7 +273,7 @@ export const serviceService = {
   async remove(req: Request) {
     const userId = getRequesterId(req);
     const providerId = await getVerifiedProviderId(userId);
-    const { id } = req.params;
+    const id = getRouteParam(req, "id");
 
     const service = await prisma.services.findUnique({ where: { id } });
     if (!service) throw new NotFoundException("Service not found");
@@ -309,7 +333,7 @@ export const serviceService = {
 
   // ── Admin xem 1 service theo ID ───────────────────────────────────────────
   async getById(req: Request) {
-    const { id } = req.params;
+    const id = getRouteParam(req, "id");
     const service = await prisma.services.findUnique({
       where: { id },
       select: SERVICE_SELECT,
@@ -320,7 +344,7 @@ export const serviceService = {
 
   // ── Admin ẩn service vi phạm ──────────────────────────────────────────────
   async adminHide(req: Request) {
-    const { id } = req.params;
+    const id = getRouteParam(req, "id");
     const service = await prisma.services.findUnique({ where: { id } });
     if (!service) throw new NotFoundException("Service not found");
 
@@ -339,7 +363,7 @@ export const serviceService = {
 
   // ── Admin bỏ ẩn service ───────────────────────────────────────────────────
   async adminUnhide(req: Request) {
-    const { id } = req.params;
+    const id = getRouteParam(req, "id");
     const service = await prisma.services.findUnique({ where: { id } });
     if (!service) throw new NotFoundException("Service not found");
 
@@ -362,7 +386,7 @@ export const serviceService = {
 
   // ── Public xem dịch vụ của 1 provider theo slug ───────────────────────────
   async getByProviderSlug(req: Request) {
-    const { slug } = req.params;
+    const slug = getRouteParam(req, "slug");
 
     const provider = await prisma.providers.findUnique({
       where: { slug },

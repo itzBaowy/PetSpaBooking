@@ -8,6 +8,7 @@ import providerRouterMobile from "./mobile-router/provider-mobile.router.ts";
 import mobileServiceRouter from "./mobile-router/service-mobile.router.ts";
 import mobilePetRouter from "./mobile-router/pet-mobile.router.ts";
 import mobileCustomerRouter from "./mobile-router/customer.router.ts";
+import mobileBookingRouter from "./mobile-router/booking-mobile.router.ts";
 
 const rootRouter = express.Router();
 
@@ -22,6 +23,7 @@ rootRouter.use(
   mobileServiceRouter,
   mobilePetRouter,
   mobileCustomerRouter,
+  mobileBookingRouter,
 );
 
 export default rootRouter;

@@ -34,6 +34,7 @@ model customers {
   location String
   pets     pets[]
   reviews  reviews[]
+  bookings bookings[]
 
   users users @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
@@ -79,6 +80,8 @@ model providers {
 
   services          services[]
   reviews           reviews[]
+  bookings          bookings[]
+  walletTransactions wallet_transactions[]
   workingHours      working_hours[]
   providerDocuments provider_documents[]
 }
@@ -117,18 +120,137 @@ model services {
   updateAt        DateTime @updatedAt
 
   provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  bookings bookings[]
+}
+
+model bookings {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  customerId String @db.ObjectId
+  providerId String @db.ObjectId
+  serviceId  String @db.ObjectId
+  petId      String? @db.ObjectId
+
+  appointmentStart DateTime
+  appointmentEnd   DateTime
+
+  status        String @default("PENDING")
+  paymentMethod String @default("CASH")
+  paymentStatus String @default("UNPAID")
+
+  totalAmount Float
+  currency    String @default("VND")
+  note        String?
+
+  cancelReason String?
+  rejectReason String?
+
+  confirmedAt  DateTime?
+  checkedInAt  DateTime?
+  checkedOutAt DateTime?
+  completedAt  DateTime?
+  cancelledAt  DateTime?
+  rejectedAt   DateTime?
+
+  commissionAmount        Float?
+  providerEarning         Float?
+  walletCommissionAmount  Float?
+  depositCommissionAmount Float?
+  commissionProcessingStartedAt DateTime?
+  commissionProcessedAt   DateTime?
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  customer customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  service  services  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  qrLogs   booking_qr_logs[]
+  dispute  booking_disputes?
+  review   reviews?
+  walletTransactions wallet_transactions[]
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([serviceId])
+  @@index([status])
+  @@index([appointmentStart])
+}
+
+model booking_qr_logs {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId  String @db.ObjectId
+  customerId String @db.ObjectId
+  providerId String @db.ObjectId
+
+  action    String
+  scannedBy String @db.ObjectId
+  scannedAt DateTime @default(now())
+  metadata  String?
+
+  booking bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([providerId])
+}
+
+model booking_disputes {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId   String @unique @db.ObjectId
+  customerId  String @db.ObjectId
+  providerId  String @db.ObjectId
+  reason      String
+  description String?
+  status      String @default("PENDING")
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  booking bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
 }
 
 model reviews {
   id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId  String   @unique @db.ObjectId
   providerId String   @db.ObjectId
   customerId String   @db.ObjectId
   rating     Int
   comment    String?
+  images     String[] @default([])
   createAt   DateTime @default(now())
+  updateAt   DateTime @updatedAt
 
   provider  providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
   customers customers @relation(fields: [customerId], references: [id])
+  booking   bookings  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([customerId])
+}
+
+model wallet_transactions {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  providerId   String @db.ObjectId
+  bookingId    String? @db.ObjectId
+  type         String
+  balanceType  String
+  amount       Float
+  balanceAfter Float
+  note         String?
+  createAt     DateTime @default(now())
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  booking  bookings? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([bookingId])
+  @@index([type])
+  @@index([createAt])
+  @@unique([bookingId, type, balanceType])
 }
 
 model working_hours {

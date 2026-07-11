@@ -7,6 +7,7 @@ import { NotFoundException } from "./src/common/helpers/exception.helper.ts";
 import { swaggerOptions } from "./src/common/swagger/swagger.config.ts";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { startBookingAutoCompleteJob } from "./src/jobs/booking-auto-complete.job.ts";
 
 dotenv.config();
 
@@ -65,6 +66,12 @@ app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
     console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
 });
+
+if (process.env.ENABLE_BOOKING_AUTO_COMPLETE_JOB === "true") {
+    startBookingAutoCompleteJob();
+} else {
+    console.log("[booking-auto-complete] Disabled. Set ENABLE_BOOKING_AUTO_COMPLETE_JOB=true to enable.");
+}
 
 // Prevent Node from exiting cleanly
 setInterval(() => {}, 1 << 30);
