@@ -132,10 +132,43 @@ adminProviderRouter.get(
 
 /**
  * @swagger
+ * /api/admin/providers/{id}/documents:
+ *   get:
+ *     summary: List provider verification documents
+ *     description: Admin retrieves all verification documents for one provider.
+ *     tags: [Admin-Providers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Provider ID
+ *     responses:
+ *       200:
+ *         description: Provider documents retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin role required
+ *       404:
+ *         description: Provider not found
+ */
+adminProviderRouter.get(
+  "/providers/:id/documents",
+  protect,
+  checkRole("ADMIN"),
+  adminProviderController.getDocuments,
+);
+
+/**
+ * @swagger
  * /api/admin/providers/{id}/verify:
  *   patch:
  *     summary: Verify a provider
- *     description: Admin verifies a provider application. Provider status becomes VERIFIED.
+ *     description: Admin verifies a provider application. Provider status becomes VERIFIED only after required documents are APPROVED.
  *     tags: [Admin-Providers]
  *     security:
  *       - bearerAuth: []
@@ -150,7 +183,7 @@ adminProviderRouter.get(
  *       200:
  *         description: Provider verified successfully
  *       400:
- *         description: Provider is already verified
+ *         description: Provider is already verified or required documents are not approved
  *       401:
  *         description: Unauthorized
  *       403:
@@ -255,6 +288,88 @@ adminProviderRouter.patch(
   protect,
   checkRole("ADMIN"),
   adminProviderController.suspend,
+);
+
+/**
+ * @swagger
+ * /api/admin/provider-documents/{documentId}/approve:
+ *   patch:
+ *     summary: Approve a provider document
+ *     description: Admin approves one provider verification document.
+ *     tags: [Admin-Providers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: documentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Provider document ID
+ *     responses:
+ *       200:
+ *         description: Provider document approved successfully
+ *       400:
+ *         description: Document is already approved
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin role required
+ *       404:
+ *         description: Provider document not found
+ */
+adminProviderRouter.patch(
+  "/provider-documents/:documentId/approve",
+  protect,
+  checkRole("ADMIN"),
+  adminProviderController.approveDocument,
+);
+
+/**
+ * @swagger
+ * /api/admin/provider-documents/{documentId}/reject:
+ *   patch:
+ *     summary: Reject a provider document
+ *     description: Admin rejects one provider verification document with a reason.
+ *     tags: [Admin-Providers]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: documentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Provider document ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - reason
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 example: "Business license is blurry"
+ *     responses:
+ *       200:
+ *         description: Provider document rejected successfully
+ *       400:
+ *         description: Missing reason or document is already rejected
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin role required
+ *       404:
+ *         description: Provider document not found
+ */
+adminProviderRouter.patch(
+  "/provider-documents/:documentId/reject",
+  protect,
+  checkRole("ADMIN"),
+  adminProviderController.rejectDocument,
 );
 
 export default adminProviderRouter;
