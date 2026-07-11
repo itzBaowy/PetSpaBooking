@@ -153,7 +153,7 @@ export const adminWithdrawalService = {
     }
 
     const withdrawal = await this.getById(req);
-    await notificationService.create({
+    await notificationService.safeCreate({
       userId: withdrawal.provider.userId,
       type: "WITHDRAWAL_APPROVED",
       title: "Withdrawal approved",
@@ -190,7 +190,7 @@ export const adminWithdrawalService = {
     }
 
     const withdrawal = await this.getById(req);
-    await notificationService.create({
+    await notificationService.safeCreate({
       userId: withdrawal.provider.userId,
       type: "WITHDRAWAL_REJECTED",
       title: "Withdrawal rejected",
@@ -293,7 +293,7 @@ export const adminWithdrawalService = {
         });
 
         if (withdrawal) {
-          await notificationService.create({
+          await notificationService.safeCreate({
             userId: withdrawal.provider.userId,
             type: "WITHDRAWAL_PAID",
             title: "Withdrawal paid",

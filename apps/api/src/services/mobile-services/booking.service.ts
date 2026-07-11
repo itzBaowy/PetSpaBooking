@@ -524,7 +524,7 @@ export const mobileBookingServices = {
         }),
       ]);
 
-      await notificationService.createMany([
+      await notificationService.safeCreateMany([
         ...(providerProfile
           ? [
               {
@@ -679,7 +679,7 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
-    await notificationService.create({
+    await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_CONFIRMED",
       title: "Booking confirmed",
@@ -715,7 +715,7 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
-    await notificationService.create({
+    await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_REJECTED",
       title: "Booking rejected",
@@ -775,7 +775,7 @@ export const mobileBookingServices = {
       });
     });
 
-    await notificationService.create({
+    await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_CHECKED_IN",
       title: "Checked in",
@@ -837,7 +837,7 @@ export const mobileBookingServices = {
       });
     });
 
-    await notificationService.create({
+    await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_CHECKED_OUT",
       title: "Checked out",

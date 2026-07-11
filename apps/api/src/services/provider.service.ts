@@ -480,7 +480,7 @@ export const providerService = {
             select: PROVIDER_SELECT,
         });
 
-        await notificationService.create({
+        await notificationService.safeCreate({
             userId: provider.userId,
             type: "PROVIDER_VERIFIED",
             title: "Provider verified",
@@ -512,7 +512,7 @@ export const providerService = {
             select: PROVIDER_SELECT,
         });
 
-        await notificationService.create({
+        await notificationService.safeCreate({
             userId: provider.userId,
             type: "PROVIDER_REJECTED",
             title: "Provider rejected",

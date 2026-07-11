@@ -248,7 +248,7 @@ export const bookingFinanceService = {
       });
 
       if (completedBooking) {
-        await notificationService.createMany([
+        await notificationService.safeCreateMany([
           {
             userId: completedBooking.customer.userId,
             type: "BOOKING_COMPLETED",
