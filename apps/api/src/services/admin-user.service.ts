@@ -147,6 +147,26 @@ export const adminUserService = {
           select: {
             id: true,
             location: true,
+            pets: {
+              select: {
+                id: true,
+                name: true,
+                breed: true,
+                gender: true,
+                ageLabel: true,
+                imageUrl: true,
+                status: true,
+                weight: true,
+                height: true,
+                color: true,
+                criticalNote: true,
+                nextVaccineDate: true,
+                photos: true,
+                createAt: true,
+                updateAt: true,
+              },
+              orderBy: { createAt: "desc" },
+            },
           },
         },
         notifications: {

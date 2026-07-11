@@ -1,2 +1,2 @@
 import { DepositConfigPage } from "@/apis/admin/finance/components/deposit-config-page";
-export default function AdminDepositConfigPage() { return <DepositConfigPage />; }
+export default function Page() { return <DepositConfigPage />; }

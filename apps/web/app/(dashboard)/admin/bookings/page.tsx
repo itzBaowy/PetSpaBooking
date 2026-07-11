@@ -1,5 +1,2 @@
-import { SystemBookingTable } from "@/apis/admin/bookings/components/system-booking-table";
-
-export default function AdminBookings() {
-  return <SystemBookingTable />;
-}
+import { AdminBookingsPage } from "@/components/admin/supported-pages";
+export default function Page() { return <AdminBookingsPage />; }

@@ -1,5 +1,2 @@
-import { DisputeResolutionWorkspace } from "@/apis/admin/bookings/components/dispute-resolution-workspace";
-
-export default function Disputes() {
-  return <DisputeResolutionWorkspace />;
-}
+import { AdminDisputesPage } from "@/components/admin/supported-pages";
+export default function Page() { return <AdminDisputesPage />; }
