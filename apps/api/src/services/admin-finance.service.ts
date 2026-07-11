@@ -1,4 +1,5 @@
 import { Request } from "express";
+import crypto from "crypto";
 import { ObjectId } from "mongodb";
 import prisma from "../../connect.prisma.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
@@ -344,6 +345,7 @@ export const adminFinanceService = {
       const transaction = await tx.wallet_transactions.create({
         data: {
           providerId: provider.id,
+          idempotencyKey: `manual-adjustment:${crypto.randomUUID()}`,
           type: "MANUAL_ADJUSTMENT",
           balanceType,
           amount,

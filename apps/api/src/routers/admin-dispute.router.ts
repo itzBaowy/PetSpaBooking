@@ -90,7 +90,7 @@ adminDisputeRouter.get(
  * /api/admin/disputes/{id}/resolve:
  *   patch:
  *     summary: Resolve a pending dispute
- *     description: Admin resolves a PENDING dispute. Provider win completes the booking and triggers commission processing.
+ *     description: Admin resolves a PENDING dispute. Provider win or cancelled dispute completes the booking and triggers commission processing. Customer win cancels the booking without commission processing in v1.
  *     tags: [Admin-Disputes]
  *     security:
  *       - bearerAuth: []

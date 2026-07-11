@@ -9,6 +9,7 @@ import {
 } from "../common/helpers/exception.helper.ts";
 
 const WITHDRAWAL_STATUSES = ["PENDING", "APPROVED", "REJECTED", "PAID"] as const;
+const MAX_WITHDRAWAL_MARK_PAID_RETRIES = 5;
 type WithdrawalStatus = (typeof WITHDRAWAL_STATUSES)[number];
 
 const WITHDRAWAL_INCLUDE = {
@@ -62,6 +63,21 @@ function getOptionalAdminNote(value: unknown): string | null {
   }
 
   return value.trim();
+}
+
+function isTransactionWriteConflict(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2034"
+  );
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
 }
 
 export const adminWithdrawalService = {
@@ -169,67 +185,104 @@ export const adminWithdrawalService = {
     const adminId = getRequesterId(req);
     const id = getRouteParam(req, "id");
     const adminNote = getOptionalAdminNote(req.body?.adminNote);
-    const now = new Date();
 
-    return prisma.$transaction(async (tx) => {
-      const withdrawal = await tx.withdrawal_requests.findUnique({
-        where: { id },
-        include: WITHDRAWAL_INCLUDE,
-      });
+    for (
+      let attempt = 1;
+      attempt <= MAX_WITHDRAWAL_MARK_PAID_RETRIES;
+      attempt += 1
+    ) {
+      try {
+        return await prisma.$transaction(async (tx) => {
+          const now = new Date();
+          const withdrawal = await tx.withdrawal_requests.findUnique({
+            where: { id },
+            include: WITHDRAWAL_INCLUDE,
+          });
 
-      if (!withdrawal) {
-        throw new NotFoundException("Withdrawal request not found");
+          if (!withdrawal) {
+            throw new NotFoundException("Withdrawal request not found");
+          }
+
+          if (withdrawal.status !== "APPROVED") {
+            throw new BadRequestException(
+              "Only APPROVED withdrawals can be marked paid",
+            );
+          }
+
+          const claimed = await tx.withdrawal_requests.updateMany({
+            where: { id, status: "APPROVED" },
+            data: {
+              status: "PAID",
+              reviewedBy: withdrawal.reviewedBy ?? adminId,
+              reviewedAt: withdrawal.reviewedAt ?? now,
+              paidAt: now,
+              adminNote: adminNote ?? withdrawal.adminNote,
+            },
+          });
+
+          if (claimed.count === 0) {
+            throw new BadRequestException(
+              "Withdrawal request was already processed",
+            );
+          }
+
+          const debited = await tx.providers.updateMany({
+            where: {
+              id: withdrawal.providerId,
+              walletBalance: { gte: withdrawal.amount },
+            },
+            data: {
+              walletBalance: { decrement: withdrawal.amount },
+            },
+          });
+
+          if (debited.count === 0) {
+            throw new BadRequestException(
+              "Provider wallet balance is insufficient",
+            );
+          }
+
+          const updatedProvider = await tx.providers.findUnique({
+            where: { id: withdrawal.providerId },
+            select: {
+              id: true,
+              walletBalance: true,
+            },
+          });
+
+          if (!updatedProvider) {
+            throw new NotFoundException("Provider not found");
+          }
+
+          await tx.wallet_transactions.create({
+            data: {
+              providerId: withdrawal.providerId,
+              idempotencyKey: `withdrawal:${withdrawal.id}:WITHDRAWAL_PAYOUT:WALLET`,
+              type: "WITHDRAWAL_PAYOUT",
+              balanceType: "WALLET",
+              amount: -withdrawal.amount,
+              balanceAfter: updatedProvider.walletBalance,
+              note: `Withdrawal payout ${withdrawal.id}`,
+            },
+          });
+
+          return tx.withdrawal_requests.findUnique({
+            where: { id },
+            include: WITHDRAWAL_INCLUDE,
+          });
+        });
+      } catch (error) {
+        if (
+          !isTransactionWriteConflict(error) ||
+          attempt === MAX_WITHDRAWAL_MARK_PAID_RETRIES
+        ) {
+          throw error;
+        }
+
+        await wait(attempt * 50);
       }
+    }
 
-      if (withdrawal.status !== "APPROVED") {
-        throw new BadRequestException("Only APPROVED withdrawals can be marked paid");
-      }
-
-      if (withdrawal.provider.walletBalance < withdrawal.amount) {
-        throw new BadRequestException("Provider wallet balance is insufficient");
-      }
-
-      const claimed = await tx.withdrawal_requests.updateMany({
-        where: { id, status: "APPROVED" },
-        data: {
-          status: "PAID",
-          reviewedBy: withdrawal.reviewedBy ?? adminId,
-          reviewedAt: withdrawal.reviewedAt ?? now,
-          paidAt: now,
-          adminNote: adminNote ?? withdrawal.adminNote,
-        },
-      });
-
-      if (claimed.count === 0) {
-        throw new BadRequestException("Withdrawal request was already processed");
-      }
-
-      const updatedProvider = await tx.providers.update({
-        where: { id: withdrawal.providerId },
-        data: {
-          walletBalance: { decrement: withdrawal.amount },
-        },
-        select: {
-          id: true,
-          walletBalance: true,
-        },
-      });
-
-      await tx.wallet_transactions.create({
-        data: {
-          providerId: withdrawal.providerId,
-          type: "WITHDRAWAL_PAYOUT",
-          balanceType: "WALLET",
-          amount: -withdrawal.amount,
-          balanceAfter: updatedProvider.walletBalance,
-          note: `Withdrawal payout ${withdrawal.id}`,
-        },
-      });
-
-      return tx.withdrawal_requests.findUnique({
-        where: { id },
-        include: WITHDRAWAL_INCLUDE,
-      });
-    });
+    return this.getById(req);
   },
 };

@@ -240,6 +240,7 @@ model wallet_transactions {
   id           String @id @default(auto()) @map("_id") @db.ObjectId
   providerId   String @db.ObjectId
   bookingId    String? @db.ObjectId
+  idempotencyKey String @unique
   type         String
   balanceType  String
   amount       Float

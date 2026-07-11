@@ -35,6 +35,7 @@ const DISPUTE_INCLUDE = {
       totalAmount: true,
       checkedOutAt: true,
       completedAt: true,
+      cancelledAt: true,
       commissionProcessedAt: true,
     },
   },
@@ -90,6 +91,24 @@ function getOptionalAdminNote(value: unknown): string | null {
   }
 
   return value.trim();
+}
+
+function getBookingResolutionUpdate(status: ResolutionStatus, resolvedAt: Date) {
+  if (status === "RESOLVED_CUSTOMER_WIN") {
+    return {
+      status: "CANCELLED",
+      cancelledAt: resolvedAt,
+    };
+  }
+
+  return {
+    status: "COMPLETED",
+    completedAt: resolvedAt,
+  };
+}
+
+function shouldProcessCommission(status: ResolutionStatus) {
+  return status === "RESOLVED_PROVIDER_WIN" || status === "CANCELLED";
 }
 
 function mapDispute(dispute: {
@@ -202,20 +221,15 @@ export const adminDisputeService = {
         include: DISPUTE_INCLUDE,
       });
 
-      if (status === "RESOLVED_PROVIDER_WIN") {
-        await tx.bookings.update({
-          where: { id: dispute.bookingId },
-          data: {
-            status: "COMPLETED",
-            completedAt: now,
-          },
-        });
-      }
+      await tx.bookings.update({
+        where: { id: dispute.bookingId },
+        data: getBookingResolutionUpdate(status, now),
+      });
 
       return updatedDispute;
     });
 
-    if (status === "RESOLVED_PROVIDER_WIN") {
+    if (shouldProcessCommission(status)) {
       await bookingFinanceService.processCompletedBookingCommission(
         dispute.bookingId,
       );

@@ -29,6 +29,13 @@ const PROVIDER_STATUSES = [
 const WITHDRAWAL_STATUSES = ["PENDING", "APPROVED", "REJECTED", "PAID"] as const;
 
 type CountBucket<T extends readonly string[]> = Record<T[number], number>;
+type GroupCountRow = {
+  status?: string;
+  providerStatus?: string;
+  _count: {
+    _all: number;
+  };
+};
 
 function emptyBucket<T extends readonly string[]>(
   values: T,
@@ -41,7 +48,7 @@ function emptyBucket<T extends readonly string[]>(
 
 function toBucket<T extends readonly string[]>(
   values: T,
-  rows: Array<{ status?: string; providerStatus?: string; _count: number }>,
+  rows: GroupCountRow[],
   key: "status" | "providerStatus",
 ): CountBucket<T> {
   const bucket = emptyBucket(values);
@@ -49,11 +56,22 @@ function toBucket<T extends readonly string[]>(
   for (const row of rows) {
     const value = row[key];
     if (value && values.includes(value)) {
-      bucket[value as T[number]] = row._count;
+      bucket[value as T[number]] = row._count._all;
     }
   }
 
   return bucket;
+}
+
+function assertNumberBucket<T extends readonly string[]>(
+  name: string,
+  bucket: CountBucket<T>,
+) {
+  for (const [key, value] of Object.entries(bucket)) {
+    if (typeof value !== "number" || Number.isNaN(value)) {
+      throw new Error(`${name}.${key} must be a number`);
+    }
+  }
 }
 
 function startOfToday() {
@@ -92,11 +110,11 @@ export const adminDashboardService = {
       prisma.providers.count(),
       prisma.providers.groupBy({
         by: ["providerStatus"],
-        _count: true,
+        _count: { _all: true },
       }),
       prisma.bookings.groupBy({
         by: ["status"],
-        _count: true,
+        _count: { _all: true },
       }),
       prisma.bookings.aggregate({
         where: {
@@ -131,13 +149,13 @@ export const adminDashboardService = {
       }),
       prisma.booking_disputes.groupBy({
         by: ["status"],
-        _count: true,
+        _count: { _all: true },
       }),
       prisma.services.count({ where: { isActive: true, isHiddenByAdmin: false } }),
       prisma.services.count({ where: { isHiddenByAdmin: true } }),
       prisma.withdrawal_requests.groupBy({
         by: ["status"],
-        _count: true,
+        _count: { _all: true },
       }),
       prisma.withdrawal_requests.count({
         where: {
@@ -167,6 +185,11 @@ export const adminDashboardService = {
       withdrawalStatusRows,
       "status",
     );
+
+    assertNumberBucket("providers.byStatus", providerStatuses);
+    assertNumberBucket("bookings.byStatus", bookingStatuses);
+    assertNumberBucket("disputes.byStatus", disputeStatuses);
+    assertNumberBucket("withdrawals.byStatus", withdrawalStatuses);
 
     return {
       users: {

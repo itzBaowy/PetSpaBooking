@@ -32,29 +32,46 @@ const ADMIN_PROVIDER_SELECT = {
   updateAt: true,
 } as const;
 
-async function attachDocumentSummary<
-  T extends { id: string },
->(providers: T[]) {
-  return Promise.all(
-    providers.map(async (provider) => {
-      const [totalDocuments, pendingDocuments] = await Promise.all([
-        prisma.provider_documents.count({
-          where: { providerId: provider.id },
-        }),
-        prisma.provider_documents.count({
-          where: { providerId: provider.id, status: "PENDING" },
-        }),
-      ]);
+async function attachDocumentSummary<T extends { id: string }>(providers: T[]) {
+  const providerIds = providers.map((provider) => provider.id);
 
-      return {
-        ...provider,
-        documentSummary: {
-          total: totalDocuments,
-          pending: pendingDocuments,
-        },
-      };
-    }),
-  );
+  if (providerIds.length === 0) {
+    return providers.map((provider) => ({
+      ...provider,
+      documentSummary: {
+        total: 0,
+        pending: 0,
+      },
+    }));
+  }
+
+  const documentGroups = await prisma.provider_documents.groupBy({
+    by: ["providerId", "status"],
+    where: {
+      providerId: { in: providerIds },
+    },
+    _count: { _all: true },
+  });
+
+  const summaryByProvider = new Map<string, { total: number; pending: number }>();
+
+  for (const group of documentGroups) {
+    const summary =
+      summaryByProvider.get(group.providerId) ?? { total: 0, pending: 0 };
+    summary.total += group._count._all;
+    if (group.status === "PENDING") {
+      summary.pending += group._count._all;
+    }
+    summaryByProvider.set(group.providerId, summary);
+  }
+
+  return providers.map((provider) => ({
+    ...provider,
+    documentSummary: summaryByProvider.get(provider.id) ?? {
+      total: 0,
+      pending: 0,
+    },
+  }));
 }
 
 export const adminProviderService = {

@@ -26,7 +26,7 @@ type BookingStatus = (typeof BOOKING_STATUSES)[number];
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
 type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 
-const ADMIN_BOOKING_INCLUDE = {
+const ADMIN_BOOKING_BASE_INCLUDE = {
   provider: {
     select: {
       id: true,
@@ -82,6 +82,19 @@ const ADMIN_BOOKING_INCLUDE = {
       createAt: true,
     },
   },
+} as const;
+
+const ADMIN_BOOKING_LIST_INCLUDE = {
+  ...ADMIN_BOOKING_BASE_INCLUDE,
+  _count: {
+    select: {
+      walletTransactions: true,
+    },
+  },
+} as const;
+
+const ADMIN_BOOKING_DETAIL_INCLUDE = {
+  ...ADMIN_BOOKING_BASE_INCLUDE,
   walletTransactions: {
     orderBy: { createAt: "desc" },
   },
@@ -170,7 +183,7 @@ export const adminBookingService = {
       prisma.bookings.count({ where }),
       prisma.bookings.findMany({
         where,
-        include: ADMIN_BOOKING_INCLUDE,
+        include: ADMIN_BOOKING_LIST_INCLUDE,
         skip: index,
         take: pageSize,
         orderBy: { appointmentStart: "desc" },
@@ -196,7 +209,7 @@ export const adminBookingService = {
     const id = getRouteParam(req, "id");
     const booking = await prisma.bookings.findUnique({
       where: { id },
-      include: ADMIN_BOOKING_INCLUDE,
+      include: ADMIN_BOOKING_DETAIL_INCLUDE,
     });
 
     if (!booking) {

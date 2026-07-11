@@ -15,6 +15,14 @@ function getDepositStatusAfterDeduction(depositBalance: number): string {
   return depositBalance >= MIN_PROVIDER_DEPOSIT ? "ACTIVE" : "LOW_BALANCE";
 }
 
+function getBookingLedgerKey(
+  bookingId: string,
+  type: string,
+  balanceType: string,
+) {
+  return `booking:${bookingId}:${type}:${balanceType}`;
+}
+
 function isTransactionWriteConflict(error: unknown) {
   return (
     typeof error === "object" &&
@@ -100,6 +108,11 @@ export const bookingFinanceService = {
                 data: {
                   providerId: provider.id,
                   bookingId: booking.id,
+                  idempotencyKey: getBookingLedgerKey(
+                    booking.id,
+                    "ONLINE_EARNING",
+                    "WALLET",
+                  ),
                   type: "ONLINE_EARNING",
                   balanceType: "WALLET",
                   amount: providerEarning,
@@ -147,6 +160,11 @@ export const bookingFinanceService = {
               data: {
                 providerId: provider.id,
                 bookingId: booking.id,
+                idempotencyKey: getBookingLedgerKey(
+                  booking.id,
+                  "CASH_COMMISSION_DEDUCTION",
+                  "WALLET",
+                ),
                 type: "CASH_COMMISSION_DEDUCTION",
                 balanceType: "WALLET",
                 amount: -walletCommissionAmount,
@@ -161,6 +179,11 @@ export const bookingFinanceService = {
               data: {
                 providerId: provider.id,
                 bookingId: booking.id,
+                idempotencyKey: getBookingLedgerKey(
+                  booking.id,
+                  "DEPOSIT_COMMISSION_DEDUCTION",
+                  "DEPOSIT",
+                ),
                 type: "DEPOSIT_COMMISSION_DEDUCTION",
                 balanceType: "DEPOSIT",
                 amount: -depositCommissionAmount,
