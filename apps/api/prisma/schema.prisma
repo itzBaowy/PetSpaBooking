@@ -73,6 +73,7 @@ model providers {
   walletBalance     Float   @default(0)
   cancellationRate  Float   @default(0)
   adminNote         String?
+  statusBeforeUserSuspension String?
 
   payOnline Boolean @default(true)
   payCash   Boolean @default(true)

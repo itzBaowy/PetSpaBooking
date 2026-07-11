@@ -4,6 +4,7 @@ import prisma from "../../connect.prisma.ts";
 import {
   BadRequestException,
   NotFoundException,
+  UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import { notificationService } from "./notification.service.ts";
@@ -32,7 +33,7 @@ function getRequesterId(req: Request): string {
   const userId = (req as Request & { user?: { userId?: string } }).user
     ?.userId;
   if (!userId) {
-    throw new BadRequestException("Unauthorized");
+    throw new UnauthorizedException("Unauthorized");
   }
 
   return userId;
@@ -229,6 +230,15 @@ export const adminUserService = {
       throw new NotFoundException("User not found");
     }
 
+    let providerStatusChange:
+      | {
+          providerId: string;
+          previousStatus: string;
+          nextStatus: string;
+          restoredFromUserSuspension: boolean;
+        }
+      | null = null;
+
     const updatedUser = await prisma.$transaction(async (tx) => {
       const updated = await tx.users.update({
         where: { id },
@@ -236,14 +246,55 @@ export const adminUserService = {
         select: ADMIN_USER_SELECT,
       });
 
+      const provider = await tx.providers.findUnique({
+        where: { userId: id },
+        select: {
+          id: true,
+          providerStatus: true,
+          statusBeforeUserSuspension: true,
+        },
+      });
+
       if (status !== "ACTIVE") {
-        await tx.providers.updateMany({
-          where: { userId: id },
+        if (provider) {
+          const statusBeforeUserSuspension =
+            provider.statusBeforeUserSuspension ??
+            (provider.providerStatus === "SUSPENDED"
+              ? null
+              : provider.providerStatus);
+
+          await tx.providers.update({
+            where: { id: provider.id },
+            data: {
+              providerStatus: "SUSPENDED",
+              statusBeforeUserSuspension,
+              adminNote: reason ?? `User status changed to ${status}`,
+            },
+          });
+
+          providerStatusChange = {
+            providerId: provider.id,
+            previousStatus: provider.providerStatus,
+            nextStatus: "SUSPENDED",
+            restoredFromUserSuspension: false,
+          };
+        }
+      } else if (provider?.statusBeforeUserSuspension) {
+        await tx.providers.update({
+          where: { id: provider.id },
           data: {
-            providerStatus: "SUSPENDED",
-            adminNote: reason ?? `User status changed to ${status}`,
+            providerStatus: provider.statusBeforeUserSuspension,
+            statusBeforeUserSuspension: null,
+            adminNote: null,
           },
         });
+
+        providerStatusChange = {
+          providerId: provider.id,
+          previousStatus: provider.providerStatus,
+          nextStatus: provider.statusBeforeUserSuspension,
+          restoredFromUserSuspension: true,
+        };
       }
 
       return updated;
@@ -266,7 +317,7 @@ export const adminUserService = {
         previousStatus: user.status,
         status,
         reason,
-        providerSuspended: status !== "ACTIVE",
+        providerStatusChange,
       },
     });
 
