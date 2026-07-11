@@ -7,6 +7,7 @@ import {
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import { notificationService } from "./notification.service.ts";
+import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
 const USER_STATUSES = ["ACTIVE", "INACTIVE", "BANNED"] as const;
 const USER_ROLES = ["CUSTOMER", "PROVIDER", "ADMIN"] as const;
@@ -254,6 +255,19 @@ export const adminUserService = {
       title: "Account status changed",
       message: `Your account status was changed to ${status}.`,
       data: { status, reason },
+    });
+
+    await adminAuditLogService.safeLog({
+      adminId: requesterId,
+      action: "USER_STATUS_UPDATE",
+      targetType: "USER",
+      targetId: id,
+      metadata: {
+        previousStatus: user.status,
+        status,
+        reason,
+        providerSuspended: status !== "ACTIVE",
+      },
     });
 
     return updatedUser;

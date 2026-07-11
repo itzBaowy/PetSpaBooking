@@ -27,6 +27,7 @@ model users {
   updateAt  DateTime   @updatedAt
   customers customers?
   notifications notifications[]
+  adminAuditLogs admin_audit_logs[]
 }
 
 model customers {
@@ -295,6 +296,24 @@ model notifications {
   @@index([userId])
   @@index([type])
   @@index([readAt])
+  @@index([createAt])
+}
+
+model admin_audit_logs {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  adminId    String @db.ObjectId
+  action     String
+  targetType String
+  targetId   String?
+  metadata   String?
+  createAt   DateTime @default(now())
+
+  admin users @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType])
+  @@index([targetId])
   @@index([createAt])
 }
 
