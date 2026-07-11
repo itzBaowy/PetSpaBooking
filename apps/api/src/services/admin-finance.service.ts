@@ -6,7 +6,9 @@ import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts
 import {
   BadRequestException,
   NotFoundException,
+  UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
+import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
 const WALLET_TRANSACTION_TYPES = [
   "ONLINE_EARNING",
@@ -29,6 +31,13 @@ function getRouteParam(req: Request, name: string): string {
   }
 
   return value;
+}
+
+function getRequesterId(req: Request): string {
+  const userId = (req as Request & { user?: { userId?: string } }).user
+    ?.userId;
+  if (!userId) throw new UnauthorizedException("Unauthorized");
+  return userId;
 }
 
 function getOptionalObjectId(value: unknown, name: string) {
@@ -293,12 +302,13 @@ export const adminFinanceService = {
   },
 
   async adjustProviderWallet(req: Request) {
+    const adminId = getRequesterId(req);
     const id = getRouteParam(req, "id");
     const balanceType = getRequiredBalanceType(req.body?.balanceType);
     const amount = getAdjustmentAmount(req.body?.amount);
     const reason = getAdjustmentReason(req.body?.reason);
 
-    return prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx) => {
       const provider = await tx.providers.findUnique({
         where: { id },
         select: {
@@ -362,5 +372,20 @@ export const adminFinanceService = {
         transaction,
       };
     });
+
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "PROVIDER_WALLET_ADJUST",
+      targetType: "PROVIDER",
+      targetId: id,
+      metadata: {
+        balanceType,
+        amount,
+        reason,
+        transactionId: result.transaction.id,
+      },
+    });
+
+    return result;
   },
 };

@@ -8,6 +8,7 @@ import {
   UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { notificationService } from "./notification.service.ts";
+import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
 const WITHDRAWAL_STATUSES = ["PENDING", "APPROVED", "REJECTED", "PAID"] as const;
 const MAX_WITHDRAWAL_MARK_PAID_RETRIES = 5;
@@ -161,6 +162,17 @@ export const adminWithdrawalService = {
       data: { withdrawalId: withdrawal.id },
     });
 
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "WITHDRAWAL_APPROVE",
+      targetType: "WITHDRAWAL",
+      targetId: withdrawal.id,
+      metadata: {
+        providerId: withdrawal.providerId,
+        amount: withdrawal.amount,
+      },
+    });
+
     return withdrawal;
   },
 
@@ -196,6 +208,18 @@ export const adminWithdrawalService = {
       title: "Withdrawal rejected",
       message: "Your withdrawal request was rejected.",
       data: { withdrawalId: withdrawal.id, adminNote },
+    });
+
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "WITHDRAWAL_REJECT",
+      targetType: "WITHDRAWAL",
+      targetId: withdrawal.id,
+      metadata: {
+        providerId: withdrawal.providerId,
+        amount: withdrawal.amount,
+        adminNote,
+      },
     });
 
     return withdrawal;
@@ -299,6 +323,17 @@ export const adminWithdrawalService = {
             title: "Withdrawal paid",
             message: "Your withdrawal request was marked as paid.",
             data: { withdrawalId: withdrawal.id },
+          });
+
+          await adminAuditLogService.safeLog({
+            adminId,
+            action: "WITHDRAWAL_MARK_PAID",
+            targetType: "WITHDRAWAL",
+            targetId: withdrawal.id,
+            metadata: {
+              providerId: withdrawal.providerId,
+              amount: withdrawal.amount,
+            },
           });
         }
 

@@ -9,6 +9,7 @@ import {
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import { bookingFinanceService } from "./booking-finance.service.ts";
 import { notificationService } from "./notification.service.ts";
+import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
 const VALID_DISPUTE_STATUSES = [
   "PENDING",
@@ -276,6 +277,21 @@ export const adminDisputeService = {
           ]
         : []),
     ]);
+
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "DISPUTE_RESOLVE",
+      targetType: "DISPUTE",
+      targetId: dispute.id,
+      metadata: {
+        bookingId: dispute.bookingId,
+        customerId: dispute.customerId,
+        providerId: dispute.providerId,
+        status,
+        bookingStatus:
+          status === "RESOLVED_CUSTOMER_WIN" ? "CANCELLED" : "COMPLETED",
+      },
+    });
 
     return mapDispute(freshDispute ?? resolvedDispute);
   },

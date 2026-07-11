@@ -9,6 +9,7 @@ import {
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import cloudinary from "../common/cloudinary/init.cloudinary.ts";
 import { notificationService } from "./notification.service.ts";
+import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VALID_PROVIDER_STATUSES = [
@@ -464,6 +465,7 @@ export const providerService = {
 
     // ── Admin duyệt provider ──────────────────────────────────────────────────
     async approve(req: Request) {
+        const adminId = getRequesterId(req);
         const id = getRouteParam(req, "id");
 
         const provider = await prisma.providers.findUnique({ where: { id } });
@@ -488,11 +490,23 @@ export const providerService = {
             data: { providerId: id },
         });
 
+        await adminAuditLogService.safeLog({
+            adminId,
+            action: "PROVIDER_VERIFY",
+            targetType: "PROVIDER",
+            targetId: id,
+            metadata: {
+                previousStatus: provider.providerStatus,
+                status: "VERIFIED",
+            },
+        });
+
         return updatedProvider;
     },
 
     // ── Admin từ chối provider ────────────────────────────────────────────────
     async reject(req: Request) {
+        const adminId = getRequesterId(req);
         const id = getRouteParam(req, "id");
         const { reason } = req.body as { reason?: string };
 
@@ -520,11 +534,24 @@ export const providerService = {
             data: { providerId: id, reason },
         });
 
+        await adminAuditLogService.safeLog({
+            adminId,
+            action: "PROVIDER_REJECT",
+            targetType: "PROVIDER",
+            targetId: id,
+            metadata: {
+                previousStatus: provider.providerStatus,
+                status: "REJECTED",
+                reason,
+            },
+        });
+
         return updated;
     },
 
     // ── Admin suspend/unsuspend provider ──────────────────────────────────────
     async suspend(req: Request) {
+        const adminId = getRequesterId(req);
         const id = getRouteParam(req, "id");
         const { reason } = req.body as { reason?: string };
 
@@ -539,6 +566,18 @@ export const providerService = {
             where: { id },
             data: { providerStatus: "SUSPENDED", adminNote: reason ?? null },
             select: PROVIDER_SELECT,
+        });
+
+        await adminAuditLogService.safeLog({
+            adminId,
+            action: "PROVIDER_SUSPEND",
+            targetType: "PROVIDER",
+            targetId: id,
+            metadata: {
+                previousStatus: provider.providerStatus,
+                status: "SUSPENDED",
+                reason: reason ?? null,
+            },
         });
 
         return updatedProvider;
