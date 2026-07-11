@@ -16,6 +16,8 @@ import {
 } from "../../common/helpers/exception.helper.ts";
 import { ObjectId } from "mongodb";
 
+const MIN_WITHDRAWAL_AMOUNT = 100_000;
+
 function getRequesterId(req: Request): string {
   const userId = (req as Request & { user?: { userId?: string } }).user
     ?.userId;
@@ -376,6 +378,134 @@ export const mobileProviderServices = {
         skip: index,
         take: pageSize,
         orderBy: { createAt: "desc" },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    return {
+      items,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  },
+
+  async createWithdrawal(req: Request) {
+    const userId = getRequesterId(req);
+    const { amount, reason } = req.body as {
+      amount?: unknown;
+      reason?: unknown;
+    };
+
+    if (typeof amount !== "number" || !Number.isFinite(amount)) {
+      throw new BadRequestException("amount must be a valid number");
+    }
+
+    if (amount < MIN_WITHDRAWAL_AMOUNT) {
+      throw new BadRequestException(
+        `Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT} VND`,
+      );
+    }
+
+    if (
+      reason !== undefined &&
+      (typeof reason !== "string" || !reason.trim())
+    ) {
+      throw new BadRequestException("reason must be a non-empty string");
+    }
+
+    const provider = await prisma.providers.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        providerStatus: true,
+        walletBalance: true,
+        bankCode: true,
+        bankAccountNumber: true,
+        bankAccountName: true,
+      },
+    });
+
+    if (!provider) {
+      throw new NotFoundException("Provider profile not found");
+    }
+
+    if (provider.providerStatus !== "VERIFIED") {
+      throw new BadRequestException("Provider must be VERIFIED to withdraw");
+    }
+
+    if (provider.walletBalance < amount) {
+      throw new BadRequestException("Insufficient wallet balance");
+    }
+
+    if (
+      !provider.bankCode ||
+      !provider.bankAccountNumber ||
+      !provider.bankAccountName
+    ) {
+      throw new BadRequestException("Provider bank account is required");
+    }
+
+    const pendingDispute = await prisma.booking_disputes.findFirst({
+      where: {
+        providerId: provider.id,
+        status: "PENDING",
+      },
+      select: { id: true },
+    });
+
+    if (pendingDispute) {
+      throw new BadRequestException(
+        "Cannot create withdrawal while provider has pending disputes",
+      );
+    }
+
+    return prisma.withdrawal_requests.create({
+      data: {
+        providerId: provider.id,
+        amount,
+        bankCode: provider.bankCode,
+        bankAccountNumber: provider.bankAccountNumber,
+        bankAccountName: provider.bankAccountName,
+        reason: typeof reason === "string" ? reason.trim() : null,
+        status: "PENDING",
+      },
+    });
+  },
+
+  async getWithdrawals(req: Request) {
+    const userId = getRequesterId(req);
+    const provider = await prisma.providers.findUnique({
+      where: { userId },
+      select: { id: true },
+    });
+
+    if (!provider) {
+      throw new NotFoundException("Provider profile not found");
+    }
+
+    const { page, pageSize, index, where } = buildQueryPrisma(
+      req.query as Record<string, unknown>,
+    );
+    where.providerId = provider.id;
+
+    if (typeof req.query.status === "string" && req.query.status) {
+      where.status = req.query.status;
+    }
+
+    const [totalItems, items] = await Promise.all([
+      prisma.withdrawal_requests.count({ where }),
+      prisma.withdrawal_requests.findMany({
+        where,
+        skip: index,
+        take: pageSize,
+        orderBy: { requestedAt: "desc" },
       }),
     ]);
 

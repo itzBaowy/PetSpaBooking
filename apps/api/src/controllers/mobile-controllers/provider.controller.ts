@@ -87,4 +87,39 @@ export const mobileProviderController = {
       next(error);
     }
   },
+
+  async createWithdrawal(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.createWithdrawal(req);
+      const response = responseSuccess(
+        result,
+        "Withdrawal request created successfully",
+        201,
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getWithdrawals(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.getWithdrawals(req);
+      const response = responseSuccess(
+        result,
+        "Provider withdrawals retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
 };

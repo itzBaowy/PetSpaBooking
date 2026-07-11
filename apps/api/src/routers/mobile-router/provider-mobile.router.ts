@@ -177,7 +177,7 @@ providerRouterMobile.get(
  *         name: type
  *         schema:
  *           type: string
- *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION]
+ *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT]
  *     responses:
  *       200:
  *         description: Provider wallet transactions retrieved successfully
@@ -193,6 +193,89 @@ providerRouterMobile.get(
   protect,
   checkRole("PROVIDER"),
   mobileProviderController.getWalletTransactions,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/withdrawals:
+ *   post:
+ *     summary: Create a provider withdrawal request
+ *     description: Provider requests a withdrawal from wallet balance. Balance is deducted only when admin marks the request as PAID.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 minimum: 100000
+ *                 example: 200000
+ *               reason:
+ *                 type: string
+ *                 nullable: true
+ *                 example: "Monthly payout"
+ *     responses:
+ *       201:
+ *         description: Withdrawal request created successfully
+ *       400:
+ *         description: Invalid amount, insufficient balance, missing bank account, or pending disputes
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ */
+providerRouterMobile.post(
+  "/provider/withdrawals",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.createWithdrawal,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/withdrawals:
+ *   get:
+ *     summary: Get provider withdrawal requests
+ *     description: Provider retrieves their own withdrawal requests.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, APPROVED, REJECTED, PAID]
+ *     responses:
+ *       200:
+ *         description: Provider withdrawals retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ */
+providerRouterMobile.get(
+  "/provider/withdrawals",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.getWithdrawals,
 );
 
 export default providerRouterMobile;

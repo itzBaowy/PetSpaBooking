@@ -9,6 +9,12 @@ import mobileServiceRouter from "./mobile-router/service-mobile.router.ts";
 import mobilePetRouter from "./mobile-router/pet-mobile.router.ts";
 import mobileCustomerRouter from "./mobile-router/customer.router.ts";
 import mobileBookingRouter from "./mobile-router/booking-mobile.router.ts";
+import adminDisputeRouter from "./admin-dispute.router.ts";
+import adminDashboardRouter from "./admin-dashboard.router.ts";
+import adminProviderRouter from "./admin-provider.router.ts";
+import adminFinanceRouter from "./admin-finance.router.ts";
+import adminBookingRouter from "./admin-booking.router.ts";
+import adminWithdrawalRouter from "./admin-withdrawal.router.ts";
 
 const rootRouter = express.Router();
 
@@ -17,6 +23,12 @@ rootRouter.use("/users", userRouter);
 rootRouter.use("/providers", providerRouter);
 rootRouter.use("/services", serviceRouter);
 rootRouter.use("/banks", bankRouter);
+rootRouter.use("/admin", adminDashboardRouter);
+rootRouter.use("/admin", adminProviderRouter);
+rootRouter.use("/admin", adminDisputeRouter);
+rootRouter.use("/admin", adminFinanceRouter);
+rootRouter.use("/admin", adminBookingRouter);
+rootRouter.use("/admin", adminWithdrawalRouter);
 rootRouter.use(
   "/mobile",
   providerRouterMobile,
