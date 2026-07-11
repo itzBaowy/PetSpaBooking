@@ -75,7 +75,7 @@ export function Pagination({
         </div>
       )}
 
-      {totalPages > 1 && (
+      {totalPages >= 1 && (
         <nav
           aria-label="Phân trang"
           className="flex items-center justify-center gap-2"
