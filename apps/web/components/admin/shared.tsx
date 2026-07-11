@@ -74,10 +74,16 @@ export const VALUE_LABELS: Record<string, string> = {
   WITHDRAWAL_REJECT: "Từ chối yêu cầu rút tiền",
   // Target types
   BookingDispute: "Tranh chấp lịch hẹn",
+  BOOKING_DISPUTE: "Tranh chấp lịch hẹn",
   Provider: "Nhà cung cấp",
+  PROVIDER: "Nhà cung cấp",
   ProviderWallet: "Ví nhà cung cấp",
+  PROVIDER_WALLET: "Ví nhà cung cấp",
   User: "Người dùng",
+  USER: "Người dùng",
   WithdrawalRequest: "Yêu cầu rút tiền",
+  WITHDRAWAL: "Yêu cầu rút tiền",
+  WITHDRAWAL_REQUEST: "Yêu cầu rút tiền",
 };
 
 export function fieldLabel(key: string) { return FIELD_LABELS[key] ?? key; }
