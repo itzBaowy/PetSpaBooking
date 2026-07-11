@@ -67,7 +67,11 @@ app.listen(PORT, () => {
     console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
 });
 
-startBookingAutoCompleteJob();
+if (process.env.ENABLE_BOOKING_AUTO_COMPLETE_JOB === "true") {
+    startBookingAutoCompleteJob();
+} else {
+    console.log("[booking-auto-complete] Disabled. Set ENABLE_BOOKING_AUTO_COMPLETE_JOB=true to enable.");
+}
 
 // Prevent Node from exiting cleanly
 setInterval(() => {}, 1 << 30);

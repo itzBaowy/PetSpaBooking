@@ -25,7 +25,6 @@ const VALID_BOOKING_STATUSES = [
 const MIN_PROVIDER_DEPOSIT = 300_000;
 const QR_TOKEN_EXPIRES_IN_SECONDS = 10 * 60;
 const VALID_QR_ACTIONS = ["CHECK_IN", "CHECK_OUT"] as const;
-const ACTIVE_DISPUTE_STATUSES = ["PENDING"] as const;
 
 type PaymentMethod = (typeof VALID_PAYMENT_METHODS)[number];
 type BookingStatus = (typeof VALID_BOOKING_STATUSES)[number];
@@ -163,6 +162,15 @@ export function getBookingAutoCompleteHours(): number {
 function getBookingDisputeDeadline(checkedOutAt: Date): Date {
   return new Date(
     checkedOutAt.getTime() + getBookingAutoCompleteHours() * 60 * 60 * 1000,
+  );
+}
+
+function isUniqueConstraintError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2002"
   );
 }
 
@@ -465,44 +473,51 @@ export const mobileBookingServices = {
       throw new BadRequestException("Dispute window has expired");
     }
 
-    const existingDispute = await prisma.booking_disputes.findFirst({
+    const existingDispute = await prisma.booking_disputes.findUnique({
       where: {
         bookingId: booking.id,
-        status: { in: [...ACTIVE_DISPUTE_STATUSES] },
       },
     });
 
     if (existingDispute) {
-      throw new BadRequestException("This booking already has an active dispute");
+      throw new BadRequestException("This booking already has a dispute");
     }
 
-    return prisma.$transaction(async (tx) => {
-      const dispute = await tx.booking_disputes.create({
-        data: {
-          bookingId: booking.id,
-          customerId: booking.customerId,
-          providerId: booking.providerId,
-          reason: reason.trim(),
-          description:
-            typeof description === "string" ? description.trim() : null,
-          status: "PENDING",
-        },
-      });
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const dispute = await tx.booking_disputes.create({
+          data: {
+            bookingId: booking.id,
+            customerId: booking.customerId,
+            providerId: booking.providerId,
+            reason: reason.trim(),
+            description:
+              typeof description === "string" ? description.trim() : null,
+            status: "PENDING",
+          },
+        });
 
-      await tx.bookings.update({
-        where: { id: booking.id },
-        data: { status: "DISPUTE" },
-      });
+        await tx.bookings.update({
+          where: { id: booking.id },
+          data: { status: "DISPUTE" },
+        });
 
-      return {
-        id: dispute.id,
-        bookingId: dispute.bookingId,
-        reason: dispute.reason,
-        description: dispute.description,
-        status: dispute.status,
-        createdAt: dispute.createAt,
-      };
-    });
+        return {
+          id: dispute.id,
+          bookingId: dispute.bookingId,
+          reason: dispute.reason,
+          description: dispute.description,
+          status: dispute.status,
+          createdAt: dispute.createAt,
+        };
+      });
+    } catch (error) {
+      if (isUniqueConstraintError(error)) {
+        throw new BadRequestException("This booking already has a dispute");
+      }
+
+      throw error;
+    }
   },
 
   async createReview(req: Request) {

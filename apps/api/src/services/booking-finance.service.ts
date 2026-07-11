@@ -2,6 +2,7 @@ import prisma from "../../connect.prisma.ts";
 
 const PLATFORM_COMMISSION_RATE = 0.15;
 const MIN_PROVIDER_DEPOSIT = 300_000;
+const MAX_COMMISSION_PROCESSING_RETRIES = 5;
 
 function calculateCommission(totalAmount: number) {
   const commissionAmount = Math.round(totalAmount * PLATFORM_COMMISSION_RATE);
@@ -14,127 +15,185 @@ function getDepositStatusAfterDeduction(depositBalance: number): string {
   return depositBalance >= MIN_PROVIDER_DEPOSIT ? "ACTIVE" : "LOW_BALANCE";
 }
 
+function isTransactionWriteConflict(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    error.code === "P2034"
+  );
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
 export const bookingFinanceService = {
   async processCompletedBookingCommission(bookingId: string) {
-    return prisma.$transaction(async (tx) => {
-      const booking = await tx.bookings.findUnique({
-        where: { id: bookingId },
-      });
-
-      if (!booking || booking.status !== "COMPLETED") {
-        return null;
-      }
-
-      if (booking.commissionProcessedAt) {
-        return booking;
-      }
-
-      const provider = await tx.providers.findUnique({
-        where: { id: booking.providerId },
-      });
-
-      if (!provider) {
-        throw new Error("Provider not found for completed booking");
-      }
-
-      const now = new Date();
-      const { commissionAmount, providerEarning } = calculateCommission(
-        booking.totalAmount,
-      );
-
-      if (booking.paymentMethod === "ONLINE") {
-        const walletBalanceAfter = provider.walletBalance + providerEarning;
-
-        await tx.providers.update({
-          where: { id: provider.id },
-          data: { walletBalance: walletBalanceAfter },
-        });
-
-        if (providerEarning !== 0) {
-          await tx.wallet_transactions.create({
+    for (
+      let attempt = 1;
+      attempt <= MAX_COMMISSION_PROCESSING_RETRIES;
+      attempt += 1
+    ) {
+      try {
+        return await prisma.$transaction(async (tx) => {
+          const now = new Date();
+          const claim = await tx.bookings.updateMany({
+            where: {
+              id: bookingId,
+              status: "COMPLETED",
+              AND: [
+                {
+                  OR: [
+                    { commissionProcessedAt: null },
+                    { commissionProcessedAt: { isSet: false } },
+                  ],
+                },
+                {
+                  OR: [
+                    { commissionProcessingStartedAt: null },
+                    { commissionProcessingStartedAt: { isSet: false } },
+                  ],
+                },
+              ],
+            },
             data: {
-              providerId: provider.id,
-              bookingId: booking.id,
-              type: "ONLINE_EARNING",
-              balanceType: "WALLET",
-              amount: providerEarning,
-              balanceAfter: walletBalanceAfter,
-              note: "Provider earning from online booking",
+              commissionProcessingStartedAt: now,
             },
           });
+
+          if (claim.count === 0) {
+            return tx.bookings.findUnique({ where: { id: bookingId } });
+          }
+
+          const booking = await tx.bookings.findUnique({
+            where: { id: bookingId },
+          });
+
+          if (!booking || booking.status !== "COMPLETED") {
+            return null;
+          }
+
+          const provider = await tx.providers.findUnique({
+            where: { id: booking.providerId },
+          });
+
+          if (!provider) {
+            throw new Error("Provider not found for completed booking");
+          }
+
+          const { commissionAmount, providerEarning } = calculateCommission(
+            booking.totalAmount,
+          );
+
+          if (booking.paymentMethod === "ONLINE") {
+            const updatedProvider = await tx.providers.update({
+              where: { id: provider.id },
+              data: { walletBalance: { increment: providerEarning } },
+              select: { walletBalance: true },
+            });
+
+            if (providerEarning !== 0) {
+              await tx.wallet_transactions.create({
+                data: {
+                  providerId: provider.id,
+                  bookingId: booking.id,
+                  type: "ONLINE_EARNING",
+                  balanceType: "WALLET",
+                  amount: providerEarning,
+                  balanceAfter: updatedProvider.walletBalance,
+                  note: "Provider earning from online booking",
+                },
+              });
+            }
+
+            return tx.bookings.update({
+              where: { id: booking.id },
+              data: {
+                commissionAmount,
+                providerEarning,
+                walletCommissionAmount: 0,
+                depositCommissionAmount: 0,
+                commissionProcessedAt: now,
+              },
+            });
+          }
+
+          const walletCommissionAmount = Math.min(
+            provider.walletBalance,
+            commissionAmount,
+          );
+          const depositCommissionAmount =
+            commissionAmount - walletCommissionAmount;
+          const estimatedDepositBalanceAfter =
+            provider.depositBalance - depositCommissionAmount;
+
+          const updatedProvider = await tx.providers.update({
+            where: { id: provider.id },
+            data: {
+              walletBalance: { decrement: walletCommissionAmount },
+              depositBalance: { decrement: depositCommissionAmount },
+              depositStatus: getDepositStatusAfterDeduction(
+                estimatedDepositBalanceAfter,
+              ),
+            },
+            select: { walletBalance: true, depositBalance: true },
+          });
+
+          if (walletCommissionAmount > 0) {
+            await tx.wallet_transactions.create({
+              data: {
+                providerId: provider.id,
+                bookingId: booking.id,
+                type: "CASH_COMMISSION_DEDUCTION",
+                balanceType: "WALLET",
+                amount: -walletCommissionAmount,
+                balanceAfter: updatedProvider.walletBalance,
+                note: "Platform commission deducted from wallet for cash booking",
+              },
+            });
+          }
+
+          if (depositCommissionAmount > 0) {
+            await tx.wallet_transactions.create({
+              data: {
+                providerId: provider.id,
+                bookingId: booking.id,
+                type: "DEPOSIT_COMMISSION_DEDUCTION",
+                balanceType: "DEPOSIT",
+                amount: -depositCommissionAmount,
+                balanceAfter: updatedProvider.depositBalance,
+                note: "Platform commission deducted from deposit for cash booking",
+              },
+            });
+          }
+
+          return tx.bookings.update({
+            where: { id: booking.id },
+            data: {
+              commissionAmount,
+              providerEarning,
+              walletCommissionAmount,
+              depositCommissionAmount,
+              commissionProcessedAt: now,
+            },
+          });
+        });
+      } catch (error) {
+        if (
+          !isTransactionWriteConflict(error) ||
+          attempt === MAX_COMMISSION_PROCESSING_RETRIES
+        ) {
+          throw error;
         }
 
-        return tx.bookings.update({
-          where: { id: booking.id },
-          data: {
-            commissionAmount,
-            providerEarning,
-            walletCommissionAmount: 0,
-            depositCommissionAmount: 0,
-            commissionProcessedAt: now,
-          },
-        });
+        await wait(attempt * 50);
       }
+    }
 
-      const walletCommissionAmount = Math.min(
-        provider.walletBalance,
-        commissionAmount,
-      );
-      const depositCommissionAmount =
-        commissionAmount - walletCommissionAmount;
-      const walletBalanceAfter =
-        provider.walletBalance - walletCommissionAmount;
-      const depositBalanceAfter =
-        provider.depositBalance - depositCommissionAmount;
-
-      await tx.providers.update({
-        where: { id: provider.id },
-        data: {
-          walletBalance: walletBalanceAfter,
-          depositBalance: depositBalanceAfter,
-          depositStatus: getDepositStatusAfterDeduction(depositBalanceAfter),
-        },
-      });
-
-      if (walletCommissionAmount > 0) {
-        await tx.wallet_transactions.create({
-          data: {
-            providerId: provider.id,
-            bookingId: booking.id,
-            type: "CASH_COMMISSION_DEDUCTION",
-            balanceType: "WALLET",
-            amount: -walletCommissionAmount,
-            balanceAfter: walletBalanceAfter,
-            note: "Platform commission deducted from wallet for cash booking",
-          },
-        });
-      }
-
-      if (depositCommissionAmount > 0) {
-        await tx.wallet_transactions.create({
-          data: {
-            providerId: provider.id,
-            bookingId: booking.id,
-            type: "DEPOSIT_COMMISSION_DEDUCTION",
-            balanceType: "DEPOSIT",
-            amount: -depositCommissionAmount,
-            balanceAfter: depositBalanceAfter,
-            note: "Platform commission deducted from deposit for cash booking",
-          },
-        });
-      }
-
-      return tx.bookings.update({
-        where: { id: booking.id },
-        data: {
-          commissionAmount,
-          providerEarning,
-          walletCommissionAmount,
-          depositCommissionAmount,
-          commissionProcessedAt: now,
-        },
-      });
-    });
+    return prisma.bookings.findUnique({ where: { id: bookingId } });
   },
 
   async completeBookingAndProcessCommission(bookingId: string) {
@@ -142,7 +201,10 @@ export const bookingFinanceService = {
       where: {
         id: bookingId,
         status: "CHECKED_OUT",
-        commissionProcessedAt: null,
+        OR: [
+          { commissionProcessedAt: null },
+          { commissionProcessedAt: { isSet: false } },
+        ],
       },
       data: {
         status: "COMPLETED",

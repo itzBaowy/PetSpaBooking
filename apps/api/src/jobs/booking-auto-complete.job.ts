@@ -6,18 +6,37 @@ import { getBookingAutoCompleteHours } from "../services/mobile-services/booking
 const DEFAULT_INTERVAL_MINUTES = 5;
 const ACTIVE_DISPUTE_STATUSES = ["PENDING"];
 
-function getCronIntervalMinutes(): number {
-  const value = Number(process.env.BOOKING_AUTO_COMPLETE_CRON_INTERVAL_MINUTES);
-  return Number.isFinite(value) && value > 0 ? value : DEFAULT_INTERVAL_MINUTES;
-}
+export function getCronIntervalMinutes(): number {
+  const rawValue = process.env.BOOKING_AUTO_COMPLETE_CRON_INTERVAL_MINUTES;
+  if (!rawValue) return DEFAULT_INTERVAL_MINUTES;
 
-function getCronExpression(): string {
-  const intervalMinutes = getCronIntervalMinutes();
-  if (intervalMinutes >= 60) {
-    return "0 * * * *";
+  const trimmedValue = rawValue.trim();
+  if (!/^\d+$/.test(trimmedValue)) {
+    console.warn(
+      `[booking-auto-complete] Invalid BOOKING_AUTO_COMPLETE_CRON_INTERVAL_MINUTES="${rawValue}". Falling back to ${DEFAULT_INTERVAL_MINUTES}.`,
+    );
+    return DEFAULT_INTERVAL_MINUTES;
   }
 
-  return `*/${Math.floor(intervalMinutes)} * * * *`;
+  return Math.max(Number.parseInt(trimmedValue, 10), 1);
+}
+
+export function getCronExpression(): string {
+  const intervalMinutes = getCronIntervalMinutes();
+
+  if (intervalMinutes < 60) {
+    return `*/${intervalMinutes} * * * *`;
+  }
+
+  if (intervalMinutes % 60 === 0) {
+    const intervalHours = intervalMinutes / 60;
+    return `0 */${intervalHours} * * *`;
+  }
+
+  console.warn(
+    `[booking-auto-complete] Cron cannot represent every ${intervalMinutes} minutes reliably. Falling back to every ${DEFAULT_INTERVAL_MINUTES} minutes.`,
+  );
+  return `*/${DEFAULT_INTERVAL_MINUTES} * * * *`;
 }
 
 function getAutoCompleteCutoff(): Date {
