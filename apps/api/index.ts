@@ -7,6 +7,7 @@ import { NotFoundException } from "./src/common/helpers/exception.helper.ts";
 import { swaggerOptions } from "./src/common/swagger/swagger.config.ts";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
+import { startBookingAutoCompleteJob } from "./src/jobs/booking-auto-complete.job.ts";
 
 dotenv.config();
 
@@ -65,6 +66,8 @@ app.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
     console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
 });
+
+startBookingAutoCompleteJob();
 
 // Prevent Node from exiting cleanly
 setInterval(() => {}, 1 << 30);

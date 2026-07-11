@@ -318,9 +318,40 @@ async function main() {
 
     if (provider) {
       await prisma.reviews.deleteMany({ where: { providerId: provider.id } });
+      await prisma.bookings.deleteMany({
+        where: { providerId: provider.id, customerId: customer.id },
+      });
+      const service = await prisma.services.findFirst({
+        where: { providerId: provider.id, isActive: true },
+        select: { id: true, price: true, duration: true },
+      });
+      if (!service) throw new Error("Missing seeded service for provider_test");
+
+      const appointmentStart = new Date();
+      const completedBooking = await prisma.bookings.create({
+        data: {
+          providerId: provider.id,
+          customerId: customer.id,
+          serviceId: service.id,
+          appointmentStart,
+          appointmentEnd: new Date(
+            appointmentStart.getTime() + service.duration * 60 * 1000,
+          ),
+          status: "COMPLETED",
+          paymentMethod: "CASH",
+          paymentStatus: "UNPAID",
+          totalAmount: service.price,
+          currency: "VND",
+          checkedOutAt: appointmentStart,
+          completedAt: appointmentStart,
+        },
+        select: { id: true },
+      });
+
       await prisma.reviews.createMany({
         data: [
           {
+            bookingId: completedBooking.id,
             providerId: provider.id,
             customerId: customer.id,
             rating: 5,

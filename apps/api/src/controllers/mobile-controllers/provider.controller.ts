@@ -53,4 +53,38 @@ export const mobileProviderController = {
       next(error);
     }
   },
+
+  async getWallet(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.getWallet(req);
+      const response = responseSuccess(
+        result,
+        "Provider wallet retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getWalletTransactions(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.getWalletTransactions(req);
+      const response = responseSuccess(
+        result,
+        "Provider wallet transactions retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
 };
