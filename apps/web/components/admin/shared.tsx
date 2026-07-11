@@ -62,6 +62,22 @@ export const VALUE_LABELS: Record<string, string> = {
   CASH_COMMISSION_DEDUCTION: "Trừ hoa hồng tiền mặt",
   DEPOSIT_COMMISSION_DEDUCTION: "Trừ hoa hồng từ ký quỹ",
   MANUAL_ADJUSTMENT: "Điều chỉnh thủ công", WITHDRAWAL_PAYOUT: "Chi trả rút tiền",
+  // Actions
+  DISPUTE_RESOLVE: "Giải quyết tranh chấp",
+  PROVIDER_REJECT: "Từ chối nhà cung cấp",
+  PROVIDER_SUSPEND: "Tạm ngưng nhà cung cấp",
+  PROVIDER_VERIFY: "Xác minh nhà cung cấp",
+  PROVIDER_WALLET_ADJUST: "Điều chỉnh số dư ví",
+  USER_STATUS_UPDATE: "Cập nhật trạng thái",
+  WITHDRAWAL_APPROVE: "Duyệt yêu cầu rút tiền",
+  WITHDRAWAL_MARK_PAID: "Đánh dấu đã chi trả",
+  WITHDRAWAL_REJECT: "Từ chối yêu cầu rút tiền",
+  // Target types
+  BookingDispute: "Tranh chấp lịch hẹn",
+  Provider: "Nhà cung cấp",
+  ProviderWallet: "Ví nhà cung cấp",
+  User: "Người dùng",
+  WithdrawalRequest: "Yêu cầu rút tiền",
 };
 
 export function fieldLabel(key: string) { return FIELD_LABELS[key] ?? key; }
@@ -152,9 +168,9 @@ export function FilterSelect({ value, options, onChange, className }: { value: s
 
 export function StatusPill({ value }: { value: unknown }) {
   const raw = textValue(value, "UNKNOWN");
-  const success = ["ACTIVE", "VERIFIED", "SUCCESS", "COMPLETED", "APPROVED", "PAID", "ONLINE_EARNING"].includes(raw);
-  const warning = ["PENDING", "PENDING_VERIFICATION", "UNPAID", "NOT_PAID", "LOW_BALANCE", "CONFIRMED"].includes(raw);
-  const danger = ["INACTIVE", "BANNED", "REJECTED", "SUSPENDED", "FAILED", "CANCELLED", "DISPUTE"].includes(raw);
+  const success = ["ACTIVE", "VERIFIED", "SUCCESS", "COMPLETED", "APPROVED", "PAID", "ONLINE_EARNING", "PROVIDER_VERIFY", "WITHDRAWAL_APPROVE", "WITHDRAWAL_MARK_PAID"].includes(raw);
+  const warning = ["PENDING", "PENDING_VERIFICATION", "UNPAID", "NOT_PAID", "LOW_BALANCE", "CONFIRMED", "PROVIDER_SUSPEND", "USER_STATUS_UPDATE", "PROVIDER_WALLET_ADJUST"].includes(raw);
+  const danger = ["INACTIVE", "BANNED", "REJECTED", "SUSPENDED", "FAILED", "CANCELLED", "DISPUTE", "PROVIDER_REJECT", "WITHDRAWAL_REJECT", "DISPUTE_RESOLVE"].includes(raw);
   return <FinanceStatusPill tone={success ? "success" : warning ? "warning" : danger ? "danger" : "default"}>{displayValue(raw)}</FinanceStatusPill>;
 }
 
@@ -173,7 +189,7 @@ export function DetailItem({ label, value, icon }: { label: string; value: unkno
 export function EntityTable({ loading, items, columns, detailBase }: { loading: boolean; items?: AdminEntity[]; columns: string[]; detailBase?: string }) {
   const router = useRouter();
   if (loading) return <p className="rounded-2xl border bg-white p-6">Đang tải dữ liệu...</p>;
-  const statusKeys = new Set(["status", "providerStatus", "depositStatus", "paymentStatus", "balanceType", "type"]);
+  const statusKeys = new Set(["status", "providerStatus", "depositStatus", "paymentStatus", "balanceType", "type", "action"]);
   const tableColumns: Array<DataTableColumn<AdminEntity>> = columns.map((key) => ({
     key,
     header: fieldLabel(key),
