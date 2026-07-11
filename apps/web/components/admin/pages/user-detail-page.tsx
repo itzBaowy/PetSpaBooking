@@ -20,6 +20,7 @@ import {
   StatusPill,
   DetailItem,
 } from "../shared";
+import { AdminProviderDetailPage } from "./provider-detail-page";
 
 export function AdminUserDetailPage({ id }: { id: string }) {
   const profile = useProfile();
