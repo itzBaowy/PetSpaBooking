@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from "../../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../../common/helpers/build-query-prisma.helper.ts";
+import { notificationService } from "../notification.service.ts";
 
 const VALID_PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
 const VALID_BOOKING_STATUSES = [
@@ -484,7 +485,7 @@ export const mobileBookingServices = {
     }
 
     try {
-      return await prisma.$transaction(async (tx) => {
+      const result = await prisma.$transaction(async (tx) => {
         const dispute = await tx.booking_disputes.create({
           data: {
             bookingId: booking.id,
@@ -511,6 +512,40 @@ export const mobileBookingServices = {
           createdAt: dispute.createAt,
         };
       });
+
+      const [providerProfile, admins] = await Promise.all([
+        prisma.providers.findUnique({
+          where: { id: booking.providerId },
+          select: { userId: true, businessName: true },
+        }),
+        prisma.users.findMany({
+          where: { role: "ADMIN" },
+          select: { id: true },
+        }),
+      ]);
+
+      await notificationService.createMany([
+        ...(providerProfile
+          ? [
+              {
+                userId: providerProfile.userId,
+                type: "DISPUTE_CREATED",
+                title: "New dispute",
+                message: "A customer created a dispute for a booking.",
+                data: { bookingId: booking.id, disputeId: result.id },
+              },
+            ]
+          : []),
+        ...admins.map((admin) => ({
+          userId: admin.id,
+          type: "DISPUTE_CREATED",
+          title: "New dispute",
+          message: "A new booking dispute needs review.",
+          data: { bookingId: booking.id, disputeId: result.id },
+        })),
+      ]);
+
+      return result;
     } catch (error) {
       if (isUniqueConstraintError(error)) {
         throw new BadRequestException("This booking already has a dispute");
@@ -635,7 +670,7 @@ export const mobileBookingServices = {
       throw new BadRequestException("Only PENDING bookings can be confirmed");
     }
 
-    return prisma.bookings.update({
+    const updatedBooking = await prisma.bookings.update({
       where: { id },
       data: {
         status: "CONFIRMED",
@@ -643,6 +678,16 @@ export const mobileBookingServices = {
       },
       include: BOOKING_INCLUDE,
     });
+
+    await notificationService.create({
+      userId: updatedBooking.customer.users.id,
+      type: "BOOKING_CONFIRMED",
+      title: "Booking confirmed",
+      message: `${updatedBooking.provider.businessName} confirmed your booking.`,
+      data: { bookingId: updatedBooking.id },
+    });
+
+    return updatedBooking;
   },
 
   async reject(req: Request) {
@@ -660,7 +705,7 @@ export const mobileBookingServices = {
       throw new BadRequestException("Only PENDING bookings can be rejected");
     }
 
-    return prisma.bookings.update({
+    const updatedBooking = await prisma.bookings.update({
       where: { id },
       data: {
         status: "REJECTED",
@@ -669,6 +714,16 @@ export const mobileBookingServices = {
       },
       include: BOOKING_INCLUDE,
     });
+
+    await notificationService.create({
+      userId: updatedBooking.customer.users.id,
+      type: "BOOKING_REJECTED",
+      title: "Booking rejected",
+      message: `${updatedBooking.provider.businessName} rejected your booking.`,
+      data: { bookingId: updatedBooking.id, reason: reason ?? null },
+    });
+
+    return updatedBooking;
   },
 
   async checkIn(req: Request) {
@@ -697,7 +752,7 @@ export const mobileBookingServices = {
 
     const now = new Date();
 
-    return prisma.$transaction(async (tx) => {
+    const updatedBooking = await prisma.$transaction(async (tx) => {
       await tx.booking_qr_logs.create({
         data: {
           bookingId: booking.id,
@@ -719,6 +774,16 @@ export const mobileBookingServices = {
         include: BOOKING_INCLUDE,
       });
     });
+
+    await notificationService.create({
+      userId: updatedBooking.customer.users.id,
+      type: "BOOKING_CHECKED_IN",
+      title: "Checked in",
+      message: `Your booking at ${updatedBooking.provider.businessName} was checked in.`,
+      data: { bookingId: updatedBooking.id },
+    });
+
+    return updatedBooking;
   },
 
   async checkOut(req: Request) {
@@ -749,7 +814,7 @@ export const mobileBookingServices = {
 
     const now = new Date();
 
-    return prisma.$transaction(async (tx) => {
+    const updatedBooking = await prisma.$transaction(async (tx) => {
       await tx.booking_qr_logs.create({
         data: {
           bookingId: booking.id,
@@ -771,5 +836,15 @@ export const mobileBookingServices = {
         include: BOOKING_INCLUDE,
       });
     });
+
+    await notificationService.create({
+      userId: updatedBooking.customer.users.id,
+      type: "BOOKING_CHECKED_OUT",
+      title: "Checked out",
+      message: `Your booking at ${updatedBooking.provider.businessName} was checked out.`,
+      data: { bookingId: updatedBooking.id },
+    });
+
+    return updatedBooking;
   },
 };
