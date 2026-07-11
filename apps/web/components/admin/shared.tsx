@@ -76,7 +76,6 @@ export const VALUE_LABELS: Record<string, string> = {
   BookingDispute: "Tranh chấp lịch hẹn",
   BOOKING_DISPUTE: "Tranh chấp lịch hẹn",
   Provider: "Nhà cung cấp",
-  PROVIDER: "Nhà cung cấp",
   ProviderWallet: "Ví nhà cung cấp",
   PROVIDER_WALLET: "Ví nhà cung cấp",
   User: "Người dùng",
