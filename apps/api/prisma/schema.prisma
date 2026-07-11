@@ -82,6 +82,7 @@ model providers {
   reviews           reviews[]
   bookings          bookings[]
   walletTransactions wallet_transactions[]
+  withdrawalRequests withdrawal_requests[]
   workingHours      working_hours[]
   providerDocuments provider_documents[]
 }
@@ -202,6 +203,9 @@ model booking_disputes {
   reason      String
   description String?
   status      String @default("PENDING")
+  resolvedBy  String? @db.ObjectId
+  resolvedAt  DateTime?
+  adminNote   String?
 
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
@@ -236,6 +240,7 @@ model wallet_transactions {
   id           String @id @default(auto()) @map("_id") @db.ObjectId
   providerId   String @db.ObjectId
   bookingId    String? @db.ObjectId
+  idempotencyKey String @unique
   type         String
   balanceType  String
   amount       Float
@@ -250,7 +255,28 @@ model wallet_transactions {
   @@index([bookingId])
   @@index([type])
   @@index([createAt])
-  @@unique([bookingId, type, balanceType])
+}
+
+model withdrawal_requests {
+  id                String @id @default(auto()) @map("_id") @db.ObjectId
+  providerId        String @db.ObjectId
+  amount            Float
+  bankCode          String?
+  bankAccountNumber String?
+  bankAccountName   String?
+  status            String @default("PENDING")
+  reason            String?
+  adminNote         String?
+  requestedAt       DateTime @default(now())
+  reviewedBy        String? @db.ObjectId
+  reviewedAt        DateTime?
+  paidAt            DateTime?
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([status])
+  @@index([requestedAt])
 }
 
 model working_hours {
