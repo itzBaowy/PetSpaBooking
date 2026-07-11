@@ -8,6 +8,7 @@ import {
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import { bookingFinanceService } from "./booking-finance.service.ts";
+import { notificationService } from "./notification.service.ts";
 
 const VALID_DISPUTE_STATUSES = [
   "PENDING",
@@ -239,6 +240,42 @@ export const adminDisputeService = {
       where: { id: resolvedDispute.id },
       include: DISPUTE_INCLUDE,
     });
+
+    const [customer, provider] = await Promise.all([
+      prisma.customers.findUnique({
+        where: { id: dispute.customerId },
+        select: { userId: true },
+      }),
+      prisma.providers.findUnique({
+        where: { id: dispute.providerId },
+        select: { userId: true },
+      }),
+    ]);
+
+    await notificationService.createMany([
+      ...(customer
+        ? [
+            {
+              userId: customer.userId,
+              type: "DISPUTE_RESOLVED",
+              title: "Dispute resolved",
+              message: `Your dispute was resolved as ${status}.`,
+              data: { bookingId: dispute.bookingId, disputeId: dispute.id, status },
+            },
+          ]
+        : []),
+      ...(provider
+        ? [
+            {
+              userId: provider.userId,
+              type: "DISPUTE_RESOLVED",
+              title: "Dispute resolved",
+              message: `A booking dispute was resolved as ${status}.`,
+              data: { bookingId: dispute.bookingId, disputeId: dispute.id, status },
+            },
+          ]
+        : []),
+    ]);
 
     return mapDispute(freshDispute ?? resolvedDispute);
   },

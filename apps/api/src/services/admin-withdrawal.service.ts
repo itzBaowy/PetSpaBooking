@@ -7,6 +7,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
+import { notificationService } from "./notification.service.ts";
 
 const WITHDRAWAL_STATUSES = ["PENDING", "APPROVED", "REJECTED", "PAID"] as const;
 const MAX_WITHDRAWAL_MARK_PAID_RETRIES = 5;
@@ -16,6 +17,7 @@ const WITHDRAWAL_INCLUDE = {
   provider: {
     select: {
       id: true,
+      userId: true,
       businessName: true,
       providerStatus: true,
       walletBalance: true,
@@ -150,7 +152,16 @@ export const adminWithdrawalService = {
       throw new BadRequestException("Only PENDING withdrawals can be approved");
     }
 
-    return this.getById(req);
+    const withdrawal = await this.getById(req);
+    await notificationService.create({
+      userId: withdrawal.provider.userId,
+      type: "WITHDRAWAL_APPROVED",
+      title: "Withdrawal approved",
+      message: "Your withdrawal request was approved.",
+      data: { withdrawalId: withdrawal.id },
+    });
+
+    return withdrawal;
   },
 
   async reject(req: Request) {
@@ -178,7 +189,16 @@ export const adminWithdrawalService = {
       throw new BadRequestException("Only PENDING withdrawals can be rejected");
     }
 
-    return this.getById(req);
+    const withdrawal = await this.getById(req);
+    await notificationService.create({
+      userId: withdrawal.provider.userId,
+      type: "WITHDRAWAL_REJECTED",
+      title: "Withdrawal rejected",
+      message: "Your withdrawal request was rejected.",
+      data: { withdrawalId: withdrawal.id, adminNote },
+    });
+
+    return withdrawal;
   },
 
   async markPaid(req: Request) {
@@ -192,7 +212,7 @@ export const adminWithdrawalService = {
       attempt += 1
     ) {
       try {
-        return await prisma.$transaction(async (tx) => {
+        const withdrawal = await prisma.$transaction(async (tx) => {
           const now = new Date();
           const withdrawal = await tx.withdrawal_requests.findUnique({
             where: { id },
@@ -271,6 +291,18 @@ export const adminWithdrawalService = {
             include: WITHDRAWAL_INCLUDE,
           });
         });
+
+        if (withdrawal) {
+          await notificationService.create({
+            userId: withdrawal.provider.userId,
+            type: "WITHDRAWAL_PAID",
+            title: "Withdrawal paid",
+            message: "Your withdrawal request was marked as paid.",
+            data: { withdrawalId: withdrawal.id },
+          });
+        }
+
+        return withdrawal;
       } catch (error) {
         if (
           !isTransactionWriteConflict(error) ||

@@ -1,4 +1,5 @@
 import prisma from "../../connect.prisma.ts";
+import { notificationService } from "./notification.service.ts";
 
 const PLATFORM_COMMISSION_RATE = 0.15;
 const MIN_PROVIDER_DEPOSIT = 300_000;
@@ -220,7 +221,7 @@ export const bookingFinanceService = {
   },
 
   async completeBookingAndProcessCommission(bookingId: string) {
-    await prisma.bookings.updateMany({
+    const completed = await prisma.bookings.updateMany({
       where: {
         id: bookingId,
         status: "CHECKED_OUT",
@@ -235,6 +236,37 @@ export const bookingFinanceService = {
       },
     });
 
-    return this.processCompletedBookingCommission(bookingId);
+    const booking = await this.processCompletedBookingCommission(bookingId);
+
+    if (completed.count > 0 && booking?.status === "COMPLETED") {
+      const completedBooking = await prisma.bookings.findUnique({
+        where: { id: bookingId },
+        include: {
+          customer: { select: { userId: true } },
+          provider: { select: { userId: true, businessName: true } },
+        },
+      });
+
+      if (completedBooking) {
+        await notificationService.createMany([
+          {
+            userId: completedBooking.customer.userId,
+            type: "BOOKING_COMPLETED",
+            title: "Booking completed",
+            message: "Your booking has been completed.",
+            data: { bookingId },
+          },
+          {
+            userId: completedBooking.provider.userId,
+            type: "BOOKING_COMPLETED",
+            title: "Booking completed",
+            message: `A booking for ${completedBooking.provider.businessName} has been completed.`,
+            data: { bookingId },
+          },
+        ]);
+      }
+    }
+
+    return booking;
   },
 };

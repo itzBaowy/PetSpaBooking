@@ -26,6 +26,7 @@ model users {
   createAt  DateTime   @default(now())
   updateAt  DateTime   @updatedAt
   customers customers?
+  notifications notifications[]
 }
 
 model customers {
@@ -277,6 +278,24 @@ model withdrawal_requests {
   @@index([providerId])
   @@index([status])
   @@index([requestedAt])
+}
+
+model notifications {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String @db.ObjectId
+  type     String
+  title    String
+  message  String
+  data     String?
+  readAt   DateTime?
+  createAt DateTime @default(now())
+
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([readAt])
+  @@index([createAt])
 }
 
 model working_hours {

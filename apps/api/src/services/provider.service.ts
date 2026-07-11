@@ -8,6 +8,7 @@ import {
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import cloudinary from "../common/cloudinary/init.cloudinary.ts";
+import { notificationService } from "./notification.service.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VALID_PROVIDER_STATUSES = [
@@ -479,6 +480,14 @@ export const providerService = {
             select: PROVIDER_SELECT,
         });
 
+        await notificationService.create({
+            userId: provider.userId,
+            type: "PROVIDER_VERIFIED",
+            title: "Provider verified",
+            message: "Your provider profile has been verified.",
+            data: { providerId: id },
+        });
+
         return updatedProvider;
     },
 
@@ -501,6 +510,14 @@ export const providerService = {
             where: { id },
             data: { providerStatus: "REJECTED", adminNote: reason },
             select: PROVIDER_SELECT,
+        });
+
+        await notificationService.create({
+            userId: provider.userId,
+            type: "PROVIDER_REJECTED",
+            title: "Provider rejected",
+            message: "Your provider verification was rejected.",
+            data: { providerId: id, reason },
         });
 
         return updated;
