@@ -43,6 +43,19 @@ export const adminProviderController = {
     }
   },
 
+  async getDocuments(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminProviderService.getDocuments(req);
+      const response = responseSuccess(
+        result,
+        "Provider documents retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async verify(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await providerService.approve(req);
@@ -75,6 +88,32 @@ export const adminProviderController = {
       const response = responseSuccess(
         result,
         "Provider suspended successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async approveDocument(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminProviderService.approveDocument(req);
+      const response = responseSuccess(
+        result,
+        "Provider document approved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async rejectDocument(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminProviderService.rejectDocument(req);
+      const response = responseSuccess(
+        result,
+        "Provider document rejected successfully",
       );
       res.status(response.statusCode).json(response);
     } catch (error) {

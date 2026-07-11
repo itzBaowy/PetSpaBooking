@@ -26,6 +26,8 @@ provider_test
 admin_test
 ```
 
+Ghi chú cho dev: từ thời điểm này, mỗi tính năng API mới nên được cập nhật vào file này trong cùng lượt triển khai để FE có thể đọc luồng và fetch đúng contract.
+
 ## 1. Response Và Auth
 
 Response success chuẩn:
@@ -348,6 +350,9 @@ Các event hiện có thể tạo notification:
 - `WITHDRAWAL_PAID`
 - `PROVIDER_VERIFIED`
 - `PROVIDER_REJECTED`
+- `PROVIDER_DOCUMENT_APPROVED`
+- `PROVIDER_DOCUMENT_REJECTED`
+- `PROVIDER_READY_FOR_VERIFICATION`
 - `ACCOUNT_STATUS_CHANGED`
 
 ## 6. Admin APIs
@@ -411,9 +416,12 @@ Rule:
 GET /api/admin/providers
 GET /api/admin/providers/pending
 GET /api/admin/providers/{id}
+GET /api/admin/providers/{id}/documents
 PATCH /api/admin/providers/{id}/verify
 PATCH /api/admin/providers/{id}/reject
 PATCH /api/admin/providers/{id}/suspend
+PATCH /api/admin/provider-documents/{documentId}/approve
+PATCH /api/admin/provider-documents/{documentId}/reject
 ```
 
 Reject body:
@@ -441,6 +449,73 @@ Suspend body:
     "pending": 2
   }
 }
+```
+
+Provider documents response:
+
+```json
+{
+  "providerId": "<providerId>",
+  "requiredDocumentTypes": [
+    "business_license",
+    "id_card_front",
+    "id_card_back"
+  ],
+  "items": [
+    {
+      "id": "<documentId>",
+      "providerId": "<providerId>",
+      "documentType": "business_license",
+      "imageUrl": "https://res.cloudinary.com/...",
+      "cloudinaryPublicId": "petlink/provider-documents/...",
+      "status": "PENDING",
+      "adminNote": null,
+      "createAt": "2026-07-11T10:00:00.000Z",
+      "updateAt": "2026-07-11T10:00:00.000Z"
+    }
+  ]
+}
+```
+
+Document statuses:
+
+```txt
+PENDING
+APPROVED
+REJECTED
+```
+
+Reject document body:
+
+```json
+{
+  "reason": "Business license is blurry"
+}
+```
+
+Verify provider rule:
+
+- Provider chỉ được `VERIFIED` khi các document bắt buộc đã có ít nhất một bản `APPROVED`.
+- Required document types hiện tại: `business_license`, `id_card_front`, `id_card_back`.
+- Nếu thiếu, API `PATCH /api/admin/providers/{id}/verify` trả `400` kèm danh sách document còn thiếu trong message.
+
+Ví dụ fetch:
+
+```ts
+const documents = await apiFetch(`/admin/providers/${providerId}/documents`, {
+  token: adminToken,
+});
+
+await apiFetch(`/admin/provider-documents/${documentId}/approve`, {
+  method: "PATCH",
+  token: adminToken,
+});
+
+await apiFetch(`/admin/provider-documents/${documentId}/reject`, {
+  method: "PATCH",
+  token: adminToken,
+  body: JSON.stringify({ reason: "Business license is blurry" }),
+});
 ```
 
 ### 6.4 Admin bookings
@@ -610,6 +685,87 @@ USER_STATUS_UPDATE
 PROVIDER_VERIFY
 PROVIDER_REJECT
 PROVIDER_SUSPEND
+PROVIDER_DOCUMENT_APPROVE
+PROVIDER_DOCUMENT_REJECT
+```
+
+### 6.9 Admin reports
+
+```http
+GET /api/admin/reports/revenue
+GET /api/admin/reports/revenue/daily
+GET /api/admin/reports/providers
+GET /api/admin/reports/disputes
+```
+
+Query chung:
+
+```txt
+from=2026-07-01
+to=2026-07-31
+```
+
+Provider report có thêm phân trang:
+
+```txt
+page
+pageSize
+```
+
+Revenue summary trả các số tổng hợp:
+
+```txt
+completedBookings
+cashBookings
+onlineBookings
+totalRevenue
+totalCommission
+totalProviderEarning
+withdrawalPaidAmount
+netPlatformRevenue
+```
+
+Daily revenue trả mảng theo ngày:
+
+```json
+[
+  {
+    "date": "2026-07-11",
+    "completedBookings": 3,
+    "totalRevenue": 1500000,
+    "totalCommission": 150000,
+    "totalProviderEarning": 1350000
+  }
+]
+```
+
+Provider performance trả danh sách provider kèm booking/revenue/review/dispute summary:
+
+```txt
+items
+pagination
+```
+
+Dispute report trả bucket theo status:
+
+```txt
+pending
+resolvedProviderWin
+resolvedCustomerWin
+cancelled
+total
+```
+
+Ví dụ fetch:
+
+```ts
+const revenue = await apiFetch("/admin/reports/revenue?from=2026-07-01&to=2026-07-31", {
+  token: adminToken,
+});
+
+const providers = await apiFetch("/admin/reports/providers?page=1&pageSize=10", {
+  token: adminToken,
+});
 ```
 
 ## 7. Booking Lifecycle FE Cần Nhớ
@@ -679,4 +835,3 @@ try {
 10. Customer review khi booking `COMPLETED`.
 11. Provider xem wallet/withdrawal.
 12. Admin audit finance/withdrawal/audit logs.
-

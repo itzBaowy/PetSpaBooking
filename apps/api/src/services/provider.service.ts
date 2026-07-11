@@ -26,6 +26,11 @@ const VALID_DOC_TYPES = [
     "tax_code",
     "other",
 ] as const;
+const REQUIRED_PROVIDER_DOC_TYPES = [
+    "business_license",
+    "id_card_front",
+    "id_card_back",
+] as const;
 
 type ProviderStatus = (typeof VALID_PROVIDER_STATUSES)[number];
 type DocType = (typeof VALID_DOC_TYPES)[number];
@@ -473,6 +478,28 @@ export const providerService = {
 
         if (provider.providerStatus === "VERIFIED") {
             throw new BadRequestException("Provider is already verified");
+        }
+
+        const documents = await prisma.provider_documents.findMany({
+            where: { providerId: id },
+            select: {
+                documentType: true,
+                status: true,
+            },
+        });
+        const approvedDocumentTypes = new Set(
+            documents
+                .filter((document) => document.status === "APPROVED")
+                .map((document) => document.documentType),
+        );
+        const missingRequiredDocuments = REQUIRED_PROVIDER_DOC_TYPES.filter(
+            (documentType) => !approvedDocumentTypes.has(documentType),
+        );
+
+        if (missingRequiredDocuments.length > 0) {
+            throw new BadRequestException(
+                `Provider requires approved documents before verification: ${missingRequiredDocuments.join(", ")}`,
+            );
         }
 
         // Cập nhật provider status (KHÔNG sửa user role)
