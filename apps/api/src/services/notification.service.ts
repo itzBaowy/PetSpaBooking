@@ -43,6 +43,10 @@ function decodeNotification<T extends { data: string | null }>(notification: T) 
   };
 }
 
+function logNotificationError(action: string, error: unknown) {
+  console.error(`[notification] ${action} failed:`, error);
+}
+
 export const notificationService = {
   async create(input: CreateNotificationInput) {
     return prisma.notifications.create({
@@ -68,6 +72,24 @@ export const notificationService = {
         data: encodeData(input.data),
       })),
     });
+  },
+
+  async safeCreate(input: CreateNotificationInput) {
+    try {
+      return await this.create(input);
+    } catch (error) {
+      logNotificationError("create", error);
+      return null;
+    }
+  },
+
+  async safeCreateMany(inputs: CreateNotificationInput[]) {
+    try {
+      return await this.createMany(inputs);
+    } catch (error) {
+      logNotificationError("createMany", error);
+      return { count: 0 };
+    }
   },
 
   async getMine(req: Request) {

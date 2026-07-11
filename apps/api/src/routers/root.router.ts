@@ -16,6 +16,7 @@ import adminProviderRouter from "./admin-provider.router.ts";
 import adminFinanceRouter from "./admin-finance.router.ts";
 import adminBookingRouter from "./admin-booking.router.ts";
 import adminWithdrawalRouter from "./admin-withdrawal.router.ts";
+import adminUserRouter from "./admin-user.router.ts";
 
 const rootRouter = express.Router();
 
@@ -30,6 +31,7 @@ rootRouter.use("/admin", adminDisputeRouter);
 rootRouter.use("/admin", adminFinanceRouter);
 rootRouter.use("/admin", adminBookingRouter);
 rootRouter.use("/admin", adminWithdrawalRouter);
+rootRouter.use("/admin", adminUserRouter);
 rootRouter.use(
   "/mobile",
   providerRouterMobile,

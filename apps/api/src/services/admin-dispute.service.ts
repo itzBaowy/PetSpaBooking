@@ -252,7 +252,7 @@ export const adminDisputeService = {
       }),
     ]);
 
-    await notificationService.createMany([
+    await notificationService.safeCreateMany([
       ...(customer
         ? [
             {
