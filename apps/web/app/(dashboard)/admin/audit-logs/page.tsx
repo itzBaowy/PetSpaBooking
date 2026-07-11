@@ -1,5 +1,2 @@
-import { AuditLogTable } from "@/apis/admin/audit-logs/components/audit-log-table";
-
-export default function AuditLogs() {
-  return <AuditLogTable />;
-}
+import { AdminAuditLogsPage } from "@/components/admin/supported-pages";
+export default function Page() { return <AdminAuditLogsPage />; }

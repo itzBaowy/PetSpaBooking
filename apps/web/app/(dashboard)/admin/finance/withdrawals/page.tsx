@@ -1,2 +1,2 @@
-import { WithdrawalManagementPage } from "@/apis/admin/finance/components/withdrawal-management-page";
-export default function AdminWithdrawalsPage() { return <WithdrawalManagementPage />; }
+import { AdminWithdrawalsPage } from "@/components/admin/supported-pages";
+export default function Page() { return <AdminWithdrawalsPage />; }

@@ -1,5 +1,2 @@
 import { ModerationTable } from "@/apis/admin/moderation/components/moderation-table";
-
-export default function Moderation() {
-  return <ModerationTable />;
-}
+export default function Page() { return <ModerationTable />; }
