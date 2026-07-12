@@ -98,6 +98,33 @@ export async function apiFetch<T>(
 }
 ```
 
+### 1.1 Đổi password
+
+Token required, dùng được cho customer/provider/admin user.
+
+```http
+PATCH /api/users/me/password
+```
+
+Body:
+
+```json
+{
+  "currentPassword": "Test@123",
+  "newPassword": "NewTest@123",
+  "confirmPassword": "NewTest@123"
+}
+```
+
+Rule:
+
+- `currentPassword`, `newPassword`, `confirmPassword` bắt buộc.
+- `currentPassword` phải đúng password hiện tại.
+- `newPassword` tối thiểu 6 ký tự.
+- `newPassword` và `confirmPassword` phải trùng nhau.
+- `newPassword` phải khác `currentPassword`.
+- Sau khi đổi password, FE nên yêu cầu user login lại hoặc refresh local auth state.
+
 ## 2. Public Mobile Provider APIs
 
 Không cần token.
@@ -593,6 +620,8 @@ Các event hiện có thể tạo notification:
 - `PROVIDER_DOCUMENT_APPROVED`
 - `PROVIDER_DOCUMENT_REJECTED`
 - `PROVIDER_READY_FOR_VERIFICATION`
+- `SERVICE_HIDDEN_BY_ADMIN`
+- `SERVICE_UNHIDDEN_BY_ADMIN`
 - `ACCOUNT_STATUS_CHANGED`
 - `ADMIN_ANNOUNCEMENT`
 
@@ -759,7 +788,45 @@ await apiFetch(`/admin/provider-documents/${documentId}/reject`, {
 });
 ```
 
-### 6.4 Admin bookings
+### 6.4 Admin services
+
+```http
+GET /api/admin/services
+GET /api/admin/services/{id}
+PATCH /api/admin/services/{id}/hide
+PATCH /api/admin/services/{id}/unhide
+```
+
+List filters:
+
+```txt
+providerId
+category=GROOMING|SPA|BOARDING|TRAINING|VETERINARY|OTHER
+isActive=true|false
+isHiddenByAdmin=true|false
+keyword
+page
+pageSize
+```
+
+Hide body optional:
+
+```json
+{
+  "reason": "Service violates platform policy"
+}
+```
+
+Rule:
+
+- `hide` set `isHiddenByAdmin = true`.
+- `unhide` set `isHiddenByAdmin = false`.
+- Service bị admin hidden sẽ không xuất hiện trong public/mobile bookable services.
+- Customer không thể tạo booking với service `isHiddenByAdmin = true`.
+- Provider vẫn thấy field `isHiddenByAdmin` trong service của mình để hiển thị trạng thái bị admin ẩn.
+- Hide/unhide gửi notification cho provider và ghi audit log.
+
+### 6.5 Admin bookings
 
 ```http
 GET /api/admin/bookings
@@ -793,7 +860,7 @@ review
 walletTransactions
 ```
 
-### 6.5 Admin disputes
+### 6.6 Admin disputes
 
 ```http
 GET /api/admin/disputes
@@ -816,7 +883,7 @@ Resolution rules:
 - `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission v1.
 - `CANCELLED`: hiểu là hủy khiếu nại, booking -> `COMPLETED`, chạy commission.
 
-### 6.6 Admin finance
+### 6.7 Admin finance
 
 ```http
 GET /api/admin/wallet-transactions
@@ -881,7 +948,7 @@ Reject refund body:
 }
 ```
 
-### 6.7 Admin withdrawals
+### 6.8 Admin withdrawals
 
 ```http
 GET /api/admin/withdrawals
@@ -924,7 +991,7 @@ PENDING -> REJECTED
 
 `mark-paid` trừ `provider.walletBalance` và ghi ledger `WITHDRAWAL_PAYOUT`.
 
-### 6.8 Admin notifications
+### 6.9 Admin notifications
 
 ```http
 GET /api/admin/notifications
@@ -978,7 +1045,7 @@ Rule:
 - Mobile user đọc bằng API notification sẵn có: `GET /api/mobile/notifications`.
 - Action này ghi audit log.
 
-### 6.9 Admin audit logs
+### 6.10 Admin audit logs
 
 ```http
 GET /api/admin/audit-logs
@@ -1015,9 +1082,11 @@ REFUND_MARK_REFUNDED
 REFUND_REJECT
 ADMIN_NOTIFICATION_SEND
 ADMIN_NOTIFICATION_BROADCAST
+SERVICE_HIDE
+SERVICE_UNHIDE
 ```
 
-### 6.10 Admin reports
+### 6.11 Admin reports
 
 ```http
 GET /api/admin/reports/revenue

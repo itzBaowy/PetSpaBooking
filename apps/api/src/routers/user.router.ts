@@ -98,6 +98,47 @@ const userRouter = express.Router();
  */
 userRouter.get("/", protect, checkRole("ADMIN"), userController.getAll);
 
+/**
+ * @swagger
+ * /api/users/me/password:
+ *   patch:
+ *     summary: Change my password
+ *     description: Authenticated user changes their own password by providing the current password.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *               - confirmPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: "Test@123"
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "NewTest@123"
+ *               confirmPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "NewTest@123"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       400:
+ *         description: Missing fields, weak password, or password confirmation mismatch
+ *       401:
+ *         description: Unauthorized or current password is incorrect
+ */
+userRouter.patch("/me/password", protect, userController.changePassword);
+
 
 /**
  * @swagger

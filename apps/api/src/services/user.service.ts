@@ -1,9 +1,11 @@
 import { Request } from "express";
+import bcrypt from "bcrypt";
 import prisma from "../../connect.prisma.ts";
 import {
     BadRequestException,
     ForbiddenException,
     NotFoundException,
+    UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import cloudinary from "../common/cloudinary/init.cloudinary.ts";
@@ -307,6 +309,63 @@ export const userService = {
         });
 
         return updated;
+    },
+
+    async changePassword(req: Request) {
+        const payload = (req as Request & { user?: { userId?: string } }).user;
+        const userId = payload?.userId;
+        if (!userId) {
+            throw new UnauthorizedException("Unauthorized");
+        }
+
+        const { currentPassword, newPassword, confirmPassword } = req.body as {
+            currentPassword?: string;
+            newPassword?: string;
+            confirmPassword?: string;
+        };
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            throw new BadRequestException(
+                "currentPassword, newPassword, and confirmPassword are required",
+            );
+        }
+
+        if (newPassword.length < 6) {
+            throw new BadRequestException("New password must be at least 6 characters");
+        }
+
+        if (newPassword !== confirmPassword) {
+            throw new BadRequestException("New password and confirmPassword do not match");
+        }
+
+        if (currentPassword === newPassword) {
+            throw new BadRequestException("New password must be different from current password");
+        }
+
+        const user = await prisma.users.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                password: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException("User not found");
+        }
+
+        const isMatch = bcrypt.compareSync(currentPassword, user.password);
+        if (!isMatch) {
+            throw new UnauthorizedException("Current password is incorrect");
+        }
+
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
+        await prisma.users.update({
+            where: { id: user.id },
+            data: { password: hashedPassword },
+        });
+
+        return { changed: true };
     },
 
     async remove(req: Request) {
