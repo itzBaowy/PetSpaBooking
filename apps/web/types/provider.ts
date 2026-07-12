@@ -91,3 +91,51 @@ export interface ProviderVerificationProfile {
   feedback?: ProviderVerificationFeedback;
   timeline: ProviderVerificationTimelineItem[];
 }
+
+export type ProviderImageKind = "logo" | "cover" | "gallery";
+
+export interface ProviderBusinessImage {
+  id: string;
+  kind: ProviderImageKind;
+  name: string;
+  url: string;
+  isLocal?: boolean;
+}
+
+export interface ProviderBusinessHour {
+  day: string;
+  isOpen: boolean;
+  openingTime: string;
+  closingTime: string;
+}
+
+export interface ProviderBusinessProfileForm {
+  businessName: string;
+  shortDescription: string;
+  fullDescription: string;
+  serviceCategories: string[];
+  operatingModel: string;
+  yearsOfOperation: number;
+  registrationNumber: string;
+  representativeName: string;
+  contactPhone: string;
+  contactEmail: string;
+  website: string;
+  socialLink: string;
+  province: string;
+  district: string;
+  ward: string;
+  detailedAddress: string;
+  latitude: string;
+  longitude: string;
+  supportedServices: string[];
+  images: ProviderBusinessImage[];
+  businessHours: ProviderBusinessHour[];
+  verificationDocumentsComplete: boolean;
+  payoutInformationComplete: boolean;
+}
+
+export type ProviderBusinessProfileErrors = Partial<Record<
+  "businessName" | "contactEmail" | "contactPhone" | "detailedAddress" | "businessHours" | "images",
+  string
+>>;
