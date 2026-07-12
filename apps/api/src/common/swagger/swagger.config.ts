@@ -826,6 +826,105 @@ export const swaggerOptions = {
           },
         },
 
+        MobileGlobalSearchServiceItem: {
+          type: "object",
+          properties: {
+            id: { type: "string", example: "66a3c0b0d5a4f1f4a3d7c9f1" },
+            providerId: { type: "string", example: "66a3c0b0d5a4f1f4a3d7c9f0" },
+            providerName: { type: "string", example: "PetLink Verified Spa" },
+            name: { type: "string", example: "Tắm & làm đẹp" },
+            price: { type: "number", example: 250000 },
+            durationMinutes: { type: "integer", example: 60 },
+            thumbnailUrl: {
+              type: "string",
+              example: "/brand/petlink-logo.png",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Grooming cho thú cưng",
+            },
+            category: { type: "string", example: "GROOMING" },
+            targetPets: {
+              type: "array",
+              items: { type: "string" },
+              example: ["DOG", "CAT"],
+            },
+            benefits: {
+              type: "array",
+              items: { type: "string" },
+              example: ["Làm sạch lông", "Giảm mùi hôi"],
+            },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2026-07-02T05:22:49.693Z",
+            },
+          },
+        },
+
+        MobileGlobalSearchResponse: {
+          type: "object",
+          properties: {
+            status: { type: "string", example: "success" },
+            statusCode: { type: "integer", example: 200 },
+            message: {
+              type: "string",
+              example: "Global search results retrieved successfully",
+            },
+            data: {
+              type: "object",
+              properties: {
+                query: { type: "string", example: "petlink" },
+                providers: {
+                  type: "object",
+                  properties: {
+                    items: {
+                      type: "array",
+                      items: {
+                        $ref: "#/components/schemas/MobileProviderItem",
+                      },
+                    },
+                    pagination: {
+                      type: "object",
+                      properties: {
+                        page: { type: "integer", example: 1 },
+                        pageSize: { type: "integer", example: 10 },
+                        totalItems: { type: "integer", example: 1 },
+                        totalPages: { type: "integer", example: 1 },
+                        hasNextPage: { type: "boolean", example: false },
+                        hasPrevPage: { type: "boolean", example: false },
+                      },
+                    },
+                  },
+                },
+                services: {
+                  type: "object",
+                  properties: {
+                    items: {
+                      type: "array",
+                      items: {
+                        $ref: "#/components/schemas/MobileGlobalSearchServiceItem",
+                      },
+                    },
+                    pagination: {
+                      type: "object",
+                      properties: {
+                        page: { type: "integer", example: 1 },
+                        pageSize: { type: "integer", example: 10 },
+                        totalItems: { type: "integer", example: 3 },
+                        totalPages: { type: "integer", example: 1 },
+                        hasNextPage: { type: "boolean", example: false },
+                        hasPrevPage: { type: "boolean", example: false },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+
         PetHealthReminder: {
           type: "object",
           properties: {
