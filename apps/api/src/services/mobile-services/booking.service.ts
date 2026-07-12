@@ -10,6 +10,7 @@ import {
 } from "../../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../../common/helpers/build-query-prisma.helper.ts";
 import { notificationService } from "../notification.service.ts";
+import { assertProviderSlotAvailable } from "./availability.service.ts";
 
 const VALID_PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
 const VALID_BOOKING_STATUSES = [
@@ -304,6 +305,7 @@ export const mobileBookingServices = {
     }
 
     const end = new Date(start.getTime() + service.duration * 60_000);
+    await assertProviderSlotAvailable(providerId, start, end);
 
     return prisma.bookings.create({
       data: {
@@ -748,6 +750,15 @@ export const mobileBookingServices = {
 
     if (booking.status !== "CONFIRMED") {
       throw new BadRequestException("Only CONFIRMED bookings can be checked in");
+    }
+
+    if (
+      booking.paymentMethod === "ONLINE" &&
+      booking.paymentStatus !== "SUCCESS"
+    ) {
+      throw new BadRequestException(
+        "Online booking must be paid before check-in",
+      );
     }
 
     const now = new Date();

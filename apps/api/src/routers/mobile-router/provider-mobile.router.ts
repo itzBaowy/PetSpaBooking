@@ -129,6 +129,221 @@ providerRouterMobile.get(
 
 /**
  * @swagger
+ * /api/mobile/providers/{providerId}/available-slots:
+ *   get:
+ *     summary: Get provider available booking slots
+ *     description: Returns bookable slots for a provider/service/date after working-hours, blocks, and existing-booking checks.
+ *     tags: [Mobile-Provider]
+ *     parameters:
+ *       - in: path
+ *         name: providerId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Provider ID
+ *       - in: query
+ *         name: serviceId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: date
+ *         required: true
+ *         schema:
+ *           type: string
+ *           example: "2026-07-20"
+ *         description: Date in YYYY-MM-DD format
+ *     responses:
+ *       200:
+ *         description: Provider available slots retrieved successfully
+ *       400:
+ *         description: Invalid providerId, serviceId, or date
+ *       404:
+ *         description: Provider or service not found
+ */
+providerRouterMobile.get(
+  "/providers/:providerId/available-slots",
+  mobileProviderController.getAvailableSlots,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/working-hours:
+ *   get:
+ *     summary: Get provider working hours
+ *     description: Provider retrieves their own weekly working hours.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Provider working hours retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ */
+providerRouterMobile.get(
+  "/provider/working-hours",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.getWorkingHours,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/working-hours:
+ *   put:
+ *     summary: Update provider working hours
+ *     description: Provider replaces their weekly working-hours config.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - items
+ *             properties:
+ *               items:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - dayOfWeek
+ *                     - openTime
+ *                     - closeTime
+ *                     - isClosed
+ *                   properties:
+ *                     dayOfWeek:
+ *                       type: integer
+ *                       minimum: 0
+ *                       maximum: 6
+ *                       example: 1
+ *                     openTime:
+ *                       type: string
+ *                       example: "08:00"
+ *                     closeTime:
+ *                       type: string
+ *                       example: "18:00"
+ *                     isClosed:
+ *                       type: boolean
+ *                       example: false
+ *     responses:
+ *       200:
+ *         description: Provider working hours updated successfully
+ *       400:
+ *         description: Invalid working-hours payload
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ */
+providerRouterMobile.put(
+  "/provider/working-hours",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.updateWorkingHours,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/availability-blocks:
+ *   get:
+ *     summary: Get provider availability blocks
+ *     description: Provider retrieves custom blocked time ranges.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Provider availability blocks retrieved successfully
+ */
+providerRouterMobile.get(
+  "/provider/availability-blocks",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.getAvailabilityBlocks,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/availability-blocks:
+ *   post:
+ *     summary: Create provider availability block
+ *     description: Provider blocks a custom time range from receiving bookings.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - startAt
+ *               - endAt
+ *             properties:
+ *               startAt:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2026-07-20T03:00:00.000Z"
+ *               endAt:
+ *                 type: string
+ *                 format: date-time
+ *                 example: "2026-07-20T05:00:00.000Z"
+ *               reason:
+ *                 type: string
+ *                 nullable: true
+ *                 example: "Personal day off"
+ *     responses:
+ *       201:
+ *         description: Provider availability block created successfully
+ *       400:
+ *         description: Invalid block or overlapping block
+ */
+providerRouterMobile.post(
+  "/provider/availability-blocks",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.createAvailabilityBlock,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/availability-blocks/{id}:
+ *   delete:
+ *     summary: Delete provider availability block
+ *     description: Provider deletes one of their custom blocked time ranges.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Availability block ID
+ *     responses:
+ *       200:
+ *         description: Provider availability block deleted successfully
+ *       404:
+ *         description: Availability block not found
+ */
+providerRouterMobile.delete(
+  "/provider/availability-blocks/:id",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.deleteAvailabilityBlock,
+);
+
+/**
+ * @swagger
  * /api/mobile/provider/wallet:
  *   get:
  *     summary: Get provider wallet
