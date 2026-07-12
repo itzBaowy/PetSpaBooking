@@ -1,10 +1,11 @@
-import { ProviderNavigationPlaceholder } from "@/components/provider/provider-navigation-placeholder";
+import { ProviderAvailabilityMockWorkflow } from "@/components/provider/availability/availability-workflow";
 
 export default function ProviderAvailabilityPage() {
   return (
-    <ProviderNavigationPlaceholder
-      title="Availability"
-      description="Quản lý giờ làm việc và các khoảng thời gian tạm ngưng nhận lịch."
-    />
+    <main className="p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <ProviderAvailabilityMockWorkflow />
+      </div>
+    </main>
   );
 }
