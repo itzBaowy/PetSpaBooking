@@ -36,3 +36,58 @@ export interface Provider {
   createdAt: string;
   updatedAt: string;
 }
+
+export type ProviderVerificationStatus =
+  | "not_submitted"
+  | "pending"
+  | "requires_changes"
+  | "approved"
+  | "rejected"
+  | "suspended";
+
+export type VerificationOcrStatus = "not_required" | "processing" | "matched" | "needs_review";
+export type VerificationReviewStatus = "not_reviewed" | "in_review" | "approved" | "changes_required" | "rejected";
+
+export interface ProviderVerificationDocument {
+  id: string;
+  filename: string;
+  type: string;
+  uploadedAt: string;
+  ocrStatus: VerificationOcrStatus;
+  reviewStatus: VerificationReviewStatus;
+  previewKind: "image" | "document";
+}
+
+export interface ProviderVerificationFeedback {
+  reason: string;
+  fields: string[];
+  documents: string[];
+  adminNote: string;
+  deadline?: string;
+}
+
+export interface ProviderVerificationTimelineItem {
+  id: string;
+  title: string;
+  description: string;
+  occurredAt: string;
+  state: "complete" | "current" | "upcoming";
+}
+
+export interface ProviderVerificationProfile {
+  applicationId: string;
+  status: ProviderVerificationStatus;
+  lastSubmittedAt?: string;
+  business: {
+    businessName: string;
+    representativeName: string;
+    phone: string;
+    email: string;
+    address: string;
+    serviceCategories: string[];
+    operatingModel: string;
+  };
+  documents: ProviderVerificationDocument[];
+  feedback?: ProviderVerificationFeedback;
+  timeline: ProviderVerificationTimelineItem[];
+}
