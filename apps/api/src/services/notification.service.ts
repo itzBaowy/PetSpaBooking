@@ -7,6 +7,7 @@ import {
   UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
+import { socketService } from "./socket.service.ts";
 
 type CreateNotificationInput = {
   userId: string;
@@ -47,9 +48,17 @@ function logNotificationError(action: string, error: unknown) {
   console.error(`[notification] ${action} failed:`, error);
 }
 
+function emitNotification<T extends { userId: string; data: string | null }>(
+  notification: T,
+) {
+  socketService.emitToUser(notification.userId, "notification:new", {
+    notification: decodeNotification(notification),
+  });
+}
+
 export const notificationService = {
   async create(input: CreateNotificationInput) {
-    return prisma.notifications.create({
+    const notification = await prisma.notifications.create({
       data: {
         userId: input.userId,
         type: input.type,
@@ -58,12 +67,15 @@ export const notificationService = {
         data: encodeData(input.data),
       },
     });
+
+    emitNotification(notification);
+    return notification;
   },
 
   async createMany(inputs: CreateNotificationInput[]) {
     if (inputs.length === 0) return { count: 0 };
 
-    return prisma.notifications.createMany({
+    const result = await prisma.notifications.createMany({
       data: inputs.map((input) => ({
         userId: input.userId,
         type: input.type,
@@ -72,6 +84,24 @@ export const notificationService = {
         data: encodeData(input.data),
       })),
     });
+
+    for (const input of inputs) {
+      socketService.emitToUser(input.userId, "notification:new", {
+        notification: {
+          id: null,
+          userId: input.userId,
+          type: input.type,
+          title: input.title,
+          message: input.message,
+          data: input.data ?? null,
+          readAt: null,
+          createAt: new Date().toISOString(),
+        },
+        shouldRefetch: true,
+      });
+    }
+
+    return result;
   },
 
   async safeCreate(input: CreateNotificationInput) {

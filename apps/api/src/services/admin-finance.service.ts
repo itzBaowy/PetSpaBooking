@@ -10,6 +10,7 @@ import {
 } from "../common/helpers/exception.helper.ts";
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
 import { notificationService } from "./notification.service.ts";
+import { socketService } from "./socket.service.ts";
 
 const WALLET_TRANSACTION_TYPES = [
   "ONLINE_EARNING",
@@ -480,6 +481,25 @@ export const adminFinanceService = {
       },
     });
 
+    socketService.emitToUser(updatedBooking.customer.users.id, "refund:updated", {
+      bookingId: updatedBooking.id,
+      paymentStatus: updatedBooking.paymentStatus,
+      refundReference,
+    });
+    socketService.emitToProvider(updatedBooking.provider.id, "refund:updated", {
+      bookingId: updatedBooking.id,
+      paymentStatus: updatedBooking.paymentStatus,
+      refundReference,
+    });
+    socketService.emitToBooking(updatedBooking.id, "refund:updated", {
+      bookingId: updatedBooking.id,
+      paymentStatus: updatedBooking.paymentStatus,
+      refundReference,
+    });
+    socketService.emitToBooking(updatedBooking.id, "booking:updated", {
+      booking: updatedBooking,
+    });
+
     await adminAuditLogService.safeLog({
       adminId,
       action: "REFUND_MARK_REFUNDED",
@@ -549,6 +569,25 @@ export const adminFinanceService = {
         bookingId: updatedBooking.id,
         adminNote,
       },
+    });
+
+    socketService.emitToUser(updatedBooking.customer.users.id, "refund:updated", {
+      bookingId: updatedBooking.id,
+      paymentStatus: updatedBooking.paymentStatus,
+      adminNote,
+    });
+    socketService.emitToProvider(updatedBooking.provider.id, "refund:updated", {
+      bookingId: updatedBooking.id,
+      paymentStatus: updatedBooking.paymentStatus,
+      adminNote,
+    });
+    socketService.emitToBooking(updatedBooking.id, "refund:updated", {
+      bookingId: updatedBooking.id,
+      paymentStatus: updatedBooking.paymentStatus,
+      adminNote,
+    });
+    socketService.emitToBooking(updatedBooking.id, "booking:updated", {
+      booking: updatedBooking,
     });
 
     await adminAuditLogService.safeLog({
