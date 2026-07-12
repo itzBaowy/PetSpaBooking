@@ -20,6 +20,23 @@ export const mobileProviderController = {
     }
   },
 
+  async searchGlobal(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.searchGlobal(req);
+      const response = responseSuccess(
+        result,
+        "Global search results retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getAllReviewByProviderId(
     req: Request,
     res: Response,

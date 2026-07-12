@@ -14,6 +14,26 @@ export type ProviderFilterPayload = {
   maxDistanceKm?: number;
 };
 
+export type GlobalSearchServiceItem = {
+  id: string;
+  providerId: string;
+  providerName: string;
+  name: string;
+  price: number;
+  durationMinutes: number;
+  thumbnailUrl: string;
+  description?: string;
+  category: string;
+  targetPets: string[];
+  benefits: string[];
+  createdAt: string;
+};
+
+export type GlobalSearchResponse = {
+  providers: string[];
+  services: string[];
+};
+
 export type ProviderItem = {
   id: string;
   slug: string;

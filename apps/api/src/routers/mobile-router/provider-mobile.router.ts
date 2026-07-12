@@ -84,6 +84,50 @@ providerRouterMobile.get(
 
 /**
  * @swagger
+ * /api/mobile/search:
+ *   get:
+ *     summary: Global search across providers and services for mobile
+ *     description: Search by provider name, slug, service name, or provider description in one endpoint.
+ *     tags: [Mobile-Provider]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Search keyword for provider or service names
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: userLat
+ *         schema:
+ *           type: number
+ *         description: User latitude
+ *       - in: query
+ *         name: userLng
+ *         schema:
+ *           type: number
+ *         description: User longitude
+ *     responses:
+ *       200:
+ *         description: Global search results for mobile
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MobileGlobalSearchResponse'
+ */
+providerRouterMobile.get("/search", mobileProviderController.searchGlobal);
+
+/**
+ * @swagger
  * /api/mobile/providers/provider-detail/{providerId}:
  *   get:
  *     summary: Get provider detail for mobile

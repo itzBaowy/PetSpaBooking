@@ -8,7 +8,11 @@ import {
   getDistanceKm,
 } from "../../common/helpers/provider.helper.ts";
 import { getQueryString } from "../../common/helpers/paramHelper.ts";
-import { ProviderItem } from "../../types/mobile-types/provider.types.ts";
+import {
+  GlobalSearchResponse,
+  GlobalSearchServiceItem,
+  ProviderItem,
+} from "../../types/mobile-types/provider.types.ts";
 import {
   BadRequestException,
   NotFoundException,
@@ -42,6 +46,126 @@ function parseOptionalNumber(
 }
 
 export const mobileProviderServices = {
+  async searchGlobal(req: Request): Promise<GlobalSearchResponse> {
+    const { page, pageSize, index } = buildQueryPrisma(
+      req.query as Record<string, unknown>,
+    );
+
+    const { userLat, userLng, category } = req.query;
+    const searchTerm =
+      typeof req.query.q === "string"
+        ? req.query.q.trim()
+        : typeof req.query.searchKey === "string"
+          ? req.query.searchKey.trim()
+          : undefined;
+
+    if (!searchTerm) {
+      return {
+        providers: [],
+        services: [],
+      };
+    }
+
+    const providerWhere: Record<string, unknown> = {
+      providerStatus: "VERIFIED",
+      OR: [
+        {
+          businessName: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          slug: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          services: {
+            some: {
+              name: {
+                contains: searchTerm,
+                mode: "insensitive",
+              },
+              isActive: true,
+              isHiddenByAdmin: false,
+            },
+          },
+        },
+      ],
+    };
+
+    const serviceWhere: Record<string, unknown> = {
+      isActive: true,
+      isHiddenByAdmin: false,
+      OR: [
+        {
+          name: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          longDescription: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          provider: {
+            businessName: {
+              contains: searchTerm,
+              mode: "insensitive",
+            },
+          },
+        },
+      ],
+    };
+
+    if (typeof category === "string" && category) {
+      serviceWhere.category = category;
+    }
+
+    const [rawProviders, rawServices] = await Promise.all([
+      prisma.providers.findMany({
+        where: providerWhere,
+        select: {
+          businessName: true,
+        },
+        orderBy: { createAt: "desc" },
+        skip: index,
+        take: pageSize,
+      }),
+      prisma.services.findMany({
+        where: serviceWhere,
+        select: {
+          name: true,
+        },
+        orderBy: { createAt: "desc" },
+        skip: index,
+        take: pageSize,
+      }),
+    ]);
+
+    return {
+      providers: rawProviders.map((p) => p.businessName),
+      services: rawServices.map((s) => s.name),
+    };
+  },
+
   async getAllProviders(req: Request) {
     const { page, pageSize, index, where } = buildQueryPrisma(
       req.query as Record<string, unknown>,
