@@ -157,6 +157,7 @@ model bookings {
   completedAt  DateTime?
   cancelledAt  DateTime?
   rejectedAt   DateTime?
+  noArrivalAt  DateTime?
 
   commissionAmount        Float?
   providerEarning         Float?
