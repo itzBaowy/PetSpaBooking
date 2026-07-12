@@ -40,6 +40,13 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/bookings/${id}`,
     CANCEL: (id: string) => `/bookings/${id}/cancel`,
   },
+  MOBILE: {
+    NOTIFICATIONS: {
+      LIST: "/mobile/notifications",
+      MARK_READ: (id: string) => `/mobile/notifications/${id}/read`,
+      MARK_ALL_READ: "/mobile/notifications/read-all",
+    },
+  },
   VERIFICATION: {
     LIST: "/verification",
     DETAIL: (id: string) => `/verification/${id}`,

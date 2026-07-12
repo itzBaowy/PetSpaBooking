@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
@@ -192,8 +193,8 @@ export function LoadState({ error, retry }: { error: unknown; retry: () => void 
   );
 }
 
-export function PageTitle({ title, description }: { title: string; description: string }) {
-  return <PageHeader eyebrow="Quản trị PetLink" title={title} description={description} />;
+export function PageTitle({ title, description, actions }: { title: string; description: string; actions?: ReactNode }) {
+  return <PageHeader eyebrow="Quản trị PetLink" title={title} description={description} actions={actions} />;
 }
 
 export function Pager({ data, setPage, setPageSize }: { data?: AdminList; setPage: (page: number) => void; setPageSize?: (pageSize: number) => void }) {
@@ -260,9 +261,9 @@ export function FilterSelect({ value, options, onChange, className }: { value: s
 
 export function StatusPill({ value }: { value: unknown }) {
   const raw = textValue(value, "UNKNOWN");
-  const success = ["ACTIVE", "VERIFIED", "SUCCESS", "COMPLETED", "APPROVED", "PAID", "ONLINE_EARNING", "PROVIDER_VERIFY", "WITHDRAWAL_APPROVE", "WITHDRAWAL_MARK_PAID"].includes(raw);
-  const warning = ["PENDING", "PENDING_VERIFICATION", "UNPAID", "NOT_PAID", "LOW_BALANCE", "CONFIRMED", "PROVIDER_SUSPEND", "USER_STATUS_UPDATE", "PROVIDER_WALLET_ADJUST"].includes(raw);
-  const danger = ["INACTIVE", "BANNED", "REJECTED", "SUSPENDED", "FAILED", "CANCELLED", "DISPUTE", "PROVIDER_REJECT", "WITHDRAWAL_REJECT", "DISPUTE_RESOLVE"].includes(raw);
+  const success = ["ACTIVE", "VERIFIED", "SUCCESS", "COMPLETED", "APPROVED", "PAID", "ONLINE_EARNING", "PROVIDER_VERIFY", "WITHDRAWAL_APPROVE", "WITHDRAWAL_MARK_PAID", "Có", "Đang bật", "Đang hiển thị"].includes(raw);
+  const warning = ["PENDING", "PENDING_VERIFICATION", "UNPAID", "NOT_PAID", "LOW_BALANCE", "CONFIRMED", "PROVIDER_SUSPEND", "USER_STATUS_UPDATE", "PROVIDER_WALLET_ADJUST", "Đang bị ẩn"].includes(raw);
+  const danger = ["INACTIVE", "BANNED", "REJECTED", "SUSPENDED", "FAILED", "CANCELLED", "DISPUTE", "PROVIDER_REJECT", "WITHDRAWAL_REJECT", "DISPUTE_RESOLVE", "Không", "Đang tắt"].includes(raw);
   return <FinanceStatusPill tone={success ? "success" : warning ? "warning" : danger ? "danger" : "default"}>{displayValue(raw)}</FinanceStatusPill>;
 }
 

@@ -199,4 +199,3 @@ export { AdminServicesPage } from "./pages/services-page";
 export { AdminServiceDetailPage } from "./pages/service-detail-page";
 export { AdminRefundsPage } from "./pages/refunds-page";
 export { AdminRefundDetailPage } from "./pages/refund-detail-page";
-export { AdminNotificationsPage } from "./pages/notifications-page";

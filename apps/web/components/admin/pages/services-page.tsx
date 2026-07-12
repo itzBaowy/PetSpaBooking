@@ -8,6 +8,7 @@ import { useConfirmDialog, useToast } from "@/components/ui";
 import type { ApiResponse } from "@/types/api";
 import type { AdminEntity } from "@/apis/admin/supported-api";
 import {
+  StatusPill,
   EntityTable,
   FilterSelect,
   LoadState,
@@ -204,6 +205,16 @@ export function AdminServicesPage() {
           "isActive",
           "isHiddenByAdmin",
         ]}
+        renderers={{
+          isActive: (item) => (
+            <StatusPill value={item.isActive ? "Đang bật" : "Đang tắt"} />
+          ),
+          isHiddenByAdmin: (item) => (
+            <StatusPill
+              value={item.isHiddenByAdmin ? "Đang bị ẩn" : "Đang hiển thị"}
+            />
+          ),
+        }}
         detailBase="/admin/services"
         actions={(item) => [
           {

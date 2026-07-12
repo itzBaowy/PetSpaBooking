@@ -132,12 +132,15 @@ export function AdminUsersPage() {
 
   return (
     <div className="w-full max-w-full space-y-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
-        <PageTitle title="Quản lý người dùng" description="Tìm kiếm, lọc và quản lý tài khoản người dùng trên hệ thống." />
-        <Button onClick={openCreateForm} className="w-full xl:w-auto">
-          Thêm người dùng
-        </Button>
-      </div>
+      <PageTitle
+        title="Quản lý người dùng"
+        description="Tìm kiếm, lọc và quản lý tài khoản người dùng trên hệ thống."
+        actions={
+          <Button onClick={openCreateForm} className="w-full sm:w-auto">
+            Thêm người dùng
+          </Button>
+        }
+      />
 
       <div className="rounded-2xl border border-border-subtle bg-surface p-3 shadow-sm">
         <div className="flex flex-col gap-3 xl:flex-row xl:items-center">

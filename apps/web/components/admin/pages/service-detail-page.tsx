@@ -99,8 +99,12 @@ export function AdminServiceDetailPage({ id }: { id: string }) {
             </h1>
             <div className="mt-3 flex flex-wrap gap-2">
               <StatusPill value={service.category} />
-              <StatusPill value={service.isActive} />
-              <StatusPill value={service.isHiddenByAdmin} />
+              <StatusPill value={service.isActive ? "Đang bật" : "Đang tắt"} />
+              <StatusPill
+                value={
+                  service.isHiddenByAdmin ? "Đang bị ẩn" : "Đang hiển thị"
+                }
+              />
             </div>
           </div>
           <Button
@@ -121,8 +125,14 @@ export function AdminServiceDetailPage({ id }: { id: string }) {
             <DetailItem label="category" value={service.category} />
             <DetailItem label="price" value={service.price} />
             <DetailItem label="duration" value={service.duration} />
-            <DetailItem label="isActive" value={service.isActive} />
-            <DetailItem label="isHiddenByAdmin" value={service.isHiddenByAdmin} />
+            <DetailItem
+              label="isActive"
+              value={service.isActive ? "Đang bật" : "Đang tắt"}
+            />
+            <DetailItem
+              label="isHiddenByAdmin"
+              value={service.isHiddenByAdmin ? "Đang bị ẩn" : "Đang hiển thị"}
+            />
             <DetailItem label="createAt" value={service.createAt} />
             <DetailItem label="updateAt" value={service.updateAt} />
           </dl>

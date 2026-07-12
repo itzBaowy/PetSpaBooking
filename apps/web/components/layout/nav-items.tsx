@@ -283,7 +283,6 @@ export const adminNavGroups: NavGroup[] = [
   {
     groupLabel: "Hệ thống",
     items: [
-      { label: "Thông báo", href: "/admin/notifications", icon: <IconWarning /> },
       { label: "Nhật ký", href: "/admin/audit-logs", icon: <IconLog /> },
     ],
   },
