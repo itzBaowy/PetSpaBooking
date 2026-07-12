@@ -2,7 +2,10 @@ export type ProviderFilterPayload = {
   page?: number;
   pageSize?: number;
   search?: string;
+  searchKey?: string;
   category?: string;
+  minRating?: number;
+  maxRating?: number;
   minPrice?: number;
   maxPrice?: number;
   isOpenNow?: boolean;

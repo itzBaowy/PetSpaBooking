@@ -40,6 +40,35 @@ const providerRouterMobile = express.Router();
  *         schema:
  *           type: number
  *         description: User longitude
+ *       - in: query
+ *         name: searchKey
+ *         schema:
+ *           type: string
+ *         description: Search by provider name, slug, or service name
+ *       - in: query
+ *         name: minRating
+ *         schema:
+ *           type: number
+ *           minimum: 0
+ *           maximum: 5
+ *         description: Minimum provider average rating
+ *       - in: query
+ *         name: maxRating
+ *         schema:
+ *           type: number
+ *           minimum: 0
+ *           maximum: 5
+ *         description: Maximum provider average rating
+ *       - in: query
+ *         name: minPrice
+ *         schema:
+ *           type: number
+ *         description: Minimum service price range
+ *       - in: query
+ *         name: maxPrice
+ *         schema:
+ *           type: number
+ *         description: Maximum service price range
  *     responses:
  *       200:
  *         description: List of providers for mobile
