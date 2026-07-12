@@ -787,6 +787,58 @@ services
 withdrawals
 ```
 
+### 6.1.1 Admin system settings
+
+Admin token required. Dùng để cấu hình các rule nghiệp vụ chính mà trước đây nằm trong ENV/code.
+
+```http
+GET /api/admin/settings
+PATCH /api/admin/settings
+```
+
+Response `data` trả từng setting theo format:
+
+```json
+{
+  "minProviderDeposit": {
+    "key": "MIN_PROVIDER_DEPOSIT",
+    "value": 300000,
+    "defaultValue": 300000,
+    "description": "Minimum active provider deposit balance in VND.",
+    "source": "DB",
+    "updatedBy": "<adminUserId>",
+    "updatedAt": "2026-07-13T10:00:00.000Z"
+  }
+}
+```
+
+Update body có thể gửi một hoặc nhiều field:
+
+```json
+{
+  "minProviderDeposit": 300000,
+  "platformCommissionRate": 0.15,
+  "bookingAutoCompleteHours": 10,
+  "bookingNoArrivalGraceMinutes": 15,
+  "minWithdrawalAmount": 100000
+}
+```
+
+Ý nghĩa:
+
+- `minProviderDeposit`: deposit tối thiểu để provider được nhận booking/quản lý service.
+- `platformCommissionRate`: tỷ lệ commission khi booking `COMPLETED`, ví dụ `0.15` là 15%.
+- `bookingAutoCompleteHours`: số giờ hold sau checkout trước khi auto-complete nếu không có dispute.
+- `bookingNoArrivalGraceMinutes`: số phút sau `appointmentStart` provider mới được mark `NO_ARRIVAL`.
+- `minWithdrawalAmount`: số tiền rút tối thiểu của provider.
+
+Rule:
+
+- `platformCommissionRate` phải từ `0` đến `1`.
+- Các setting còn lại không được âm; `bookingAutoCompleteHours` phải lớn hơn hoặc bằng `1`.
+- Nếu DB chưa có setting, backend dùng ENV tương ứng nếu hợp lệ, sau đó fallback default.
+- Khi admin update, backend ghi audit log `SYSTEM_SETTINGS_UPDATE`.
+
 ### 6.2 Admin users
 
 ```http
@@ -1302,6 +1354,7 @@ ADMIN_NOTIFICATION_SEND
 ADMIN_NOTIFICATION_BROADCAST
 SERVICE_HIDE
 SERVICE_UNHIDE
+SYSTEM_SETTINGS_UPDATE
 ```
 
 ### 6.12 Admin reports

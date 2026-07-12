@@ -12,6 +12,7 @@ import { buildQueryPrisma } from "../../common/helpers/build-query-prisma.helper
 import { notificationService } from "../notification.service.ts";
 import { assertProviderSlotAvailable } from "./availability.service.ts";
 import { socketService } from "../socket.service.ts";
+import { getSystemSettingValue } from "../system-setting.service.ts";
 
 const VALID_PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
 const VALID_BOOKING_STATUSES = [
@@ -25,14 +26,8 @@ const VALID_BOOKING_STATUSES = [
   "DISPUTE",
   "NO_ARRIVAL",
 ] as const;
-const MIN_PROVIDER_DEPOSIT = 300_000;
 const QR_TOKEN_EXPIRES_IN_SECONDS = 10 * 60;
 const VALID_QR_ACTIONS = ["CHECK_IN", "CHECK_OUT"] as const;
-const NO_ARRIVAL_GRACE_MINUTES = Number.isFinite(
-  Number(process.env.BOOKING_NO_ARRIVAL_GRACE_MINUTES),
-)
-  ? Math.max(0, Number(process.env.BOOKING_NO_ARRIVAL_GRACE_MINUTES))
-  : 15;
 
 type PaymentMethod = (typeof VALID_PAYMENT_METHODS)[number];
 type BookingStatus = (typeof VALID_BOOKING_STATUSES)[number];
@@ -163,14 +158,14 @@ function verifyBookingQrToken(token: string): BookingQrPayload {
   return payload as BookingQrPayload;
 }
 
-export function getBookingAutoCompleteHours(): number {
-  const value = Number(process.env.BOOKING_AUTO_COMPLETE_HOURS);
-  return Number.isFinite(value) && value > 0 ? value : 10;
+export async function getBookingAutoCompleteHours(): Promise<number> {
+  return getSystemSettingValue("bookingAutoCompleteHours");
 }
 
-function getBookingDisputeDeadline(checkedOutAt: Date): Date {
+async function getBookingDisputeDeadline(checkedOutAt: Date): Promise<Date> {
+  const autoCompleteHours = await getBookingAutoCompleteHours();
   return new Date(
-    checkedOutAt.getTime() + getBookingAutoCompleteHours() * 60 * 60 * 1000,
+    checkedOutAt.getTime() + autoCompleteHours * 60 * 60 * 1000,
   );
 }
 
@@ -233,6 +228,7 @@ async function getOrCreateCustomer(userId: string, location?: string) {
 }
 
 async function getOperatingProviderByUserId(userId: string) {
+  const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
   const provider = await prisma.providers.findUnique({ where: { userId } });
 
   if (!provider) {
@@ -247,10 +243,10 @@ async function getOperatingProviderByUserId(userId: string) {
 
   if (
     provider.depositStatus !== "ACTIVE" ||
-    provider.depositBalance < MIN_PROVIDER_DEPOSIT
+    provider.depositBalance < minProviderDeposit
   ) {
     throw new ForbiddenException(
-      `Provider deposit must be ACTIVE and at least ${MIN_PROVIDER_DEPOSIT} VND.`,
+      `Provider deposit must be ACTIVE and at least ${minProviderDeposit} VND.`,
     );
   }
 
@@ -320,13 +316,14 @@ export const mobileBookingServices = {
     }
 
     const provider = service.provider;
+    const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
     if (provider.providerStatus !== "VERIFIED") {
       throw new BadRequestException("Provider is not available for booking");
     }
 
     if (
       provider.depositStatus !== "ACTIVE" ||
-      provider.depositBalance < MIN_PROVIDER_DEPOSIT
+      provider.depositBalance < minProviderDeposit
     ) {
       throw new BadRequestException("Provider is not accepting bookings yet");
     }
@@ -567,7 +564,10 @@ export const mobileBookingServices = {
       );
     }
 
-    if (Date.now() > getBookingDisputeDeadline(booking.checkedOutAt).getTime()) {
+    if (
+      Date.now() >
+      (await getBookingDisputeDeadline(booking.checkedOutAt)).getTime()
+    ) {
       throw new BadRequestException("Dispute window has expired");
     }
 
@@ -891,12 +891,15 @@ export const mobileBookingServices = {
       throw new BadRequestException("Only CONFIRMED bookings can be marked as no-arrival");
     }
 
+    const noArrivalGraceMinutes = await getSystemSettingValue(
+      "bookingNoArrivalGraceMinutes",
+    );
     const allowedAt = new Date(
-      booking.appointmentStart.getTime() + NO_ARRIVAL_GRACE_MINUTES * 60_000,
+      booking.appointmentStart.getTime() + noArrivalGraceMinutes * 60_000,
     );
     if (Date.now() < allowedAt.getTime()) {
       throw new BadRequestException(
-        `No-arrival can only be marked ${NO_ARRIVAL_GRACE_MINUTES} minutes after appointmentStart`,
+        `No-arrival can only be marked ${noArrivalGraceMinutes} minutes after appointmentStart`,
       );
     }
 
