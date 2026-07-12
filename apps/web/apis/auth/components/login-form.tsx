@@ -7,12 +7,12 @@ import { FormEvent, useState } from "react";
 import { useLogin, useProfile } from "@/apis/auth/queries";
 import { Button, Input, PasswordInput } from "@/components/ui";
 import { useAuthStore } from "@/stores/auth-store";
+import { getProviderRouteAccess } from "@/lib/provider-access";
 import { loginSchema } from "../schema";
 
 function getSafeNextPath(value: string | null) {
   return value?.startsWith("/") && !value.startsWith("//") ? value : null;
 }
-
 
 export function LoginForm() {
   const router = useRouter();
@@ -34,7 +34,9 @@ export function LoginForm() {
     });
 
     if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? "Thông tin không hợp lệ.");
+      setFormError(
+        parsed.error.issues[0]?.message ?? "Thông tin không hợp lệ.",
+      );
       return;
     }
 
@@ -53,18 +55,13 @@ export function LoginForm() {
       }
 
       if (userRole === "PROVIDER") {
-        if (providerStatus === "VERIFIED") {
-          router.push(nextPath?.startsWith("/provider") ? nextPath : "/provider");
-          return;
-        }
-        if (providerStatus === "PENDING_VERIFICATION" || providerStatus === "REJECTED") {
-          router.push("/provider-verification");
-          return;
-        }
-        if (providerStatus === "SUSPENDED") {
-          setFormError("Tài khoản nhà cung cấp của bạn đang bị tạm khóa.");
-          return;
-        }
+        const destination =
+          nextPath?.startsWith("/provider") &&
+          getProviderRouteAccess(nextPath, providerStatus).allowed
+            ? nextPath
+            : "/provider";
+        router.push(destination);
+        return;
       }
 
       if (userRole === "CUSTOMER") {
