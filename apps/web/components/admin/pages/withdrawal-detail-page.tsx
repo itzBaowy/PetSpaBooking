@@ -65,7 +65,7 @@ export function AdminWithdrawalDetailPage({ id }: { id: string }) {
       </div>
 
       <div className="relative overflow-hidden rounded-2xl border border-border-subtle bg-surface p-6 shadow-sm">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-brand-soft/20 blur-2xl" />
+        <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-brand-soft/20 blur-2xl" />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-500 to-purple-600 shadow-md">

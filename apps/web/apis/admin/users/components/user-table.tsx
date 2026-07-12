@@ -40,7 +40,7 @@ export function UserTable() {
             className="bg-blue-50 text-blue-700"
           />
           <div className="min-w-0">
-            <p className="wrap-break-word text-sm font-semibold text-gray-950">
+            <p className="break-words text-sm font-semibold text-gray-950">
               {getUserDisplayName(user)}
             </p>
             <p className="text-xs font-medium text-gray-500">@{user.userName}</p>
@@ -54,7 +54,7 @@ export function UserTable() {
       widthClassName: "w-[24%]",
       render: (user) => (
         <div className="min-w-0">
-          <p className="wrap-break-word text-sm text-gray-900">{user.email}</p>
+          <p className="break-words text-sm text-gray-900">{user.email}</p>
           <p className="text-xs text-gray-500">{user.phone}</p>
         </div>
       ),

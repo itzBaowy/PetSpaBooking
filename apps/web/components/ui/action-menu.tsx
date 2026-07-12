@@ -30,12 +30,7 @@ export function ActionMenu({ items, align = "right" }: ActionMenuProps) {
         onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
         className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-border-subtle bg-surface text-muted shadow-sm transition-colors hover:bg-surface-muted hover:text-foreground focus:outline-none focus:ring-4 focus:ring-brand-soft"
       >
-        <svg
-          className="h-4 w-4"
-          fill="currentColor"
-          viewBox="0 0 20 20"
-          aria-hidden="true"
-        >
+        <svg className="h-4 w-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
           <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0ZM12 10a2 2 0 11-4 0 2 2 0 014 0ZM18 10a2 2 0 11-4 0 2 2 0 014 0Z" />
         </svg>
       </button>

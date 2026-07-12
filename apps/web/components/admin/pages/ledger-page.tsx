@@ -48,7 +48,7 @@ export function AdminLedgerPage() {
 
   return (
     <div className="space-y-5">
-      <PageTitle title="Sổ cái ví và ký quỹ" description="Các giao dịch tài chính thực tế từ máy chủ." />
+      <PageTitle title="Sổ tài chính" description="Các giao dịch tài chính thực tế từ máy chủ." />
       <div className="rounded-2xl border border-border-subtle bg-surface p-3 shadow-sm">
         <div className="flex flex-wrap gap-2">
           <input

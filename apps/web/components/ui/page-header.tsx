@@ -42,7 +42,7 @@ export function PageHeader({
             {eyebrow}
           </nav>
         )}
-        <h1 className="wrap-break-word text-3xl font-extrabold tracking-tight text-foreground">
+        <h1 className="break-words text-3xl font-extrabold tracking-tight text-foreground">
           {title}
         </h1>
         {description && (

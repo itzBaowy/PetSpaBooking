@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { FinanceStatusPill } from "@/apis/admin/finance/components/status-pill";
 import { CustomSelect, type CustomSelectOption } from "@/components/ui/custom-select";
-import { ActionMenu } from "@/components/ui/action-menu";
+import { ActionMenu, type ActionMenuItem } from "@/components/ui/action-menu";
 import {
   entitySchema,
   listSchema,
@@ -23,18 +23,42 @@ import {
 export type Params = Record<string, string | number | undefined>;
 
 export const FIELD_LABELS: Record<string, string> = {
-  id: "Mã", userName: "Tên đăng nhập", fullName: "Họ và tên", email: "Email",
-  phone: "Số điện thoại", role: "Vai trò", status: "Trạng thái",
-  businessName: "Tên cơ sở", providerStatus: "Trạng thái nhà cung cấp",
-  depositStatus: "Trạng thái ký quỹ", walletBalance: "Số dư ví",
-  depositBalance: "Số dư ký quỹ", paymentMethod: "Phương thức thanh toán",
-  paymentStatus: "Trạng thái thanh toán", totalAmount: "Tổng tiền",
-  appointmentStart: "Thời gian hẹn", bookingId: "Mã booking",
-  providerId: "Mã nhà cung cấp", customerId: "Mã khách hàng",
-  reason: "Lý do", createAt: "Ngày tạo", updateAt: "Ngày cập nhật",
-  type: "Loại giao dịch", balanceType: "Loại số dư", amount: "Số tiền",
-  balanceAfter: "Số dư sau giao dịch", action: "Hành động",
-  targetType: "Loại đối tượng", targetId: "Mã đối tượng",
+  id: "Mã",
+  userName: "Tên đăng nhập",
+  displayName: "Tên hiển thị",
+  fullName: "Họ và tên",
+  email: "Email",
+  phone: "Số điện thoại",
+  role: "Vai trò",
+  status: "Trạng thái",
+  businessName: "Tên cơ sở",
+  providerStatus: "Trạng thái nhà cung cấp",
+  depositStatus: "Trạng thái ký quỹ",
+  walletBalance: "Số dư ví",
+  depositBalance: "Số dư ký quỹ",
+  paymentMethod: "Phương thức thanh toán",
+  paymentStatus: "Trạng thái thanh toán",
+  totalAmount: "Tổng tiền",
+  appointmentStart: "Thời gian hẹn",
+  bookingId: "Mã booking",
+  providerId: "Mã nhà cung cấp",
+  customerId: "Mã khách hàng",
+  reason: "Lý do",
+  description: "Mô tả",
+  createAt: "Ngày tạo",
+  updateAt: "Ngày cập nhật",
+  createdAt: "Ngày tạo",
+  updatedAt: "Ngày cập nhật",
+  resolvedBy: "Người xử lý",
+  resolvedAt: "Ngày xử lý",
+  adminNote: "Ghi chú admin",
+  type: "Loại giao dịch",
+  balanceType: "Loại số dư",
+  amount: "Số tiền",
+  balanceAfter: "Số dư sau giao dịch",
+  action: "Hành động",
+  targetType: "Loại đối tượng",
+  targetId: "Mã đối tượng",
   "customer.users.fullName": "Khách hàng",
   "customer.users.phone": "Số điện thoại",
   "provider.businessName": "Nhà cung cấp",
@@ -45,22 +69,43 @@ export const FIELD_LABELS: Record<string, string> = {
 };
 
 export const VALUE_LABELS: Record<string, string> = {
-  CUSTOMER: "Khách hàng", PROVIDER: "Nhà cung cấp", ADMIN: "Quản trị viên",
-  ACTIVE: "Đang hoạt động", INACTIVE: "Ngừng hoạt động", BANNED: "Bị cấm",
-  PENDING_VERIFICATION: "Chờ xác minh", VERIFIED: "Đã xác minh",
-  REJECTED: "Đã từ chối", SUSPENDED: "Tạm ngưng", PENDING: "Đang chờ",
-  CONFIRMED: "Đã xác nhận", CHECKED_IN: "Đã nhận khách", CHECKED_OUT: "Đã hoàn tất dịch vụ",
-  COMPLETED: "Hoàn thành", CANCELLED: "Đã hủy", DISPUTE: "Đang tranh chấp",
-  NO_ARRIVAL: "Không đến", CASH: "Tiền mặt", ONLINE: "Trực tuyến",
-  UNPAID: "Chưa thanh toán", SUCCESS: "Thành công", FAILED: "Thất bại",
-  NOT_PAID: "Chưa thanh toán", LOW_BALANCE: "Số dư thấp",
-  REFUNDED: "Đã hoàn tiền", APPROVED: "Đã duyệt", PAID: "Đã chi trả",
-  RESOLVED_PROVIDER_WIN: "Nhà cung cấp thắng", RESOLVED_CUSTOMER_WIN: "Khách hàng thắng",
-  WALLET: "Ví", DEPOSIT: "Ký quỹ", ONLINE_EARNING: "Doanh thu trực tuyến",
+  CUSTOMER: "Khách hàng",
+  PROVIDER: "Nhà cung cấp",
+  ADMIN: "Quản trị viên",
+  ACTIVE: "Đang hoạt động",
+  INACTIVE: "Ngừng hoạt động",
+  BANNED: "Bị cấm",
+  PENDING_VERIFICATION: "Chờ xác minh",
+  VERIFIED: "Đã xác minh",
+  REJECTED: "Đã từ chối",
+  SUSPENDED: "Tạm ngưng",
+  PENDING: "Đang chờ",
+  CONFIRMED: "Đã xác nhận",
+  CHECKED_IN: "Đã nhận khách",
+  CHECKED_OUT: "Đã hoàn tất dịch vụ",
+  COMPLETED: "Hoàn thành",
+  CANCELLED: "Đã hủy",
+  DISPUTE: "Đang tranh chấp",
+  NO_ARRIVAL: "Không đến",
+  CASH: "Tiền mặt",
+  ONLINE: "Trực tuyến",
+  UNPAID: "Chưa thanh toán",
+  SUCCESS: "Thành công",
+  FAILED: "Thất bại",
+  NOT_PAID: "Chưa thanh toán",
+  LOW_BALANCE: "Số dư thấp",
+  REFUNDED: "Đã hoàn tiền",
+  APPROVED: "Đã duyệt",
+  PAID: "Đã chi trả",
+  RESOLVED_PROVIDER_WIN: "Nhà cung cấp thắng",
+  RESOLVED_CUSTOMER_WIN: "Khách hàng thắng",
+  WALLET: "Ví",
+  DEPOSIT: "Ký quỹ",
+  ONLINE_EARNING: "Doanh thu trực tuyến",
   CASH_COMMISSION_DEDUCTION: "Trừ hoa hồng tiền mặt",
   DEPOSIT_COMMISSION_DEDUCTION: "Trừ hoa hồng từ ký quỹ",
-  MANUAL_ADJUSTMENT: "Điều chỉnh thủ công", WITHDRAWAL_PAYOUT: "Chi trả rút tiền",
-  // Actions
+  MANUAL_ADJUSTMENT: "Điều chỉnh thủ công",
+  WITHDRAWAL_PAYOUT: "Chi trả rút tiền",
   DISPUTE_RESOLVE: "Giải quyết tranh chấp",
   PROVIDER_REJECT: "Từ chối nhà cung cấp",
   PROVIDER_SUSPEND: "Tạm ngưng nhà cung cấp",
@@ -72,7 +117,6 @@ export const VALUE_LABELS: Record<string, string> = {
   WITHDRAWAL_APPROVE: "Duyệt yêu cầu rút tiền",
   WITHDRAWAL_MARK_PAID: "Đánh dấu đã chi trả",
   WITHDRAWAL_REJECT: "Từ chối yêu cầu rút tiền",
-  // Target types
   BookingDispute: "Tranh chấp lịch hẹn",
   BOOKING_DISPUTE: "Tranh chấp lịch hẹn",
   Provider: "Nhà cung cấp",
@@ -86,15 +130,18 @@ export const VALUE_LABELS: Record<string, string> = {
   WITHDRAWAL_REQUEST: "Yêu cầu rút tiền",
 };
 
-export function fieldLabel(key: string) { return FIELD_LABELS[key] ?? key; }
+export function fieldLabel(key: string) {
+  return FIELD_LABELS[key] ?? key;
+}
 
 export function displayValue(value: unknown, key?: string) {
   if (typeof value === "string" && VALUE_LABELS[value]) return VALUE_LABELS[value];
   if (key && ["walletBalance", "depositBalance", "totalAmount", "amount", "balanceAfter"].includes(key) && typeof value === "number") {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
   }
-  if (key && ["createAt", "updateAt", "appointmentStart"].includes(key) && typeof value === "string") {
-    const date = new Date(value); if (!Number.isNaN(date.getTime())) return date.toLocaleString("vi-VN");
+  if (key && ["createAt", "updateAt", "createdAt", "updatedAt", "resolvedAt", "appointmentStart"].includes(key) && typeof value === "string") {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) return date.toLocaleString("vi-VN");
   }
   return textValue(value);
 }
@@ -131,11 +178,30 @@ export function PageTitle({ title, description }: { title: string; description: 
 
 export function Pager({ data, setPage, setPageSize }: { data?: AdminList; setPage: (page: number) => void; setPageSize?: (pageSize: number) => void }) {
   if (!data) return null;
-  return <div className="rounded-2xl border border-border-subtle bg-surface px-4 py-3"><Pagination page={data.pagination.page} totalPages={Math.max(data.pagination.totalPages, 1)} pageSize={data.pagination.pageSize} pageSizeOptions={[10, 20, 50]} onPageChange={setPage} onPageSizeChange={setPageSize ? (nextPageSize) => { setPage(1); setPageSize(nextPageSize); } : undefined} /></div>;
+  return (
+    <div className="rounded-2xl border border-border-subtle bg-surface px-4 py-3">
+      <Pagination
+        page={data.pagination.page}
+        totalPages={Math.max(data.pagination.totalPages, 1)}
+        pageSize={data.pagination.pageSize}
+        pageSizeOptions={[10, 20, 50]}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize ? (nextPageSize) => {
+          setPage(1);
+          setPageSize(nextPageSize);
+        } : undefined}
+      />
+    </div>
+  );
 }
 
 export function Field({ label, value }: { label: string; value: unknown }) {
-  return <div className="rounded-xl bg-gray-50 p-3"><dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">{fieldLabel(label)}</dt><dd className="mt-1 break-words text-sm font-medium text-gray-900">{displayValue(value, label)}</dd></div>;
+  return (
+    <div className="rounded-xl bg-gray-50 p-3">
+      <dt className="text-xs font-semibold uppercase tracking-wide text-gray-500">{fieldLabel(label)}</dt>
+      <dd className="mt-1 break-words text-sm font-medium text-gray-900">{displayValue(value, label)}</dd>
+    </div>
+  );
 }
 
 export function EntityFields({ entity, omit = [] }: { entity: AdminEntity; omit?: string[] }) {
@@ -182,8 +248,8 @@ export function StatusPill({ value }: { value: unknown }) {
 
 export function DetailItem({ label, value, icon }: { label: string; value: unknown; icon?: React.ReactNode }) {
   return (
-    <div className="flex items-start gap-3 rounded-xl bg-surface-soft p-3 transition-colors border border-border-subtle/50 hover:bg-surface-muted/55">
-      {icon && <div className="mt-0.5 text-muted shrink-0">{icon}</div>}
+    <div className="flex items-start gap-3 rounded-xl border border-border-subtle/50 bg-surface-soft p-3 transition-colors hover:bg-surface-muted/55">
+      {icon && <div className="mt-0.5 shrink-0 text-muted">{icon}</div>}
       <div className="min-w-0 flex-1">
         <dt className="text-xs font-semibold uppercase tracking-wider text-muted">{fieldLabel(label)}</dt>
         <dd className="mt-1 break-words text-sm font-semibold text-foreground">{displayValue(value, label)}</dd>
@@ -192,20 +258,64 @@ export function DetailItem({ label, value, icon }: { label: string; value: unkno
   );
 }
 
-export function EntityTable({ loading, items, columns, detailBase }: { loading: boolean; items?: AdminEntity[]; columns: string[]; detailBase?: string }) {
+type EntityColumnRenderers = Record<string, (item: AdminEntity) => React.ReactNode>;
+
+export function EntityTable({
+  loading,
+  items,
+  columns,
+  detailBase,
+  renderers,
+  actions,
+}: {
+  loading: boolean;
+  items?: AdminEntity[];
+  columns: string[];
+  detailBase?: string;
+  renderers?: EntityColumnRenderers;
+  actions?: (item: AdminEntity) => ActionMenuItem[];
+}) {
   const router = useRouter();
   if (loading) return <p className="rounded-2xl border bg-white p-6">Đang tải dữ liệu...</p>;
+
   const statusKeys = new Set(["status", "providerStatus", "depositStatus", "paymentStatus", "balanceType", "type", "action"]);
   const tableColumns: Array<DataTableColumn<AdminEntity>> = columns.map((key) => ({
     key,
     header: fieldLabel(key),
     render: (item) => {
+      const customRender = renderers?.[key];
+      if (customRender) return customRender(item);
       const value = key.includes(".") ? nested(item, ...key.split(".")) : item[key];
       return statusKeys.has(key)
         ? <StatusPill value={value} />
         : <span className="break-words">{displayValue(value, key)}</span>;
     },
   }));
-  if (detailBase) tableColumns.push({ key: "detail", header: "Thao tác", align: "right", isAction: true, render: (item) => <ActionMenu items={[{ label: "Xem chi tiết", onClick: () => router.push(`${detailBase}/${item.id}`) }]} /> });
-  return <DataTable columns={tableColumns} data={items ?? []} getRowKey={(item) => item.id} minWidthClassName="min-w-[1040px]" emptyState={<div className="p-8 text-center text-sm font-semibold text-muted">Không có dữ liệu phù hợp.</div>} />;
+
+  if (detailBase || actions) {
+    tableColumns.push({
+      key: "detail",
+      header: "Thao tác",
+      align: "right",
+      isAction: true,
+      render: (item) => (
+        <ActionMenu
+          items={[
+            ...(detailBase ? [{ label: "Xem chi tiết", onClick: () => router.push(`${detailBase}/${item.id}`) }] : []),
+            ...(actions?.(item) ?? []),
+          ]}
+        />
+      ),
+    });
+  }
+
+  return (
+    <DataTable
+      columns={tableColumns}
+      data={items ?? []}
+      getRowKey={(item) => item.id}
+      minWidthClassName="min-w-[1040px]"
+      emptyState={<div className="p-8 text-center text-sm font-semibold text-muted">Không có dữ liệu phù hợp.</div>}
+    />
+  );
 }

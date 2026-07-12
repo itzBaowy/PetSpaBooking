@@ -21,17 +21,17 @@ export function BookingAnalyticsChart() {
   const barWidth = 14;
 
   return (
-    <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between h-85">
+    <div className="flex h-85 flex-col justify-between rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
       <div>
-        <div className="flex items-center justify-between mb-4">
+        <div className="mb-4 flex items-center justify-between">
           <h3 className="font-semibold text-gray-800">Xu hướng đặt lịch</h3>
           <div className="flex items-center gap-4 text-xs font-medium">
             <span className="flex items-center gap-1.5 text-gray-500">
-              <span className="w-3 h-3 bg-blue-500 rounded-sm inline-block"></span>
+              <span className="inline-block h-3 w-3 rounded-sm bg-blue-500"></span>
               Hoàn tất
             </span>
             <span className="flex items-center gap-1.5 text-gray-500">
-              <span className="w-3 h-3 bg-rose-400 rounded-sm inline-block"></span>
+              <span className="inline-block h-3 w-3 rounded-sm bg-rose-400"></span>
               Đã hủy
             </span>
           </div>
@@ -42,7 +42,7 @@ export function BookingAnalyticsChart() {
       <div className="relative flex-1">
         <svg
           viewBox={`0 0 ${SVG_WIDTH} ${SVG_HEIGHT}`}
-          className="w-full h-full"
+          className="h-full w-full"
           preserveAspectRatio="xMidYMid meet"
         >
           {/* Grid lines */}
@@ -89,7 +89,7 @@ export function BookingAnalyticsChart() {
                   width={barWidth}
                   height={completedHeight}
                   rx="3"
-                  className="fill-blue-500 hover:fill-blue-600 transition-colors duration-200"
+                  className="fill-blue-500 transition-colors duration-200 hover:fill-blue-600"
                 >
                   <title>{`Hoàn tất: ${d.completed}`}</title>
                 </rect>
@@ -101,7 +101,7 @@ export function BookingAnalyticsChart() {
                   width={barWidth}
                   height={cancelledHeight}
                   rx="3"
-                  className="fill-rose-400 hover:fill-rose-500 transition-colors duration-200"
+                  className="fill-rose-400 transition-colors duration-200 hover:fill-rose-500"
                 >
                   <title>{`Đã hủy: ${d.cancelled}`}</title>
                 </rect>
@@ -111,7 +111,7 @@ export function BookingAnalyticsChart() {
                   x={centerX}
                   y={START_Y + GRAPH_HEIGHT + 20}
                   textAnchor="middle"
-                  className="text-[11px] font-medium fill-gray-400 group-hover:fill-gray-700 transition-colors"
+                  className="fill-gray-400 text-[11px] font-medium transition-colors group-hover:fill-gray-700"
                 >
                   {d.month}
                 </text>

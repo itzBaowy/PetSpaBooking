@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
@@ -24,25 +25,57 @@ export function AdminDashboardPage() {
   const isLoading = query.isLoading || revenueQuery.isLoading || dailyRevenueQuery.isLoading || providersQuery.isLoading;
   const failedQuery = [query, revenueQuery, dailyRevenueQuery, providersQuery].find((item) => item.isError);
   if (isLoading) return <p>Đang tải tổng quan...</p>;
-  if (failedQuery?.isError) return <LoadState error={failedQuery.error} retry={() => void Promise.all([query.refetch(), revenueQuery.refetch(), dailyRevenueQuery.refetch(), providersQuery.refetch()])} />;
+  if (failedQuery?.isError) {
+    return (
+      <LoadState
+        error={failedQuery.error}
+        retry={() => void Promise.all([query.refetch(), revenueQuery.refetch(), dailyRevenueQuery.refetch(), providersQuery.refetch()])}
+      />
+    );
+  }
 
   const data = query.data ?? {};
   const cards = [
-    ["Người dùng", nested(data, "users", "total")],
-    ["Nhà cung cấp", nested(data, "providers", "total")],
-    ["Lịch đặt hoàn tất", nested(data, "bookings", "completed")],
-    ["Tranh chấp chờ xử lý", nested(data, "disputes", "pending")],
-    ["Rút tiền chờ duyệt", nested(data, "withdrawals", "pending")],
-    ["Dịch vụ hoạt động", nested(data, "services", "active")],
+    { label: "Người dùng", value: nested(data, "users", "total") },
+    { label: "Nhà cung cấp", value: nested(data, "providers", "total") },
+    { label: "Lịch đặt hoàn tất", value: nested(data, "bookings", "completed") },
+    {
+      label: "Tranh chấp chờ xử lý",
+      value: nested(data, "disputes", "pending"),
+      href: "/admin/bookings/disputes?status=PENDING",
+      tone: "amber" as const,
+    },
+    {
+      label: "Rút tiền chờ duyệt",
+      value: nested(data, "withdrawals", "pending"),
+      href: "/admin/finance/withdrawals?status=PENDING",
+    },
+    { label: "Dịch vụ hoạt động", value: nested(data, "services", "active") },
   ];
 
   return (
     <div className="space-y-6">
       <PageTitle title="Tổng quan quản trị" description="Số liệu trực tiếp từ GET /admin/dashboard/summary." />
       <StatisticCardGrid columns={3}>
-        {cards.map(([label, value]) => (
-          <StatisticCard key={String(label)} title={textValue(label)} value={textValue(value, "0")} />
-        ))}
+        {cards.map((card) => {
+          const content = (
+            <StatisticCard
+              title={card.label}
+              value={textValue(card.value, "0")}
+              tone={card.tone}
+              footer={card.href ? "Bấm để xem danh sách xử lý" : undefined}
+              className={card.href ? "h-full hover:border-brand-soft hover:bg-surface-muted/40" : undefined}
+            />
+          );
+
+          if (!card.href) return <div key={card.label}>{content}</div>;
+
+          return (
+            <Link key={card.label} href={card.href} className="block h-full">
+              {content}
+            </Link>
+          );
+        })}
       </StatisticCardGrid>
       {revenueQuery.data && (
         <StatisticCardGrid columns={3}>
