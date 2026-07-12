@@ -10,6 +10,7 @@ export interface ProviderBookingMock {
   appointmentAt: string; paymentMethod: ProviderPaymentMethod; paymentStatus: ProviderPaymentStatus;
   status: ProviderBookingStatus; totalAmount: number; commissionRate: number; notes?: string;
   qrStatus: "not_issued" | "issued" | "verified"; otpStatus: "not_issued" | "issued" | "verified";
+  disputeDeadline?: string;
   timeline: ProviderBookingTimelineItem[];
   dispute?: { id: string; status: "open" | "under_review"; reason: string; deadline: string };
 }
