@@ -1,10 +1,10 @@
-import { ProviderBusinessProfileMockWorkflow } from "@/components/provider/business-profile/business-profile-components";
+import { ProviderBusinessProfileLive } from "@/components/provider/live/provider-live-screens";
 
 export default function BusinessProfile() {
   return (
     <main className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl">
-        <ProviderBusinessProfileMockWorkflow />
+        <ProviderBusinessProfileLive />
       </div>
     </main>
   );
