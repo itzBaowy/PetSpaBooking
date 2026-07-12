@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from "../../common/helpers/exception.helper.ts";
 import { notificationService } from "../notification.service.ts";
+import { socketService } from "../socket.service.ts";
 
 const MOMO_PROVIDER = "MOMO";
 const MOMO_REQUEST_TYPE = "captureWallet";
@@ -239,6 +240,24 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
     });
 
     if (booking) {
+      const socketPayload = {
+        bookingId: booking.id,
+        paymentStatus: booking.paymentStatus,
+        paymentReference: transId ?? orderId,
+        orderId,
+        transId,
+      };
+      socketService.emitToUser(booking.customer.users.id, "payment:updated", socketPayload);
+      socketService.emitToProvider(booking.provider.id, "payment:updated", socketPayload);
+      socketService.emitToBooking(booking.id, "payment:updated", socketPayload);
+      socketService.emitToUser(booking.customer.users.id, "booking:updated", {
+        booking,
+      });
+      socketService.emitToProvider(booking.provider.id, "booking:updated", {
+        booking,
+      });
+      socketService.emitToBooking(booking.id, "booking:updated", { booking });
+
       await notificationService.safeCreateMany([
         {
           userId: booking.customer.users.id,

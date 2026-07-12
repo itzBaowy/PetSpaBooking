@@ -10,6 +10,7 @@ import mobilePetRouter from "./mobile-router/pet-mobile.router.ts";
 import mobileCustomerRouter from "./mobile-router/customer.router.ts";
 import mobileBookingRouter from "./mobile-router/booking-mobile.router.ts";
 import mobileNotificationRouter from "./mobile-router/notification-mobile.router.ts";
+import mobileChatRouter from "./mobile-router/chat-mobile.router.ts";
 import adminDisputeRouter from "./admin-dispute.router.ts";
 import adminDashboardRouter from "./admin-dashboard.router.ts";
 import adminProviderRouter from "./admin-provider.router.ts";
@@ -48,6 +49,7 @@ rootRouter.use(
   mobileCustomerRouter,
   mobileBookingRouter,
   mobileNotificationRouter,
+  mobileChatRouter,
 );
 
 export default rootRouter;

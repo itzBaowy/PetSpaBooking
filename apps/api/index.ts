@@ -1,4 +1,5 @@
 import express, { Request, Response, NextFunction } from "express";
+import { createServer } from "node:http";
 import rootRouter from "./src/routers/root.router.ts";
 import { appErorr } from "./src/common/helpers/handle-error.helper.ts";
 import dotenv from "dotenv";
@@ -8,10 +9,12 @@ import { swaggerOptions } from "./src/common/swagger/swagger.config.ts";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { startBookingAutoCompleteJob } from "./src/jobs/booking-auto-complete.job.ts";
+import { socketService } from "./src/services/socket.service.ts";
 
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
 const PORT = process.env.PORT || 3000;
 
 const allowedOrigins = new Set([
@@ -62,7 +65,9 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 
 app.use(appErorr);
 
-app.listen(PORT, () => {
+socketService.init(httpServer);
+
+httpServer.listen(PORT, () => {
     console.log(`Server is running at http://localhost:${PORT}`);
     console.log(`Swagger docs available at http://localhost:${PORT}/api-docs`);
 });
