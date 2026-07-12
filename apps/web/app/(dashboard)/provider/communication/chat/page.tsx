@@ -1,10 +1,3 @@
-import { ChatWindow } from "@/apis/provider/communication/components/chat-window";
+import { ProviderChatMockInterface } from "@/components/provider/chat/chat-interface";
 
-export default function Chat() {
-  return (
-    <div className="p-6 h-full">
-      <h1 className="text-2xl font-bold mb-6">Messages</h1>
-      <ChatWindow />
-    </div>
-  );
-}
+export default function ProviderChatPage() { return <main className="p-3 sm:p-5 lg:p-6"><div className="mx-auto max-w-[1500px]"><ProviderChatMockInterface /></div></main>; }
