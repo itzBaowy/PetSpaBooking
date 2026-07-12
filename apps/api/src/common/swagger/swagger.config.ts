@@ -697,11 +697,21 @@ export const swaggerOptions = {
           type: "object",
           properties: {
             id: { type: "string", example: "6a45f65e91355e58db8f3585" },
-            name: { type: "string", example: "PetLink Verified Spa - Tắm & làm đẹp" },
+            name: {
+              type: "string",
+              example: "PetLink Verified Spa - Tắm & làm đẹp",
+            },
             price: { type: "number", example: 250000 },
             durationMinutes: { type: "integer", example: 60 },
-            thumbnailUrl: { type: "string", example: "/brand/petlink-logo.png" },
-            description: { type: "string", nullable: true, example: "Dịch vụ tắm, cắt tỉa lông và chăm sóc da cho thú cưng." },
+            thumbnailUrl: {
+              type: "string",
+              example: "/brand/petlink-logo.png",
+            },
+            description: {
+              type: "string",
+              nullable: true,
+              example: "Dịch vụ tắm, cắt tỉa lông và chăm sóc da cho thú cưng.",
+            },
           },
         },
 
@@ -711,15 +721,25 @@ export const swaggerOptions = {
             id: { type: "string", example: "6a45f5a9de179b6c853f2170" },
             slug: { type: "string", example: "petlink-verified-spa" },
             businessName: { type: "string", example: "PetLink Verified Spa" },
-            description: { type: "string", example: "Hồ sơ dữ liệu mẫu dùng để kiểm tra luồng đăng nhập và hiển thị dịch vụ thật." },
+            description: {
+              type: "string",
+              example:
+                "Hồ sơ dữ liệu mẫu dùng để kiểm tra luồng đăng nhập và hiển thị dịch vụ thật.",
+            },
             avatarUrl: { type: "string", example: "/brand/petlink-logo.png" },
-            coverImageUrl: { type: "string", example: "/brand/petlink-logo.png" },
+            coverImageUrl: {
+              type: "string",
+              example: "/brand/petlink-logo.png",
+            },
             isVerified: { type: "boolean", example: false },
             status: { type: "string", example: "VERIFIED" },
             location: {
               type: "object",
               properties: {
-                address: { type: "string", example: "123 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh" },
+                address: {
+                  type: "string",
+                  example: "123 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh",
+                },
                 ward: { type: "string", example: "Phường Bến Nghé" },
                 district: { type: "string", example: "Quận 1" },
                 province: { type: "string", example: "TP. Hồ Chí Minh" },
@@ -759,7 +779,9 @@ export const swaggerOptions = {
                 },
                 preview: {
                   type: "array",
-                  items: { $ref: "#/components/schemas/MobileProviderPreviewService" },
+                  items: {
+                    $ref: "#/components/schemas/MobileProviderPreviewService",
+                  },
                 },
               },
             },
@@ -783,7 +805,11 @@ export const swaggerOptions = {
                 cash: { type: "boolean", example: true },
               },
             },
-            createdAt: { type: "string", format: "date-time", example: "2026-07-02T05:22:49.693Z" },
+            createdAt: {
+              type: "string",
+              format: "date-time",
+              example: "2026-07-02T05:22:49.693Z",
+            },
           },
         },
 
@@ -792,8 +818,211 @@ export const swaggerOptions = {
           properties: {
             status: { type: "string", example: "success" },
             statusCode: { type: "integer", example: 200 },
-            message: { type: "string", example: "Provider information retrieved successfully" },
+            message: {
+              type: "string",
+              example: "Provider information retrieved successfully",
+            },
             data: { $ref: "#/components/schemas/MobileProviderItem" },
+          },
+        },
+
+        PetHealthReminder: {
+          type: "object",
+          properties: {
+            title: { type: "string", example: "Tiêm phòng dại" },
+            date: { type: "string", example: "2026-12-31" },
+          },
+        },
+
+        PetMedicalRecord: {
+          type: "object",
+          properties: {
+            id: { type: "string", example: "rec_1" },
+            title: { type: "string", example: "Khám định kỳ" },
+            description: {
+              type: "string",
+              example: "Sức khỏe tổng quát ổn định.",
+            },
+            date: { type: "string", example: "2026-07-02" },
+          },
+        },
+
+        PetObject: {
+          type: "object",
+          properties: {
+            id: { type: "string", example: "64f1a2b3c4d5e6f789012345" },
+            customerId: { type: "string", example: "64f1a2b3c4d5e6f789012346" },
+            name: { type: "string", example: "Buddy" },
+            breed: { type: "string", example: "Golden Retriever" },
+            gender: { type: "string", example: "Male" },
+            ageLabel: { type: "string", example: "Adult" },
+            imageUrl: {
+              type: "string",
+              example: "https://example.com/buddy.jpg",
+            },
+            status: { type: "string", example: "ACTIVE" },
+            weight: { type: "string", example: "30kg" },
+            height: { type: "string", example: "60cm" },
+            color: { type: "string", example: "Golden" },
+            criticalNote: {
+              type: "string",
+              nullable: true,
+              example: "Allergic to chicken",
+            },
+            nextVaccineDate: {
+              type: "string",
+              nullable: true,
+              example: "2026-12-31",
+            },
+            photos: {
+              type: "array",
+              items: { type: "string" },
+              example: ["https://example.com/buddy1.jpg"],
+            },
+            healthReminder: {
+              $ref: "#/components/schemas/PetHealthReminder",
+            },
+            medicalRecords: {
+              type: "array",
+              items: { $ref: "#/components/schemas/PetMedicalRecord" },
+            },
+            createAt: {
+              type: "string",
+              format: "date-time",
+              example: "2026-07-02T04:37:28.894Z",
+            },
+            updateAt: {
+              type: "string",
+              format: "date-time",
+              example: "2026-07-03T04:37:28.894Z",
+            },
+          },
+        },
+
+        PetCreateRequest: {
+          type: "object",
+          required: [
+            "name",
+            "breed",
+            "gender",
+            "ageLabel",
+            "imageUrl",
+            "weight",
+            "height",
+            "color",
+          ],
+          properties: {
+            name: { type: "string", example: "Buddy" },
+            breed: { type: "string", example: "Golden Retriever" },
+            gender: { type: "string", example: "Male" },
+            ageLabel: { type: "string", example: "Adult" },
+            imageUrl: {
+              type: "string",
+              example: "https://example.com/buddy.jpg",
+            },
+            weight: { type: "string", example: "30kg" },
+            height: { type: "string", example: "60cm" },
+            color: { type: "string", example: "Golden" },
+            status: { type: "string", example: "ACTIVE" },
+            criticalNote: {
+              type: "string",
+              nullable: true,
+              example: "Allergic to chicken",
+            },
+            nextVaccineDate: {
+              type: "string",
+              nullable: true,
+              example: "2026-12-31",
+            },
+            photos: {
+              type: "array",
+              items: { type: "string" },
+              example: ["https://example.com/buddy1.jpg"],
+            },
+            healthReminder: {
+              $ref: "#/components/schemas/PetHealthReminder",
+            },
+            medicalRecords: {
+              type: "array",
+              items: { $ref: "#/components/schemas/PetMedicalRecord" },
+            },
+          },
+        },
+
+        PetUpdateRequest: {
+          type: "object",
+          description:
+            "All fields are optional. Only provided fields will be updated.",
+          properties: {
+            name: { type: "string", example: "Buddy" },
+            breed: { type: "string", example: "Golden Retriever" },
+            gender: { type: "string", example: "Male" },
+            ageLabel: { type: "string", example: "Adult" },
+            imageUrl: {
+              type: "string",
+              example: "https://example.com/buddy.jpg",
+            },
+            weight: { type: "string", example: "30kg" },
+            height: { type: "string", example: "60cm" },
+            color: { type: "string", example: "Golden" },
+            status: { type: "string", example: "ACTIVE" },
+            criticalNote: {
+              type: "string",
+              nullable: true,
+              example: "Allergic to chicken",
+            },
+            nextVaccineDate: {
+              type: "string",
+              nullable: true,
+              example: "2026-12-31",
+            },
+            photos: {
+              type: "array",
+              items: { type: "string" },
+              example: ["https://example.com/buddy1.jpg"],
+            },
+            healthReminder: {
+              $ref: "#/components/schemas/PetHealthReminder",
+            },
+            medicalRecords: {
+              type: "array",
+              items: { $ref: "#/components/schemas/PetMedicalRecord" },
+            },
+          },
+        },
+
+        PetResponse: {
+          type: "object",
+          properties: {
+            status: { type: "string", example: "success" },
+            statusCode: { type: "integer", example: 200 },
+            message: {
+              type: "string",
+              example: "Pet detail retrieved successfully",
+            },
+            data: { $ref: "#/components/schemas/PetObject" },
+          },
+        },
+
+        PetListResponse: {
+          type: "object",
+          properties: {
+            status: { type: "string", example: "success" },
+            statusCode: { type: "integer", example: 200 },
+            message: { type: "string", example: "Pets retrieved successfully" },
+            data: {
+              type: "object",
+              properties: {
+                page: { type: "integer", example: 1 },
+                pageSize: { type: "integer", example: 10 },
+                total: { type: "integer", example: 3 },
+                totalPage: { type: "integer", example: 1 },
+                pets: {
+                  type: "array",
+                  items: { $ref: "#/components/schemas/PetObject" },
+                },
+              },
+            },
           },
         },
 
