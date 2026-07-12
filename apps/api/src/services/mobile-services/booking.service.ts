@@ -10,6 +10,7 @@ import {
 } from "../../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../../common/helpers/build-query-prisma.helper.ts";
 import { notificationService } from "../notification.service.ts";
+import { assertProviderSlotAvailable } from "./availability.service.ts";
 
 const VALID_PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
 const VALID_BOOKING_STATUSES = [
@@ -26,6 +27,11 @@ const VALID_BOOKING_STATUSES = [
 const MIN_PROVIDER_DEPOSIT = 300_000;
 const QR_TOKEN_EXPIRES_IN_SECONDS = 10 * 60;
 const VALID_QR_ACTIONS = ["CHECK_IN", "CHECK_OUT"] as const;
+const NO_ARRIVAL_GRACE_MINUTES = Number.isFinite(
+  Number(process.env.BOOKING_NO_ARRIVAL_GRACE_MINUTES),
+)
+  ? Math.max(0, Number(process.env.BOOKING_NO_ARRIVAL_GRACE_MINUTES))
+  : 15;
 
 type PaymentMethod = (typeof VALID_PAYMENT_METHODS)[number];
 type BookingStatus = (typeof VALID_BOOKING_STATUSES)[number];
@@ -53,6 +59,7 @@ const BOOKING_INCLUDE = {
   provider: {
     select: {
       id: true,
+      userId: true,
       businessName: true,
       slug: true,
       avatarUrl: true,
@@ -184,6 +191,16 @@ function parseReviewImages(value: unknown): string[] {
   return value;
 }
 
+function getCancellationPaymentStatus(booking: {
+  paymentMethod: string;
+  paymentStatus: string;
+}) {
+  if (booking.paymentMethod !== "ONLINE") return booking.paymentStatus;
+  if (booking.paymentStatus === "SUCCESS") return "REFUND_PENDING";
+  if (booking.paymentStatus === "PENDING") return "CANCELLED";
+  return booking.paymentStatus;
+}
+
 async function getOrCreateCustomer(userId: string, location?: string) {
   const existing = await prisma.customers.findUnique({ where: { userId } });
   if (existing) return existing;
@@ -304,6 +321,7 @@ export const mobileBookingServices = {
     }
 
     const end = new Date(start.getTime() + service.duration * 60_000);
+    await assertProviderSlotAvailable(providerId, start, end);
 
     return prisma.bookings.create({
       data: {
@@ -435,6 +453,60 @@ export const mobileBookingServices = {
       qrToken,
       expiresInSeconds: QR_TOKEN_EXPIRES_IN_SECONDS,
     };
+  },
+
+  async cancelMyBooking(req: Request) {
+    const userId = getRequesterId(req);
+    const id = getRouteParam(req, "id");
+    const { reason } = req.body as { reason?: string };
+    const customer = await prisma.customers.findUnique({ where: { userId } });
+    if (!customer) throw new NotFoundException("Booking not found");
+
+    const booking = await prisma.bookings.findUnique({ where: { id } });
+    if (!booking || booking.customerId !== customer.id) {
+      throw new NotFoundException("Booking not found");
+    }
+
+    if (!["PENDING", "CONFIRMED"].includes(booking.status)) {
+      throw new BadRequestException(
+        "Only PENDING or CONFIRMED bookings can be cancelled",
+      );
+    }
+
+    const updatedBooking = await prisma.bookings.update({
+      where: { id: booking.id },
+      data: {
+        status: "CANCELLED",
+        paymentStatus: getCancellationPaymentStatus(booking),
+        cancelReason: reason ?? null,
+        cancelledAt: new Date(),
+      },
+      include: BOOKING_INCLUDE,
+    });
+
+    await notificationService.safeCreate({
+      userId: updatedBooking.provider.userId,
+      type: "BOOKING_CANCELLED",
+      title: "Booking cancelled",
+      message: "A customer cancelled a booking.",
+      data: {
+        bookingId: updatedBooking.id,
+        reason: reason ?? null,
+        cancelledBy: "CUSTOMER",
+      },
+    });
+
+    if (updatedBooking.paymentStatus === "REFUND_PENDING") {
+      await notificationService.safeCreate({
+        userId,
+        type: "REFUND_PENDING",
+        title: "Refund pending",
+        message: "Your online booking was cancelled and is waiting for refund processing.",
+        data: { bookingId: updatedBooking.id },
+      });
+    }
+
+    return updatedBooking;
   },
 
   async createDispute(req: Request) {
@@ -726,6 +798,102 @@ export const mobileBookingServices = {
     return updatedBooking;
   },
 
+  async cancelProviderBooking(req: Request) {
+    const userId = getRequesterId(req);
+    const id = getRouteParam(req, "id");
+    const provider = await getOperatingProviderByUserId(userId);
+    const { reason } = req.body as { reason?: string };
+
+    const booking = await prisma.bookings.findUnique({ where: { id } });
+    if (!booking || booking.providerId !== provider.id) {
+      throw new NotFoundException("Booking not found");
+    }
+
+    if (booking.status !== "CONFIRMED") {
+      throw new BadRequestException("Only CONFIRMED bookings can be cancelled by provider");
+    }
+
+    const updatedBooking = await prisma.bookings.update({
+      where: { id: booking.id },
+      data: {
+        status: "CANCELLED",
+        paymentStatus: getCancellationPaymentStatus(booking),
+        cancelReason: reason ?? null,
+        cancelledAt: new Date(),
+      },
+      include: BOOKING_INCLUDE,
+    });
+
+    await notificationService.safeCreate({
+      userId: updatedBooking.customer.users.id,
+      type: "BOOKING_CANCELLED",
+      title: "Booking cancelled",
+      message: `${updatedBooking.provider.businessName} cancelled your booking.`,
+      data: {
+        bookingId: updatedBooking.id,
+        reason: reason ?? null,
+        cancelledBy: "PROVIDER",
+      },
+    });
+
+    if (updatedBooking.paymentStatus === "REFUND_PENDING") {
+      await notificationService.safeCreate({
+        userId: updatedBooking.customer.users.id,
+        type: "REFUND_PENDING",
+        title: "Refund pending",
+        message: "Your online booking was cancelled and is waiting for refund processing.",
+        data: { bookingId: updatedBooking.id },
+      });
+    }
+
+    return updatedBooking;
+  },
+
+  async markNoArrival(req: Request) {
+    const userId = getRequesterId(req);
+    const id = getRouteParam(req, "id");
+    const provider = await getOperatingProviderByUserId(userId);
+
+    const booking = await prisma.bookings.findUnique({ where: { id } });
+    if (!booking || booking.providerId !== provider.id) {
+      throw new NotFoundException("Booking not found");
+    }
+
+    if (booking.status !== "CONFIRMED") {
+      throw new BadRequestException("Only CONFIRMED bookings can be marked as no-arrival");
+    }
+
+    const allowedAt = new Date(
+      booking.appointmentStart.getTime() + NO_ARRIVAL_GRACE_MINUTES * 60_000,
+    );
+    if (Date.now() < allowedAt.getTime()) {
+      throw new BadRequestException(
+        `No-arrival can only be marked ${NO_ARRIVAL_GRACE_MINUTES} minutes after appointmentStart`,
+      );
+    }
+
+    const updatedBooking = await prisma.bookings.update({
+      where: { id: booking.id },
+      data: {
+        status: "NO_ARRIVAL",
+        noArrivalAt: new Date(),
+      },
+      include: BOOKING_INCLUDE,
+    });
+
+    await notificationService.safeCreate({
+      userId: updatedBooking.customer.users.id,
+      type: "BOOKING_NO_ARRIVAL",
+      title: "No arrival marked",
+      message: `${updatedBooking.provider.businessName} marked your booking as no-arrival.`,
+      data: {
+        bookingId: updatedBooking.id,
+      },
+    });
+
+    return updatedBooking;
+  },
+
   async checkIn(req: Request) {
     const userId = getRequesterId(req);
     const id = getRouteParam(req, "id");
@@ -748,6 +916,15 @@ export const mobileBookingServices = {
 
     if (booking.status !== "CONFIRMED") {
       throw new BadRequestException("Only CONFIRMED bookings can be checked in");
+    }
+
+    if (
+      booking.paymentMethod === "ONLINE" &&
+      booking.paymentStatus !== "SUCCESS"
+    ) {
+      throw new BadRequestException(
+        "Online booking must be paid before check-in",
+      );
     }
 
     const now = new Date();

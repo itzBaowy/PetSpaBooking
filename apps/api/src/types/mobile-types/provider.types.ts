@@ -83,6 +83,7 @@ export type ProviderItem = {
 
   availability: {
     isOpenNow: boolean;
+    canBookFuture: boolean;
     todayOpeningHours: {
       open: string;
       close: string;

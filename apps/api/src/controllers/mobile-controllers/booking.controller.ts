@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { responseSuccess } from "../../common/helpers/function.helper.ts";
 import { mobileBookingServices } from "../../services/mobile-services/booking.service.ts";
+import { momoPaymentService } from "../../services/mobile-services/momo-payment.service.ts";
 
 export const mobileBookingController = {
   async create(req: Request, res: Response, next: NextFunction) {
@@ -70,6 +71,19 @@ export const mobileBookingController = {
     }
   },
 
+  async cancelMyBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.cancelMyBooking(req);
+      const response = responseSuccess(
+        result,
+        "Booking cancelled successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createReview(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await mobileBookingServices.createReview(req);
@@ -120,6 +134,32 @@ export const mobileBookingController = {
     }
   },
 
+  async cancelProviderBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.cancelProviderBooking(req);
+      const response = responseSuccess(
+        result,
+        "Booking cancelled successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markNoArrival(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.markNoArrival(req);
+      const response = responseSuccess(
+        result,
+        "Booking marked as no-arrival successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async checkIn(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await mobileBookingServices.checkIn(req);
@@ -139,6 +179,46 @@ export const mobileBookingController = {
       const response = responseSuccess(
         result,
         "Booking checked out successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createMomoPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await momoPaymentService.createPayment(req);
+      const response = responseSuccess(
+        result,
+        "MoMo payment created successfully",
+        201,
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async handleMomoIpn(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await momoPaymentService.handleIpn(req);
+      const response = responseSuccess(
+        result,
+        "MoMo IPN processed successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async handleMomoReturn(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await momoPaymentService.handleReturn(req);
+      const response = responseSuccess(
+        result,
+        "MoMo return processed successfully",
       );
       res.status(response.statusCode).json(response);
     } catch (error) {

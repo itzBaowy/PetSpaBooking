@@ -98,6 +98,33 @@ export async function apiFetch<T>(
 }
 ```
 
+### 1.1 Đổi password
+
+Token required, dùng được cho customer/provider/admin user.
+
+```http
+PATCH /api/users/me/password
+```
+
+Body:
+
+```json
+{
+  "currentPassword": "Test@123",
+  "newPassword": "NewTest@123",
+  "confirmPassword": "NewTest@123"
+}
+```
+
+Rule:
+
+- `currentPassword`, `newPassword`, `confirmPassword` bắt buộc.
+- `currentPassword` phải đúng password hiện tại.
+- `newPassword` tối thiểu 6 ký tự.
+- `newPassword` và `confirmPassword` phải trùng nhau.
+- `newPassword` phải khác `currentPassword`.
+- Sau khi đổi password, FE nên yêu cầu user login lại hoặc refresh local auth state.
+
 ## 2. Public Mobile Provider APIs
 
 Không cần token.
@@ -124,6 +151,26 @@ Ví dụ:
 ```ts
 const providers = await apiFetch("/mobile/providers?page=1&pageSize=10");
 ```
+
+Lưu ý availability:
+
+```json
+{
+  "availability": {
+    "isOpenNow": false,
+    "canBookFuture": true,
+    "todayOpeningHours": {
+      "open": "Closed",
+      "close": "Closed"
+    }
+  }
+}
+```
+
+- `isOpenNow` chỉ thể hiện provider có đang mở cửa tại thời điểm hiện tại hay không.
+- FE không nên dùng `isOpenNow = false` để chặn đặt lịch tương lai.
+- Muốn đặt lịch, FE gọi `GET /api/mobile/providers/{providerId}/available-slots` và dùng slot trả về.
+- `canBookFuture = true` nghĩa là provider có service active và có ít nhất một ngày working hours mở.
 
 ## 3. Customer Booking Flow
 
@@ -155,7 +202,107 @@ Rule quan trọng:
 - Provider phải `VERIFIED`.
 - Provider phải có `depositStatus = ACTIVE`.
 - `depositBalance >= 300000`.
+- Slot phải nằm trong working hours của provider.
+- Slot không được trùng availability block.
+- Slot không được trùng booking đang `PENDING`, `CONFIRMED`, `CHECKED_IN`.
 - Booking mới tạo có `status = PENDING`.
+- Nếu `paymentMethod = ONLINE`, booking mới có `paymentStatus = PENDING` và cần tạo MoMo payment.
+
+### 3.1.1 Xem available slots trước khi booking
+
+Không cần token.
+
+```http
+GET /api/mobile/providers/{providerId}/available-slots?serviceId={serviceId}&date=2026-07-20
+```
+
+Query:
+
+```txt
+serviceId
+date=YYYY-MM-DD
+```
+
+Response `data`:
+
+```json
+{
+  "providerId": "<providerId>",
+  "serviceId": "<serviceId>",
+  "date": "2026-07-20",
+  "durationMinutes": 60,
+  "workingHours": {
+    "openTime": "08:00",
+    "closeTime": "18:00"
+  },
+  "slots": [
+    {
+      "startAt": "2026-07-20T01:00:00.000Z",
+      "endAt": "2026-07-20T02:00:00.000Z"
+    }
+  ]
+}
+```
+
+FE nên dùng `slots[].startAt` làm `appointmentStart` khi tạo booking.
+
+### 3.1.2 Thanh toán MoMo sandbox cho booking ONLINE
+
+Customer token required.
+
+```http
+POST /api/mobile/bookings/{id}/momo/create-payment
+```
+
+Rule:
+
+- Booking phải thuộc customer đang login.
+- Booking phải có `paymentMethod = ONLINE`.
+- Booking chưa được thanh toán, tức `paymentStatus != SUCCESS`.
+- Booking chỉ được tạo payment khi `status = PENDING` hoặc `CONFIRMED`.
+
+Response `data`:
+
+```json
+{
+  "bookingId": "<bookingId>",
+  "orderId": "booking-...",
+  "requestId": "uuid",
+  "amount": 300000,
+  "payUrl": "https://test-payment.momo.vn/...",
+  "deeplink": "momo://...",
+  "qrCodeUrl": "https://...",
+  "status": "PENDING"
+}
+```
+
+FE redirect user sang `payUrl`. Sau khi user thanh toán, MoMo gọi:
+
+```http
+GET /api/mobile/payments/momo/return
+POST /api/mobile/payments/momo/ipn
+```
+
+Hai endpoint callback này public, FE không cần gọi trực tiếp. Backend verify MoMo signature, nếu `resultCode = 0` thì update:
+
+```txt
+booking.paymentStatus = SUCCESS
+booking.paymentReference = transId hoặc orderId
+booking.paidAt = now
+```
+
+Provider check-in sẽ bị chặn nếu booking `ONLINE` nhưng `paymentStatus != SUCCESS`.
+
+Backend cần cấu hình MoMo sandbox trước khi API tạo payment gọi được MoMo thật:
+
+```env
+MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
+MOMO_PARTNER_CODE=...
+MOMO_ACCESS_KEY=...
+MOMO_SECRET_KEY=...
+MOMO_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/return
+MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
+```
 
 ### 3.2 Xem booking của customer
 
@@ -211,7 +358,31 @@ Body:
 
 Một booking chỉ có 1 dispute.
 
-### 3.5 Review
+### 3.5 Customer cancel booking
+
+Customer token required.
+
+```http
+PATCH /api/mobile/bookings/{id}/cancel
+```
+
+Body optional:
+
+```json
+{
+  "reason": "I need to reschedule"
+}
+```
+
+Rule:
+
+- Customer chỉ hủy booking của chính mình.
+- Chỉ hủy được booking `PENDING` hoặc `CONFIRMED`.
+- Booking chuyển sang `CANCELLED`.
+- Nếu booking `ONLINE` đã paid `SUCCESS`, `paymentStatus` chuyển sang `REFUND_PENDING`.
+- Nếu booking `ONLINE` còn `PENDING`, `paymentStatus` chuyển sang `CANCELLED`.
+
+### 3.6 Review
 
 Chỉ review được khi booking `COMPLETED`.
 
@@ -239,6 +410,8 @@ Provider token required.
 GET /api/mobile/provider/bookings
 PATCH /api/mobile/provider/bookings/{id}/confirm
 PATCH /api/mobile/provider/bookings/{id}/reject
+PATCH /api/mobile/provider/bookings/{id}/cancel
+PATCH /api/mobile/provider/bookings/{id}/no-arrival
 ```
 
 Reject body:
@@ -248,6 +421,29 @@ Reject body:
   "reason": "Provider is unavailable"
 }
 ```
+
+Cancel body optional:
+
+```json
+{
+  "reason": "Provider is unavailable"
+}
+```
+
+Provider cancel rule:
+
+- Provider owner mới được hủy.
+- Chỉ hủy được booking `CONFIRMED`.
+- Booking chuyển sang `CANCELLED`.
+- Nếu booking `ONLINE` đã paid `SUCCESS`, `paymentStatus` chuyển sang `REFUND_PENDING`.
+
+No-arrival rule:
+
+- Provider owner mới được mark no-arrival.
+- Chỉ mark được booking `CONFIRMED`.
+- Chỉ được mark sau `appointmentStart + BOOKING_NO_ARRIVAL_GRACE_MINUTES`.
+- Default grace period hiện tại là `15` phút.
+- Booking chuyển sang `NO_ARRIVAL`.
 
 ### 4.2 QR check-in/check-out
 
@@ -272,7 +468,71 @@ Status flow:
 CONFIRMED -> CHECKED_IN -> CHECKED_OUT
 ```
 
-### 4.3 Provider wallet
+Với booking `paymentMethod = ONLINE`, provider chỉ check-in được sau khi MoMo payment thành công.
+
+### 4.3 Provider availability
+
+Provider token required.
+
+```http
+GET /api/mobile/provider/working-hours
+PUT /api/mobile/provider/working-hours
+GET /api/mobile/provider/availability-blocks
+POST /api/mobile/provider/availability-blocks
+DELETE /api/mobile/provider/availability-blocks/{id}
+```
+
+`dayOfWeek` dùng format:
+
+```txt
+0=Sunday
+1=Monday
+2=Tuesday
+3=Wednesday
+4=Thursday
+5=Friday
+6=Saturday
+```
+
+Update working hours body:
+
+```json
+{
+  "items": [
+    {
+      "dayOfWeek": 1,
+      "openTime": "08:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    },
+    {
+      "dayOfWeek": 0,
+      "openTime": "00:00",
+      "closeTime": "00:00",
+      "isClosed": true
+    }
+  ]
+}
+```
+
+Create availability block body:
+
+```json
+{
+  "startAt": "2026-07-20T03:00:00.000Z",
+  "endAt": "2026-07-20T05:00:00.000Z",
+  "reason": "Personal day off"
+}
+```
+
+Rule:
+
+- `openTime` và `closeTime` dùng `HH:mm`.
+- `openTime` phải trước `closeTime` nếu `isClosed = false`.
+- Không được tạo block trùng block đang có.
+- Booking mới sẽ bị chặn nếu trùng block hoặc ngoài working hours.
+
+### 4.4 Provider wallet
 
 ```http
 GET /api/mobile/provider/wallet
@@ -289,7 +549,7 @@ MANUAL_ADJUSTMENT
 WITHDRAWAL_PAYOUT
 ```
 
-### 4.4 Provider withdrawals
+### 4.5 Provider withdrawals
 
 Provider tạo yêu cầu rút tiền, chưa trừ ví ngay. Admin `mark-paid` mới trừ ví.
 
@@ -343,17 +603,27 @@ Các event hiện có thể tạo notification:
 - `BOOKING_CHECKED_IN`
 - `BOOKING_CHECKED_OUT`
 - `BOOKING_COMPLETED`
+- `BOOKING_CANCELLED`
+- `BOOKING_NO_ARRIVAL`
+- `REFUND_PENDING`
+- `REFUND_COMPLETED`
+- `REFUND_REJECTED`
 - `DISPUTE_CREATED`
 - `DISPUTE_RESOLVED`
 - `WITHDRAWAL_APPROVED`
 - `WITHDRAWAL_REJECTED`
 - `WITHDRAWAL_PAID`
+- `PAYMENT_SUCCESS`
+- `BOOKING_ONLINE_PAID`
 - `PROVIDER_VERIFIED`
 - `PROVIDER_REJECTED`
 - `PROVIDER_DOCUMENT_APPROVED`
 - `PROVIDER_DOCUMENT_REJECTED`
 - `PROVIDER_READY_FOR_VERIFICATION`
+- `SERVICE_HIDDEN_BY_ADMIN`
+- `SERVICE_UNHIDDEN_BY_ADMIN`
 - `ACCOUNT_STATUS_CHANGED`
+- `ADMIN_ANNOUNCEMENT`
 
 ## 6. Admin APIs
 
@@ -518,7 +788,45 @@ await apiFetch(`/admin/provider-documents/${documentId}/reject`, {
 });
 ```
 
-### 6.4 Admin bookings
+### 6.4 Admin services
+
+```http
+GET /api/admin/services
+GET /api/admin/services/{id}
+PATCH /api/admin/services/{id}/hide
+PATCH /api/admin/services/{id}/unhide
+```
+
+List filters:
+
+```txt
+providerId
+category=GROOMING|SPA|BOARDING|TRAINING|VETERINARY|OTHER
+isActive=true|false
+isHiddenByAdmin=true|false
+keyword
+page
+pageSize
+```
+
+Hide body optional:
+
+```json
+{
+  "reason": "Service violates platform policy"
+}
+```
+
+Rule:
+
+- `hide` set `isHiddenByAdmin = true`.
+- `unhide` set `isHiddenByAdmin = false`.
+- Service bị admin hidden sẽ không xuất hiện trong public/mobile bookable services.
+- Customer không thể tạo booking với service `isHiddenByAdmin = true`.
+- Provider vẫn thấy field `isHiddenByAdmin` trong service của mình để hiển thị trạng thái bị admin ẩn.
+- Hide/unhide gửi notification cho provider và ghi audit log.
+
+### 6.5 Admin bookings
 
 ```http
 GET /api/admin/bookings
@@ -530,7 +838,7 @@ List filters:
 ```txt
 status
 paymentMethod=CASH|ONLINE
-paymentStatus=UNPAID|PENDING|SUCCESS|FAILED|REFUNDED
+paymentStatus=UNPAID|PENDING|SUCCESS|FAILED|REFUND_PENDING|REFUNDED|CANCELLED
 providerId
 customerId
 from
@@ -552,7 +860,7 @@ review
 walletTransactions
 ```
 
-### 6.5 Admin disputes
+### 6.6 Admin disputes
 
 ```http
 GET /api/admin/disputes
@@ -575,13 +883,17 @@ Resolution rules:
 - `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission v1.
 - `CANCELLED`: hiểu là hủy khiếu nại, booking -> `COMPLETED`, chạy commission.
 
-### 6.6 Admin finance
+### 6.7 Admin finance
 
 ```http
 GET /api/admin/wallet-transactions
 GET /api/admin/providers/{id}/wallet
 POST /api/admin/providers/{id}/wallet/adjust
 GET /api/admin/bookings/{id}/finance
+GET /api/admin/refunds
+GET /api/admin/refunds/{bookingId}
+PATCH /api/admin/refunds/{bookingId}/mark-refunded
+PATCH /api/admin/refunds/{bookingId}/reject
 ```
 
 Wallet transaction filters:
@@ -611,7 +923,32 @@ Rule:
 - Không cho balance âm.
 - Ghi ledger `MANUAL_ADJUSTMENT`.
 
-### 6.7 Admin withdrawals
+Refund v1 là manual refund:
+
+- API list chỉ trả booking `paymentMethod = ONLINE` và `paymentStatus = REFUND_PENDING`.
+- Admin hoàn tiền ngoài hệ thống hoặc trên MoMo dashboard.
+- Sau đó admin gọi `mark-refunded` để set `paymentStatus = REFUNDED`.
+- Nếu từ chối refund, admin gọi `reject`, backend set `paymentStatus = SUCCESS`.
+- Cả hai action đều ghi audit log và gửi notification cho customer.
+
+Mark refunded body optional:
+
+```json
+{
+  "refundReference": "MOMO_REFUND_123",
+  "adminNote": "Refunded manually from MoMo dashboard"
+}
+```
+
+Reject refund body:
+
+```json
+{
+  "adminNote": "Refund rejected due to policy"
+}
+```
+
+### 6.8 Admin withdrawals
 
 ```http
 GET /api/admin/withdrawals
@@ -654,7 +991,61 @@ PENDING -> REJECTED
 
 `mark-paid` trừ `provider.walletBalance` và ghi ledger `WITHDRAWAL_PAYOUT`.
 
-### 6.8 Admin audit logs
+### 6.9 Admin notifications
+
+```http
+GET /api/admin/notifications
+POST /api/admin/notifications/send
+POST /api/admin/notifications/broadcast
+```
+
+List filters:
+
+```txt
+userId
+type
+from
+to
+page
+pageSize
+```
+
+Send to one user body:
+
+```json
+{
+  "userId": "<userId>",
+  "type": "ADMIN_ANNOUNCEMENT",
+  "title": "System maintenance",
+  "message": "PetLink will be under maintenance tonight.",
+  "data": {
+    "screen": "home"
+  }
+}
+```
+
+Broadcast by role body:
+
+```json
+{
+  "role": "PROVIDER",
+  "type": "ADMIN_ANNOUNCEMENT",
+  "title": "Provider policy update",
+  "message": "Please review the latest provider policy.",
+  "data": {
+    "screen": "provider_policy"
+  }
+}
+```
+
+Rule:
+
+- Broadcast chỉ gửi tới user `ACTIVE`.
+- `role` phải là `CUSTOMER`, `PROVIDER`, hoặc `ADMIN`.
+- Mobile user đọc bằng API notification sẵn có: `GET /api/mobile/notifications`.
+- Action này ghi audit log.
+
+### 6.10 Admin audit logs
 
 ```http
 GET /api/admin/audit-logs
@@ -687,9 +1078,15 @@ PROVIDER_REJECT
 PROVIDER_SUSPEND
 PROVIDER_DOCUMENT_APPROVE
 PROVIDER_DOCUMENT_REJECT
+REFUND_MARK_REFUNDED
+REFUND_REJECT
+ADMIN_NOTIFICATION_SEND
+ADMIN_NOTIFICATION_BROADCAST
+SERVICE_HIDE
+SERVICE_UNHIDE
 ```
 
-### 6.9 Admin reports
+### 6.11 Admin reports
 
 ```http
 GET /api/admin/reports/revenue
@@ -780,6 +1177,19 @@ Rejected:
 
 ```txt
 PENDING -> REJECTED
+```
+
+Cancelled:
+
+```txt
+PENDING -> CANCELLED
+CONFIRMED -> CANCELLED
+```
+
+No-arrival:
+
+```txt
+CONFIRMED -> NO_ARRIVAL
 ```
 
 Dispute:

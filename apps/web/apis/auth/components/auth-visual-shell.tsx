@@ -31,8 +31,15 @@ export function AuthVisualShell({ children, title, description }: AuthVisualShel
 
       <section className="flex min-h-screen items-center justify-center px-4 py-10 sm:px-8">
         <div className="w-full max-w-140 rounded-[28px] border border-border-subtle bg-surface p-6 shadow-xl shadow-slate-900/5 sm:p-10">
+          <Link
+            href="/"
+            className="mb-6 inline-flex items-center gap-2 text-sm font-semibold text-muted transition-colors hover:text-brand"
+          >
+            <span aria-hidden="true">←</span>
+            Quay lại trang chủ
+          </Link>
           <div className="mb-7">
-            <Link href="/" className="mb-8 inline-block text-xl font-black text-brand lg:hidden">PetLink</Link>
+            <Link href="/" className="mb-8 block text-xl font-black text-brand lg:hidden">PetLink</Link>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">{title}</h1>
             <p className="mt-2 text-muted">{description}</p>
           </div>

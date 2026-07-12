@@ -3,6 +3,8 @@
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { useProfile } from "@/apis/auth/queries";
+import { ProviderAccessDenied } from "@/components/provider/provider-access-denied";
+import { getProviderRouteAccess } from "@/lib/provider-access";
 import { useAuthStore } from "@/stores/auth-store";
 
 type AppRole = "ADMIN" | "PROVIDER" | "CUSTOMER";
@@ -49,20 +51,7 @@ export function AuthGuard({
     if (!profile || !allowedRoles?.length) return;
 
     const roleAllowed = allowedRoles.includes(profile.role as AppRole);
-    const requiresVerifiedProvider = allowedRoles.includes("PROVIDER");
-    const providerAllowed =
-      !requiresVerifiedProvider ||
-      (profile.role === "PROVIDER" &&
-        profile.providerStatus === "VERIFIED");
-
-    if (!roleAllowed || !providerAllowed) {
-      if (profile.role === "PROVIDER") {
-        if (profile.providerStatus === "PENDING_VERIFICATION" || profile.providerStatus === "REJECTED") {
-          router.replace("/provider-verification");
-          return;
-        }
-      }
-
+    if (!roleAllowed) {
       router.replace(roleHomePath[profile.role as AppRole] ?? "/login");
     }
   }, [allowedRoles, profileQuery.data, router]);
@@ -77,18 +66,44 @@ export function AuthGuard({
 
   const profile = profileQuery.data;
   const roleAllowed =
-    !allowedRoles?.length ||
-    allowedRoles.includes(profile?.role as AppRole);
-  const providerAllowed =
-    !allowedRoles?.includes("PROVIDER") ||
-    (profile?.role === "PROVIDER" &&
-      profile.providerStatus === "VERIFIED");
+    !allowedRoles?.length || allowedRoles.includes(profile?.role as AppRole);
 
-  if (!roleAllowed || !providerAllowed) {
+  if (!roleAllowed) {
     return (
       <div className="grid min-h-screen place-items-center bg-background text-sm font-semibold text-muted">
         Đang chuyển hướng theo quyền tài khoản...
       </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+export function ProviderAccessGuard({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const pathname = usePathname() || "/provider";
+  const profileQuery = useProfile();
+  const access = getProviderRouteAccess(
+    pathname,
+    profileQuery.data?.providerStatus,
+  );
+
+  if (profileQuery.isLoading || profileQuery.isFetching) {
+    return (
+      <div className="grid min-h-[calc(100vh-4rem)] place-items-center bg-background text-sm font-semibold text-muted">
+        Đang kiểm tra quyền truy cập nhà cung cấp...
+      </div>
+    );
+  }
+
+  if (!access.allowed) {
+    return (
+      <ProviderAccessDenied
+        reason={access.reason ?? "Bạn không có quyền truy cập trang này."}
+      />
     );
   }
 
@@ -108,4 +123,5 @@ export function DashboardRoleGuard({
 export const GuardComponents = {
   AuthGuard,
   DashboardRoleGuard,
+  ProviderAccessGuard,
 };
