@@ -594,6 +594,7 @@ Các event hiện có thể tạo notification:
 - `PROVIDER_DOCUMENT_REJECTED`
 - `PROVIDER_READY_FOR_VERIFICATION`
 - `ACCOUNT_STATUS_CHANGED`
+- `ADMIN_ANNOUNCEMENT`
 
 ## 6. Admin APIs
 
@@ -923,7 +924,61 @@ PENDING -> REJECTED
 
 `mark-paid` trừ `provider.walletBalance` và ghi ledger `WITHDRAWAL_PAYOUT`.
 
-### 6.8 Admin audit logs
+### 6.8 Admin notifications
+
+```http
+GET /api/admin/notifications
+POST /api/admin/notifications/send
+POST /api/admin/notifications/broadcast
+```
+
+List filters:
+
+```txt
+userId
+type
+from
+to
+page
+pageSize
+```
+
+Send to one user body:
+
+```json
+{
+  "userId": "<userId>",
+  "type": "ADMIN_ANNOUNCEMENT",
+  "title": "System maintenance",
+  "message": "PetLink will be under maintenance tonight.",
+  "data": {
+    "screen": "home"
+  }
+}
+```
+
+Broadcast by role body:
+
+```json
+{
+  "role": "PROVIDER",
+  "type": "ADMIN_ANNOUNCEMENT",
+  "title": "Provider policy update",
+  "message": "Please review the latest provider policy.",
+  "data": {
+    "screen": "provider_policy"
+  }
+}
+```
+
+Rule:
+
+- Broadcast chỉ gửi tới user `ACTIVE`.
+- `role` phải là `CUSTOMER`, `PROVIDER`, hoặc `ADMIN`.
+- Mobile user đọc bằng API notification sẵn có: `GET /api/mobile/notifications`.
+- Action này ghi audit log.
+
+### 6.9 Admin audit logs
 
 ```http
 GET /api/admin/audit-logs
@@ -958,9 +1013,11 @@ PROVIDER_DOCUMENT_APPROVE
 PROVIDER_DOCUMENT_REJECT
 REFUND_MARK_REFUNDED
 REFUND_REJECT
+ADMIN_NOTIFICATION_SEND
+ADMIN_NOTIFICATION_BROADCAST
 ```
 
-### 6.9 Admin reports
+### 6.10 Admin reports
 
 ```http
 GET /api/admin/reports/revenue
