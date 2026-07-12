@@ -220,6 +220,83 @@ mobileBookingRouter.get(
 
 /**
  * @swagger
+ * /api/mobile/bookings/{id}/momo/create-payment:
+ *   post:
+ *     summary: Create MoMo sandbox payment
+ *     description: Customer creates a MoMo captureWallet payment for their ONLINE booking. Frontend redirects user to payUrl.
+ *     tags: [Mobile-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking ID
+ *     responses:
+ *       201:
+ *         description: MoMo payment created successfully
+ *       400:
+ *         description: Booking is not payable online or MoMo config is missing
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Customer role required
+ *       404:
+ *         description: Booking not found
+ */
+mobileBookingRouter.post(
+  "/bookings/:id/momo/create-payment",
+  protect,
+  checkRole("CUSTOMER"),
+  mobileBookingController.createMomoPayment,
+);
+
+/**
+ * @swagger
+ * /api/mobile/payments/momo/ipn:
+ *   post:
+ *     summary: MoMo IPN callback
+ *     description: Public server-to-server callback from MoMo. Backend verifies signature and updates booking payment status.
+ *     tags: [Mobile-Bookings]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *     responses:
+ *       200:
+ *         description: MoMo IPN processed successfully
+ *       400:
+ *         description: Invalid MoMo signature or payload
+ */
+mobileBookingRouter.post(
+  "/payments/momo/ipn",
+  mobileBookingController.handleMomoIpn,
+);
+
+/**
+ * @swagger
+ * /api/mobile/payments/momo/return:
+ *   get:
+ *     summary: MoMo return callback
+ *     description: Public browser return URL from MoMo. Backend verifies signature and updates booking payment status.
+ *     tags: [Mobile-Bookings]
+ *     responses:
+ *       200:
+ *         description: MoMo return processed successfully
+ *       400:
+ *         description: Invalid MoMo signature or payload
+ */
+mobileBookingRouter.get(
+  "/payments/momo/return",
+  mobileBookingController.handleMomoReturn,
+);
+
+/**
+ * @swagger
  * /api/mobile/bookings/{id}/disputes:
  *   post:
  *     summary: Create a booking dispute

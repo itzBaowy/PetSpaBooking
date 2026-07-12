@@ -125,6 +125,26 @@ Ví dụ:
 const providers = await apiFetch("/mobile/providers?page=1&pageSize=10");
 ```
 
+Lưu ý availability:
+
+```json
+{
+  "availability": {
+    "isOpenNow": false,
+    "canBookFuture": true,
+    "todayOpeningHours": {
+      "open": "Closed",
+      "close": "Closed"
+    }
+  }
+}
+```
+
+- `isOpenNow` chỉ thể hiện provider có đang mở cửa tại thời điểm hiện tại hay không.
+- FE không nên dùng `isOpenNow = false` để chặn đặt lịch tương lai.
+- Muốn đặt lịch, FE gọi `GET /api/mobile/providers/{providerId}/available-slots` và dùng slot trả về.
+- `canBookFuture = true` nghĩa là provider có service active và có ít nhất một ngày working hours mở.
+
 ## 3. Customer Booking Flow
 
 Customer token required.
@@ -155,7 +175,107 @@ Rule quan trọng:
 - Provider phải `VERIFIED`.
 - Provider phải có `depositStatus = ACTIVE`.
 - `depositBalance >= 300000`.
+- Slot phải nằm trong working hours của provider.
+- Slot không được trùng availability block.
+- Slot không được trùng booking đang `PENDING`, `CONFIRMED`, `CHECKED_IN`.
 - Booking mới tạo có `status = PENDING`.
+- Nếu `paymentMethod = ONLINE`, booking mới có `paymentStatus = PENDING` và cần tạo MoMo payment.
+
+### 3.1.1 Xem available slots trước khi booking
+
+Không cần token.
+
+```http
+GET /api/mobile/providers/{providerId}/available-slots?serviceId={serviceId}&date=2026-07-20
+```
+
+Query:
+
+```txt
+serviceId
+date=YYYY-MM-DD
+```
+
+Response `data`:
+
+```json
+{
+  "providerId": "<providerId>",
+  "serviceId": "<serviceId>",
+  "date": "2026-07-20",
+  "durationMinutes": 60,
+  "workingHours": {
+    "openTime": "08:00",
+    "closeTime": "18:00"
+  },
+  "slots": [
+    {
+      "startAt": "2026-07-20T01:00:00.000Z",
+      "endAt": "2026-07-20T02:00:00.000Z"
+    }
+  ]
+}
+```
+
+FE nên dùng `slots[].startAt` làm `appointmentStart` khi tạo booking.
+
+### 3.1.2 Thanh toán MoMo sandbox cho booking ONLINE
+
+Customer token required.
+
+```http
+POST /api/mobile/bookings/{id}/momo/create-payment
+```
+
+Rule:
+
+- Booking phải thuộc customer đang login.
+- Booking phải có `paymentMethod = ONLINE`.
+- Booking chưa được thanh toán, tức `paymentStatus != SUCCESS`.
+- Booking chỉ được tạo payment khi `status = PENDING` hoặc `CONFIRMED`.
+
+Response `data`:
+
+```json
+{
+  "bookingId": "<bookingId>",
+  "orderId": "booking-...",
+  "requestId": "uuid",
+  "amount": 300000,
+  "payUrl": "https://test-payment.momo.vn/...",
+  "deeplink": "momo://...",
+  "qrCodeUrl": "https://...",
+  "status": "PENDING"
+}
+```
+
+FE redirect user sang `payUrl`. Sau khi user thanh toán, MoMo gọi:
+
+```http
+GET /api/mobile/payments/momo/return
+POST /api/mobile/payments/momo/ipn
+```
+
+Hai endpoint callback này public, FE không cần gọi trực tiếp. Backend verify MoMo signature, nếu `resultCode = 0` thì update:
+
+```txt
+booking.paymentStatus = SUCCESS
+booking.paymentReference = transId hoặc orderId
+booking.paidAt = now
+```
+
+Provider check-in sẽ bị chặn nếu booking `ONLINE` nhưng `paymentStatus != SUCCESS`.
+
+Backend cần cấu hình MoMo sandbox trước khi API tạo payment gọi được MoMo thật:
+
+```env
+MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
+MOMO_PARTNER_CODE=...
+MOMO_ACCESS_KEY=...
+MOMO_SECRET_KEY=...
+MOMO_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/return
+MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
+```
 
 ### 3.2 Xem booking của customer
 
@@ -272,7 +392,71 @@ Status flow:
 CONFIRMED -> CHECKED_IN -> CHECKED_OUT
 ```
 
-### 4.3 Provider wallet
+Với booking `paymentMethod = ONLINE`, provider chỉ check-in được sau khi MoMo payment thành công.
+
+### 4.3 Provider availability
+
+Provider token required.
+
+```http
+GET /api/mobile/provider/working-hours
+PUT /api/mobile/provider/working-hours
+GET /api/mobile/provider/availability-blocks
+POST /api/mobile/provider/availability-blocks
+DELETE /api/mobile/provider/availability-blocks/{id}
+```
+
+`dayOfWeek` dùng format:
+
+```txt
+0=Sunday
+1=Monday
+2=Tuesday
+3=Wednesday
+4=Thursday
+5=Friday
+6=Saturday
+```
+
+Update working hours body:
+
+```json
+{
+  "items": [
+    {
+      "dayOfWeek": 1,
+      "openTime": "08:00",
+      "closeTime": "18:00",
+      "isClosed": false
+    },
+    {
+      "dayOfWeek": 0,
+      "openTime": "00:00",
+      "closeTime": "00:00",
+      "isClosed": true
+    }
+  ]
+}
+```
+
+Create availability block body:
+
+```json
+{
+  "startAt": "2026-07-20T03:00:00.000Z",
+  "endAt": "2026-07-20T05:00:00.000Z",
+  "reason": "Personal day off"
+}
+```
+
+Rule:
+
+- `openTime` và `closeTime` dùng `HH:mm`.
+- `openTime` phải trước `closeTime` nếu `isClosed = false`.
+- Không được tạo block trùng block đang có.
+- Booking mới sẽ bị chặn nếu trùng block hoặc ngoài working hours.
+
+### 4.4 Provider wallet
 
 ```http
 GET /api/mobile/provider/wallet
@@ -289,7 +473,7 @@ MANUAL_ADJUSTMENT
 WITHDRAWAL_PAYOUT
 ```
 
-### 4.4 Provider withdrawals
+### 4.5 Provider withdrawals
 
 Provider tạo yêu cầu rút tiền, chưa trừ ví ngay. Admin `mark-paid` mới trừ ví.
 
@@ -348,6 +532,8 @@ Các event hiện có thể tạo notification:
 - `WITHDRAWAL_APPROVED`
 - `WITHDRAWAL_REJECTED`
 - `WITHDRAWAL_PAID`
+- `PAYMENT_SUCCESS`
+- `BOOKING_ONLINE_PAID`
 - `PROVIDER_VERIFIED`
 - `PROVIDER_REJECTED`
 - `PROVIDER_DOCUMENT_APPROVED`

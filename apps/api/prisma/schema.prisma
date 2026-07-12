@@ -87,6 +87,7 @@ model providers {
   walletTransactions wallet_transactions[]
   withdrawalRequests withdrawal_requests[]
   workingHours      working_hours[]
+  availabilityBlocks provider_availability_blocks[]
   providerDocuments provider_documents[]
 }
 
@@ -140,6 +141,8 @@ model bookings {
   status        String @default("PENDING")
   paymentMethod String @default("CASH")
   paymentStatus String @default("UNPAID")
+  paymentReference String?
+  paidAt        DateTime?
 
   totalAmount Float
   currency    String @default("VND")
@@ -172,12 +175,46 @@ model bookings {
   dispute  booking_disputes?
   review   reviews?
   walletTransactions wallet_transactions[]
+  paymentTransactions payment_transactions[]
 
   @@index([customerId])
   @@index([providerId])
   @@index([serviceId])
   @@index([status])
   @@index([appointmentStart])
+}
+
+model payment_transactions {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId   String @db.ObjectId
+  customerId  String @db.ObjectId
+  providerId  String @db.ObjectId
+
+  provider    String @default("MOMO")
+  orderId     String @unique
+  requestId   String @unique
+  amount      Float
+  status      String @default("PENDING")
+  payUrl      String?
+  deeplink    String?
+  qrCodeUrl   String?
+  resultCode  Int?
+  message     String?
+  transId     String?
+  rawResponse String?
+  rawIpn      String?
+  paidAt      DateTime?
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  booking bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([providerId])
+  @@index([provider])
+  @@index([status])
 }
 
 model booking_qr_logs {
@@ -327,6 +364,22 @@ model working_hours {
   isClosed   Boolean @default(false)
 
   provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model provider_availability_blocks {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  providerId  String   @db.ObjectId
+  startAt     DateTime
+  endAt       DateTime
+  reason      String?
+  createAt    DateTime @default(now())
+  updateAt    DateTime @updatedAt
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([startAt])
+  @@index([endAt])
 }
 
 model pets {

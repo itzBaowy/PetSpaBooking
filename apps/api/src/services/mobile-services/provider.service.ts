@@ -92,6 +92,9 @@ export const mobileProviderServices = {
       }
 
       const availability = checkAvailability(provider.workingHours);
+      const canBookFuture =
+        provider.services.length > 0 &&
+        provider.workingHours.some((workingHour) => !workingHour.isClosed);
 
       return {
         id: provider.id,
@@ -139,7 +142,10 @@ export const mobileProviderServices = {
           })),
         },
 
-        availability: availability,
+        availability: {
+          ...availability,
+          canBookFuture,
+        },
 
         paymentMethods: {
           online: provider.payOnline,
@@ -270,6 +276,9 @@ export const mobileProviderServices = {
     }
 
     const availability = checkAvailability(provider.workingHours);
+    const canBookFuture =
+      provider.services.length > 0 &&
+      provider.workingHours.some((workingHour) => !workingHour.isClosed);
 
     const totalReviews = provider.reviews.length;
 
@@ -320,7 +329,10 @@ export const mobileProviderServices = {
           description: s.description || undefined,
         })),
       },
-      availability: availability,
+      availability: {
+        ...availability,
+        canBookFuture,
+      },
       paymentMethods: {
         online: provider.payOnline,
         cash: provider.payCash,

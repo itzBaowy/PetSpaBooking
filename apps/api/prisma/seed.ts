@@ -253,6 +253,9 @@ async function main() {
     await prisma.working_hours.deleteMany({
       where: { providerId: provider.id },
     });
+    await prisma.provider_availability_blocks.deleteMany({
+      where: { providerId: provider.id },
+    });
     await prisma.working_hours.createMany({
       data: [
         {
