@@ -89,7 +89,17 @@ export function AdminLedgerPage() {
       <EntityTable
         loading={query.isLoading}
         items={query.data?.items}
-        columns={["providerId", "bookingId", "type", "balanceType", "amount", "balanceAfter", "createAt"]}
+        columns={[
+          "provider.businessName",
+          "booking.id",
+          "booking.customer.users.fullName",
+          "booking.service.name",
+          "type",
+          "balanceType",
+          "amount",
+          "balanceAfter",
+          "createAt",
+        ]}
       />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />
     </div>

@@ -152,6 +152,26 @@ export const adminFinanceService = {
               commissionAmount: true,
               providerEarning: true,
               commissionProcessedAt: true,
+              service: {
+                select: {
+                  id: true,
+                  name: true,
+                  category: true,
+                },
+              },
+              customer: {
+                select: {
+                  id: true,
+                  users: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      userName: true,
+                      phone: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },

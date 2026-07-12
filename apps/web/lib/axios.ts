@@ -5,7 +5,7 @@ import type { ApiResponse } from "@/types/api";
 import type { AuthToken } from "@/types/auth";
 
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:5500/api";
+  process.env.NEXT_PUBLIC_API_URL || "";
 
 export const api = axios.create({
   baseURL: API_BASE_URL,

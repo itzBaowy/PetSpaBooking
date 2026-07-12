@@ -14,6 +14,7 @@ import {
   getApproveConfirmMessage,
   getSuspendPromptMessage,
 } from "../provider-helpers";
+import { errorMessage } from "@/components/admin/shared";
 
 export function useAdminProviderList(defaultStatus?: AdminProviderStatus) {
   const confirm = useConfirmDialog();
@@ -65,8 +66,12 @@ export function useAdminProviderList(defaultStatus?: AdminProviderStatus) {
     });
     if (!result.confirmed) return;
 
-    await approveMutation.mutateAsync(provider.id);
-    showToast("Đã duyệt nhà cung cấp.", "success");
+    try {
+      await approveMutation.mutateAsync(provider.id);
+      showToast("Đã duyệt nhà cung cấp.", "success");
+    } catch (error) {
+      showToast(errorMessage(error), "error");
+    }
   }
 
   async function rejectProvider(provider: AdminProvider) {
@@ -85,11 +90,15 @@ export function useAdminProviderList(defaultStatus?: AdminProviderStatus) {
     });
     if (!result.confirmed || !result.value) return;
 
-    await rejectMutation.mutateAsync({
-      providerId: provider.id,
-      payload: { reason: result.value },
-    });
-    showToast("Đã từ chối hồ sơ nhà cung cấp.", "success");
+    try {
+      await rejectMutation.mutateAsync({
+        providerId: provider.id,
+        payload: { reason: result.value },
+      });
+      showToast("Đã từ chối hồ sơ nhà cung cấp.", "success");
+    } catch (error) {
+      showToast(errorMessage(error), "error");
+    }
   }
 
   async function suspendProvider(provider: AdminProvider) {
@@ -106,11 +115,15 @@ export function useAdminProviderList(defaultStatus?: AdminProviderStatus) {
     });
     if (!result.confirmed) return;
 
-    await suspendMutation.mutateAsync({
-      providerId: provider.id,
-      payload: { reason: result.value || undefined },
-    });
-    showToast("Đã tạm ngưng nhà cung cấp.", "success");
+    try {
+      await suspendMutation.mutateAsync({
+        providerId: provider.id,
+        payload: { reason: result.value || undefined },
+      });
+      showToast("Đã tạm ngưng nhà cung cấp.", "success");
+    } catch (error) {
+      showToast(errorMessage(error), "error");
+    }
   }
 
   return {

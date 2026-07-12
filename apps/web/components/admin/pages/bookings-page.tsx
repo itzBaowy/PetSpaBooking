@@ -131,7 +131,14 @@ export function AdminBookingsPage() {
       <EntityTable
         loading={query.isLoading}
         items={query.data?.items}
-        columns={["status", "paymentMethod", "paymentStatus", "totalAmount", "appointmentStart"]}
+        columns={[
+          "customer.users.fullName",
+          "provider.businessName",
+          "service.name",
+          "status",
+          "totalAmount",
+          "appointmentStart",
+        ]}
         detailBase="/admin/bookings/detail"
       />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />

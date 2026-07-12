@@ -6,15 +6,25 @@ import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
 import { nested, textValue } from "@/apis/admin/supported-api";
 import { PageTitle, LoadState } from "../shared";
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import { formatCurrency } from "@/lib/currency";
+import { useDailyRevenue, useProviderPerformance, useRevenueSummary } from "@/apis/admin/reports/queries";
+import { PlatformRevenueChart } from "@/apis/admin/analytics/components/platform-revenue-chart";
+import { TopProvidersTable } from "@/apis/admin/analytics/components/top-providers-table";
 
 export function AdminDashboardPage() {
   const query = useQuery<Record<string, unknown>>({
     queryKey: ["admin-real", "dashboard"],
     queryFn: async () => (await api.get<ApiResponse<Record<string, unknown>>>(API_ENDPOINTS.ADMIN.DASHBOARD)).data.data,
   });
+  const revenueQuery = useRevenueSummary();
+  const dailyRevenueQuery = useDailyRevenue();
+  const providersQuery = useProviderPerformance();
 
-  if (query.isLoading) return <p>Đang tải tổng quan...</p>;
-  if (query.isError) return <LoadState error={query.error} retry={() => void query.refetch()} />;
+  const isLoading = query.isLoading || revenueQuery.isLoading || dailyRevenueQuery.isLoading || providersQuery.isLoading;
+  const failedQuery = [query, revenueQuery, dailyRevenueQuery, providersQuery].find((item) => item.isError);
+  if (isLoading) return <p>Đang tải tổng quan...</p>;
+  if (failedQuery?.isError) return <LoadState error={failedQuery.error} retry={() => void Promise.all([query.refetch(), revenueQuery.refetch(), dailyRevenueQuery.refetch(), providersQuery.refetch()])} />;
 
   const data = query.data ?? {};
   const cards = [
@@ -29,16 +39,21 @@ export function AdminDashboardPage() {
   return (
     <div className="space-y-6">
       <PageTitle title="Tổng quan quản trị" description="Số liệu trực tiếp từ GET /admin/dashboard/summary." />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      <StatisticCardGrid columns={3}>
         {cards.map(([label, value]) => (
-          <div key={String(label)} className="rounded-2xl border bg-white p-5 shadow-sm">
-            <p className="text-sm text-gray-500">{textValue(label)}</p>
-            <p className="mt-2 text-3xl font-bold">{textValue(value, "0")}</p>
-          </div>
+          <StatisticCard key={String(label)} title={textValue(label)} value={textValue(value, "0")} />
         ))}
-      </div>
-      <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-900">
-        Biểu đồ xu hướng, top dịch vụ và top nhà cung cấp chưa có endpoint trong BE nên không sử dụng dữ liệu mock.
+      </StatisticCardGrid>
+      {revenueQuery.data && (
+        <StatisticCardGrid columns={3}>
+          <StatisticCard title="Tổng giá trị booking" value={formatCurrency(revenueQuery.data.totalBookingAmount, "VND")} tone="blue" />
+          <StatisticCard title="Hoa hồng nền tảng" value={formatCurrency(revenueQuery.data.totalCommission, "VND")} tone="green" />
+          <StatisticCard title="Thu nhập nhà cung cấp" value={formatCurrency(revenueQuery.data.totalProviderEarning, "VND")} tone="purple" />
+        </StatisticCardGrid>
+      )}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {dailyRevenueQuery.data && <PlatformRevenueChart data={dailyRevenueQuery.data} />}
+        {providersQuery.data && <TopProvidersTable providers={providersQuery.data.items} />}
       </div>
     </div>
   );

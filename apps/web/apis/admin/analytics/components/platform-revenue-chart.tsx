@@ -1,7 +1,7 @@
 "use client";
 
 import { formatCurrency } from "@/lib/currency";
-import { revenueTrendMock as MOCK_REVENUE } from "../mock-data";
+import type { DailyRevenuePoint } from "@/apis/admin/reports/schema";
 
 const SVG_WIDTH = 500;
 const SVG_HEIGHT = 220;
@@ -9,24 +9,35 @@ const GRAPH_HEIGHT = 160;
 const GRAPH_WIDTH = 430;
 const START_X = 55;
 const START_Y = 20;
-const MAX_VAL = 22000000;
+export function PlatformRevenueChart({ data }: { data: DailyRevenuePoint[] }) {
+  if (data.length === 0) {
+    return (
+      <div className="flex h-85 flex-col rounded-xl border border-gray-100 bg-white p-6 shadow-sm">
+        <h3 className="font-semibold text-gray-800">Phân tích doanh thu</h3>
+        <div className="grid flex-1 place-items-center text-sm font-medium text-gray-400">
+          Chưa có booking hoàn tất trong kỳ này.
+        </div>
+      </div>
+    );
+  }
 
-export function PlatformRevenueChart() {
+  const maxValue = Math.max(...data.map((item) => item.bookingAmount), 1);
   const toX = (index: number) => {
-    return START_X + (index / (MOCK_REVENUE.length - 1)) * GRAPH_WIDTH;
+    return START_X + (index / Math.max(data.length - 1, 1)) * GRAPH_WIDTH;
   };
 
   const toY = (val: number) => {
-    return START_Y + GRAPH_HEIGHT - (val / MAX_VAL) * GRAPH_HEIGHT;
+    return START_Y + GRAPH_HEIGHT - (val / maxValue) * GRAPH_HEIGHT;
   };
 
   // Generate SVG coordinates
-  const points = MOCK_REVENUE.map((d, i) => `${toX(i)},${toY(d.value)}`).join(
+  const points = data.map((d, i) => `${toX(i)},${toY(d.bookingAmount)}`).join(
     " ",
   );
-  const areaPoints = `${toX(0)},${START_Y + GRAPH_HEIGHT} ${points} ${toX(MOCK_REVENUE.length - 1)},${START_Y + GRAPH_HEIGHT}`;
+  const areaPoints = `${toX(0)},${START_Y + GRAPH_HEIGHT} ${points} ${toX(data.length - 1)},${START_Y + GRAPH_HEIGHT}`;
 
-  const total = MOCK_REVENUE.reduce((sum, d) => sum + d.value, 0);
+  const total = data.reduce((sum, d) => sum + d.bookingAmount, 0);
+  const ticks = [0, 0.25, 0.5, 0.75, 1].map((ratio) => Math.round(maxValue * ratio));
 
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6 flex flex-col justify-between h-85">
@@ -34,7 +45,7 @@ export function PlatformRevenueChart() {
         <div className="flex items-center justify-between mb-1">
           <h3 className="font-semibold text-gray-800">Phân tích doanh thu</h3>
           <span className="text-[10px] text-blue-600 bg-blue-50 font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-            Tổng năm
+            Theo kỳ
           </span>
         </div>
         <p className="text-2xl font-bold text-gray-900 leading-none">
@@ -57,7 +68,7 @@ export function PlatformRevenueChart() {
           </defs>
 
           {/* Grid lines */}
-          {[0, 5000000, 10000000, 15000000, 20000000].map((tick) => (
+          {ticks.map((tick) => (
             <g key={tick} className="opacity-40">
               <line
                 x1={START_X}
@@ -74,7 +85,7 @@ export function PlatformRevenueChart() {
                 textAnchor="end"
                 className="text-[9px] font-medium fill-gray-400"
               >
-                {tick >= 1000000 ? `${tick / 1000000}M` : "0"}
+                {tick >= 1000000 ? `${(tick / 1000000).toFixed(1)}M` : tick.toLocaleString("vi-VN")}
               </text>
             </g>
           ))}
@@ -93,32 +104,32 @@ export function PlatformRevenueChart() {
           />
 
           {/* Data Points */}
-          {MOCK_REVENUE.map((d, i) => (
+          {data.map((d, i) => (
             <circle
-              key={d.month}
+              key={d.date}
               cx={toX(i)}
-              cy={toY(d.value)}
+              cy={toY(d.bookingAmount)}
               r="4"
               className="fill-blue-600 stroke-white hover:r-6 cursor-pointer transition-all"
               strokeWidth="2"
             >
-              <title>{`${d.month}: ${formatCurrency(d.value, "VND")}`}</title>
+              <title>{`${d.date}: ${formatCurrency(d.bookingAmount, "VND")}`}</title>
             </circle>
           ))}
 
           {/* X-axis labels */}
-          {MOCK_REVENUE.map((d, i) => {
+          {data.map((d, i) => {
             // Show label every second month to prevent overlap if screen is small
-            if (i % 2 !== 0 && i !== MOCK_REVENUE.length - 1) return null;
+            if (i % 2 !== 0 && i !== data.length - 1) return null;
             return (
               <text
-                key={d.month}
+                key={d.date}
                 x={toX(i)}
                 y={START_Y + GRAPH_HEIGHT + 20}
                 textAnchor="middle"
                 className="text-[10px] font-medium fill-gray-400"
               >
-                {d.month}
+                {new Date(d.date).toLocaleDateString("vi-VN", { day: "2-digit", month: "2-digit" })}
               </text>
             );
           })}

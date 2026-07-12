@@ -1,11 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useProfile } from "@/apis/auth/queries";
-import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { useQuery } from "@tanstack/react-query";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
 import { Button } from "@/components/ui/button";
@@ -14,12 +10,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { FinanceStatusPill } from "@/apis/admin/finance/components/status-pill";
 import { CustomSelect, type CustomSelectOption } from "@/components/ui/custom-select";
-import { SearchInput } from "@/components/ui/search-input";
 import { ActionMenu } from "@/components/ui/action-menu";
-import { getAvatarInitials } from "@/components/ui/avatar";
-import { useConfirmDialog, useToast } from "@/components/ui";
-import { UserPetsPanel } from "@/apis/admin/users/components/user-pets-panel";
-import { ProviderDocumentPanel } from "@/apis/admin/providers/components/provider-document-panel";
 import {
   entitySchema,
   listSchema,
@@ -44,6 +35,13 @@ export const FIELD_LABELS: Record<string, string> = {
   type: "Loại giao dịch", balanceType: "Loại số dư", amount: "Số tiền",
   balanceAfter: "Số dư sau giao dịch", action: "Hành động",
   targetType: "Loại đối tượng", targetId: "Mã đối tượng",
+  "customer.users.fullName": "Khách hàng",
+  "customer.users.phone": "Số điện thoại",
+  "provider.businessName": "Nhà cung cấp",
+  "service.name": "Dịch vụ",
+  "booking.id": "Mã booking",
+  "booking.customer.users.fullName": "Khách hàng",
+  "booking.service.name": "Dịch vụ",
 };
 
 export const VALUE_LABELS: Record<string, string> = {
@@ -67,6 +65,8 @@ export const VALUE_LABELS: Record<string, string> = {
   PROVIDER_REJECT: "Từ chối nhà cung cấp",
   PROVIDER_SUSPEND: "Tạm ngưng nhà cung cấp",
   PROVIDER_VERIFY: "Xác minh nhà cung cấp",
+  PROVIDER_DOCUMENT_APPROVE: "Duyệt tài liệu nhà cung cấp",
+  PROVIDER_DOCUMENT_REJECT: "Từ chối tài liệu nhà cung cấp",
   PROVIDER_WALLET_ADJUST: "Điều chỉnh số dư ví",
   USER_STATUS_UPDATE: "Cập nhật trạng thái",
   WITHDRAWAL_APPROVE: "Duyệt yêu cầu rút tiền",
@@ -76,6 +76,7 @@ export const VALUE_LABELS: Record<string, string> = {
   BookingDispute: "Tranh chấp lịch hẹn",
   BOOKING_DISPUTE: "Tranh chấp lịch hẹn",
   Provider: "Nhà cung cấp",
+  PROVIDER_DOCUMENT: "Tài liệu nhà cung cấp",
   ProviderWallet: "Ví nhà cung cấp",
   PROVIDER_WALLET: "Ví nhà cung cấp",
   User: "Người dùng",
@@ -198,9 +199,12 @@ export function EntityTable({ loading, items, columns, detailBase }: { loading: 
   const tableColumns: Array<DataTableColumn<AdminEntity>> = columns.map((key) => ({
     key,
     header: fieldLabel(key),
-    render: (item) => statusKeys.has(key)
-      ? <StatusPill value={item[key]} />
-      : <span className="break-words">{displayValue(item[key], key)}</span>,
+    render: (item) => {
+      const value = key.includes(".") ? nested(item, ...key.split(".")) : item[key];
+      return statusKeys.has(key)
+        ? <StatusPill value={value} />
+        : <span className="break-words">{displayValue(value, key)}</span>;
+    },
   }));
   if (detailBase) tableColumns.push({ key: "detail", header: "Thao tác", align: "right", isAction: true, render: (item) => <ActionMenu items={[{ label: "Xem chi tiết", onClick: () => router.push(`${detailBase}/${item.id}`) }]} /> });
   return <DataTable columns={tableColumns} data={items ?? []} getRowKey={(item) => item.id} minWidthClassName="min-w-[1040px]" emptyState={<div className="p-8 text-center text-sm font-semibold text-muted">Không có dữ liệu phù hợp.</div>} />;

@@ -6,11 +6,11 @@ import {
   PageTitle,
   LoadState,
   useAdminList,
-  EntityTable,
   Pager,
   inputClass,
   FilterSelect,
 } from "../shared";
+import { AuditLogDataTable } from "./audit-log-data-table";
 
 export function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
@@ -37,6 +37,8 @@ export function AdminAuditLogsPage() {
     { value: "PROVIDER_REJECT", label: "Từ chối nhà cung cấp" },
     { value: "PROVIDER_SUSPEND", label: "Tạm ngưng nhà cung cấp" },
     { value: "PROVIDER_VERIFY", label: "Xác minh nhà cung cấp" },
+    { value: "PROVIDER_DOCUMENT_APPROVE", label: "Duyệt tài liệu nhà cung cấp" },
+    { value: "PROVIDER_DOCUMENT_REJECT", label: "Từ chối tài liệu nhà cung cấp" },
     { value: "PROVIDER_WALLET_ADJUST", label: "Điều chỉnh số dư ví" },
     { value: "USER_STATUS_UPDATE", label: "Cập nhật trạng thái người dùng" },
     { value: "WITHDRAWAL_APPROVE", label: "Duyệt yêu cầu rút tiền" },
@@ -51,6 +53,10 @@ export function AdminAuditLogsPage() {
     { value: "ProviderWallet", label: "Ví nhà cung cấp" },
     { value: "User", label: "Người dùng" },
     { value: "WithdrawalRequest", label: "Yêu cầu rút tiền" },
+    { value: "DISPUTE", label: "Tranh chấp (dữ liệu mới)" },
+    { value: "PROVIDER", label: "Nhà cung cấp (dữ liệu mới)" },
+    { value: "PROVIDER_DOCUMENT", label: "Tài liệu nhà cung cấp" },
+    { value: "WITHDRAWAL", label: "Yêu cầu rút tiền (dữ liệu mới)" },
   ];
 
   return (
@@ -89,7 +95,7 @@ export function AdminAuditLogsPage() {
           </span>
         </div>
       </div>
-      <EntityTable loading={query.isLoading} items={query.data?.items} columns={["action", "targetType", "targetId", "createAt"]} />
+      <AuditLogDataTable loading={query.isLoading} items={query.data?.items} />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />
     </div>
   );
