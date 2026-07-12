@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
+import { notificationService } from "./notification.service.ts";
 
 const WALLET_TRANSACTION_TYPES = [
   "ONLINE_EARNING",
@@ -99,6 +100,15 @@ function getAdjustmentAmount(value: unknown): number {
 function getAdjustmentReason(value: unknown): string {
   if (typeof value !== "string" || !value.trim()) {
     throw new BadRequestException("reason is required");
+  }
+
+  return value.trim();
+}
+
+function getOptionalNote(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string" || !value.trim()) {
+    throw new BadRequestException("adminNote must be a non-empty string");
   }
 
   return value.trim();
@@ -268,6 +278,9 @@ export const adminFinanceService = {
         walletTransactions: {
           orderBy: { createAt: "desc" },
         },
+        paymentTransactions: {
+          orderBy: { createAt: "desc" },
+        },
       },
     });
 
@@ -298,7 +311,239 @@ export const adminFinanceService = {
       service: booking.service,
       dispute: booking.dispute,
       walletTransactions: booking.walletTransactions,
+      paymentTransactions: booking.paymentTransactions,
     };
+  },
+
+  async getRefunds(req: Request) {
+    const { page, pageSize, index, where } = buildQueryPrisma(
+      req.query as Record<string, unknown>,
+    );
+
+    where.paymentMethod = "ONLINE";
+    where.paymentStatus = "REFUND_PENDING";
+
+    const [totalItems, items] = await Promise.all([
+      prisma.bookings.count({ where }),
+      prisma.bookings.findMany({
+        where,
+        skip: index,
+        take: pageSize,
+        orderBy: { cancelledAt: "desc" },
+        include: {
+          customer: {
+            include: {
+              users: {
+                select: {
+                  id: true,
+                  userName: true,
+                  fullName: true,
+                  email: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+          provider: {
+            select: {
+              id: true,
+              businessName: true,
+            },
+          },
+          service: {
+            select: {
+              id: true,
+              name: true,
+              price: true,
+            },
+          },
+          paymentTransactions: {
+            orderBy: { createAt: "desc" },
+            take: 3,
+          },
+        },
+      }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    return {
+      items,
+      pagination: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  },
+
+  async getRefundByBookingId(req: Request) {
+    const bookingId = getRouteParam(req, "bookingId");
+
+    const booking = await prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: {
+        customer: {
+          include: {
+            users: true,
+          },
+        },
+        provider: true,
+        service: true,
+        dispute: true,
+        paymentTransactions: {
+          orderBy: { createAt: "desc" },
+        },
+      },
+    });
+
+    if (!booking || booking.paymentStatus !== "REFUND_PENDING") {
+      throw new NotFoundException("Refund request not found");
+    }
+
+    return booking;
+  },
+
+  async markRefunded(req: Request) {
+    const adminId = getRequesterId(req);
+    const bookingId = getRouteParam(req, "bookingId");
+    const adminNote = getOptionalNote(req.body?.adminNote);
+    const refundReference = getOptionalNote(req.body?.refundReference);
+
+    const booking = await prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: {
+        customer: {
+          include: {
+            users: true,
+          },
+        },
+      },
+    });
+
+    if (!booking || booking.paymentStatus !== "REFUND_PENDING") {
+      throw new NotFoundException("Refund request not found");
+    }
+
+    const updatedBooking = await prisma.bookings.update({
+      where: { id: booking.id },
+      data: {
+        paymentStatus: "REFUNDED",
+        paymentReference: refundReference ?? booking.paymentReference,
+        note: adminNote ? `${booking.note ?? ""}\n[Refund] ${adminNote}`.trim() : booking.note,
+      },
+      include: {
+        customer: {
+          include: {
+            users: true,
+          },
+        },
+        provider: true,
+        service: true,
+        paymentTransactions: {
+          orderBy: { createAt: "desc" },
+        },
+      },
+    });
+
+    await notificationService.safeCreate({
+      userId: updatedBooking.customer.users.id,
+      type: "REFUND_COMPLETED",
+      title: "Refund completed",
+      message: "Your cancelled online booking has been marked as refunded.",
+      data: {
+        bookingId: updatedBooking.id,
+        refundReference,
+      },
+    });
+
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "REFUND_MARK_REFUNDED",
+      targetType: "BOOKING",
+      targetId: booking.id,
+      metadata: {
+        previousPaymentStatus: booking.paymentStatus,
+        paymentStatus: "REFUNDED",
+        refundReference,
+        adminNote,
+      },
+    });
+
+    return updatedBooking;
+  },
+
+  async rejectRefund(req: Request) {
+    const adminId = getRequesterId(req);
+    const bookingId = getRouteParam(req, "bookingId");
+    const adminNote = getOptionalNote(req.body?.adminNote);
+
+    if (!adminNote) {
+      throw new BadRequestException("adminNote is required");
+    }
+
+    const booking = await prisma.bookings.findUnique({
+      where: { id: bookingId },
+      include: {
+        customer: {
+          include: {
+            users: true,
+          },
+        },
+      },
+    });
+
+    if (!booking || booking.paymentStatus !== "REFUND_PENDING") {
+      throw new NotFoundException("Refund request not found");
+    }
+
+    const updatedBooking = await prisma.bookings.update({
+      where: { id: booking.id },
+      data: {
+        paymentStatus: "SUCCESS",
+        note: `${booking.note ?? ""}\n[Refund rejected] ${adminNote}`.trim(),
+      },
+      include: {
+        customer: {
+          include: {
+            users: true,
+          },
+        },
+        provider: true,
+        service: true,
+        paymentTransactions: {
+          orderBy: { createAt: "desc" },
+        },
+      },
+    });
+
+    await notificationService.safeCreate({
+      userId: updatedBooking.customer.users.id,
+      type: "REFUND_REJECTED",
+      title: "Refund rejected",
+      message: "Your refund request was rejected by admin.",
+      data: {
+        bookingId: updatedBooking.id,
+        adminNote,
+      },
+    });
+
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "REFUND_REJECT",
+      targetType: "BOOKING",
+      targetId: booking.id,
+      metadata: {
+        previousPaymentStatus: booking.paymentStatus,
+        paymentStatus: "SUCCESS",
+        adminNote,
+      },
+    });
+
+    return updatedBooking;
   },
 
   async adjustProviderWallet(req: Request) {

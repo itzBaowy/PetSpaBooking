@@ -20,7 +20,15 @@ const BOOKING_STATUSES = [
 ] as const;
 
 const PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
-const PAYMENT_STATUSES = ["UNPAID", "PENDING", "SUCCESS", "FAILED", "REFUNDED"] as const;
+const PAYMENT_STATUSES = [
+  "UNPAID",
+  "PENDING",
+  "SUCCESS",
+  "FAILED",
+  "REFUND_PENDING",
+  "REFUNDED",
+  "CANCELLED",
+] as const;
 
 type BookingStatus = (typeof BOOKING_STATUSES)[number];
 type PaymentMethod = (typeof PAYMENT_METHODS)[number];
