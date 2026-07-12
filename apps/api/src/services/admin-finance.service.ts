@@ -11,6 +11,7 @@ import {
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
 import { notificationService } from "./notification.service.ts";
 import { socketService } from "./socket.service.ts";
+import { getSystemSettingValue } from "./system-setting.service.ts";
 
 const WALLET_TRANSACTION_TYPES = [
   "ONLINE_EARNING",
@@ -21,7 +22,6 @@ const WALLET_TRANSACTION_TYPES = [
 ] as const;
 
 const BALANCE_TYPES = ["WALLET", "DEPOSIT"] as const;
-const MIN_PROVIDER_DEPOSIT = 300_000;
 
 type WalletTransactionType = (typeof WALLET_TRANSACTION_TYPES)[number];
 type BalanceType = (typeof BALANCE_TYPES)[number];
@@ -115,8 +115,11 @@ function getOptionalNote(value: unknown): string | null {
   return value.trim();
 }
 
-function getDepositStatusAfterAdjustment(depositBalance: number) {
-  return depositBalance >= MIN_PROVIDER_DEPOSIT ? "ACTIVE" : "LOW_BALANCE";
+function getDepositStatusAfterAdjustment(
+  depositBalance: number,
+  minProviderDeposit: number,
+) {
+  return depositBalance >= minProviderDeposit ? "ACTIVE" : "LOW_BALANCE";
 }
 
 export const adminFinanceService = {
@@ -591,6 +594,7 @@ export const adminFinanceService = {
     const balanceType = getRequiredBalanceType(req.body?.balanceType);
     const amount = getAdjustmentAmount(req.body?.amount);
     const reason = getAdjustmentReason(req.body?.reason);
+    const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
 
     const result = await prisma.$transaction(async (tx) => {
       const provider = await tx.providers.findUnique({
@@ -625,7 +629,10 @@ export const adminFinanceService = {
             ? { walletBalance: { increment: amount } }
             : {
                 depositBalance: { increment: amount },
-                depositStatus: getDepositStatusAfterAdjustment(balanceAfter),
+                depositStatus: getDepositStatusAfterAdjustment(
+                  balanceAfter,
+                  minProviderDeposit,
+                ),
               },
         select: {
           id: true,

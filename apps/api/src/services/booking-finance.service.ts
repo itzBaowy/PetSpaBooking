@@ -1,19 +1,21 @@
 import prisma from "../../connect.prisma.ts";
 import { notificationService } from "./notification.service.ts";
+import { getSystemSettingValue } from "./system-setting.service.ts";
 
-const PLATFORM_COMMISSION_RATE = 0.15;
-const MIN_PROVIDER_DEPOSIT = 300_000;
 const MAX_COMMISSION_PROCESSING_RETRIES = 5;
 
-function calculateCommission(totalAmount: number) {
-  const commissionAmount = Math.round(totalAmount * PLATFORM_COMMISSION_RATE);
+function calculateCommission(totalAmount: number, commissionRate: number) {
+  const commissionAmount = Math.round(totalAmount * commissionRate);
   const providerEarning = totalAmount - commissionAmount;
 
   return { commissionAmount, providerEarning };
 }
 
-function getDepositStatusAfterDeduction(depositBalance: number): string {
-  return depositBalance >= MIN_PROVIDER_DEPOSIT ? "ACTIVE" : "LOW_BALANCE";
+function getDepositStatusAfterDeduction(
+  depositBalance: number,
+  minProviderDeposit: number,
+): string {
+  return depositBalance >= minProviderDeposit ? "ACTIVE" : "LOW_BALANCE";
 }
 
 function getBookingLedgerKey(
@@ -47,6 +49,11 @@ export const bookingFinanceService = {
       attempt += 1
     ) {
       try {
+        const [commissionRate, minProviderDeposit] = await Promise.all([
+          getSystemSettingValue("platformCommissionRate"),
+          getSystemSettingValue("minProviderDeposit"),
+        ]);
+
         return await prisma.$transaction(async (tx) => {
           const now = new Date();
           const claim = await tx.bookings.updateMany({
@@ -95,6 +102,7 @@ export const bookingFinanceService = {
 
           const { commissionAmount, providerEarning } = calculateCommission(
             booking.totalAmount,
+            commissionRate,
           );
 
           if (booking.paymentMethod === "ONLINE") {
@@ -151,6 +159,7 @@ export const bookingFinanceService = {
               depositBalance: { decrement: depositCommissionAmount },
               depositStatus: getDepositStatusAfterDeduction(
                 estimatedDepositBalanceAfter,
+                minProviderDeposit,
               ),
             },
             select: { walletBalance: true, depositBalance: true },

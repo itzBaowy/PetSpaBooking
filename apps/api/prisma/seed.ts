@@ -76,6 +76,34 @@ const providerCases = [
   },
 ] as const;
 
+const systemSettings = [
+  {
+    key: "MIN_PROVIDER_DEPOSIT",
+    value: 300000,
+    description: "Minimum active provider deposit balance in VND.",
+  },
+  {
+    key: "PLATFORM_COMMISSION_RATE",
+    value: 0.15,
+    description: "Platform commission rate from completed bookings.",
+  },
+  {
+    key: "BOOKING_AUTO_COMPLETE_HOURS",
+    value: 10,
+    description: "Hold period in hours before CHECKED_OUT bookings auto-complete.",
+  },
+  {
+    key: "BOOKING_NO_ARRIVAL_GRACE_MINUTES",
+    value: 15,
+    description: "Minutes after appointmentStart before provider can mark NO_ARRIVAL.",
+  },
+  {
+    key: "MIN_WITHDRAWAL_AMOUNT",
+    value: 100000,
+    description: "Minimum provider withdrawal amount in VND.",
+  },
+] as const;
+
 // ─── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
@@ -100,6 +128,7 @@ async function main() {
   await prisma.providers.deleteMany({});
   await prisma.customers.deleteMany({});
   await prisma.users.deleteMany({});
+  await prisma.system_settings.deleteMany({});
 
   // ── 1. Users ────────────────────────────────────────────────────────────────
   console.log("▶ Seeding users...");
@@ -121,6 +150,26 @@ async function main() {
       });
       customersByName.set(user.userName, customer);
     }
+  }
+
+  // ── 1.1 System settings ───────────────────────────────────────────────────
+  console.log("▶ Seeding system settings...");
+  const adminUserForSettings = usersByName.get("admin_test")!;
+  for (const setting of systemSettings) {
+    await prisma.system_settings.upsert({
+      where: { key: setting.key },
+      update: {
+        value: setting.value,
+        description: setting.description,
+        updatedBy: adminUserForSettings.id,
+      },
+      create: {
+        key: setting.key,
+        value: setting.value,
+        description: setting.description,
+        updatedBy: adminUserForSettings.id,
+      },
+    });
   }
 
   // ── 2. Providers ─────────────────────────────────────────────────────────────

@@ -39,14 +39,15 @@ export function getCronExpression(): string {
   return `*/${DEFAULT_INTERVAL_MINUTES} * * * *`;
 }
 
-function getAutoCompleteCutoff(): Date {
+async function getAutoCompleteCutoff(): Promise<Date> {
+  const autoCompleteHours = await getBookingAutoCompleteHours();
   return new Date(
-    Date.now() - getBookingAutoCompleteHours() * 60 * 60 * 1000,
+    Date.now() - autoCompleteHours * 60 * 60 * 1000,
   );
 }
 
 export async function autoCompleteCheckedOutBookings(): Promise<number> {
-  const cutoff = getAutoCompleteCutoff();
+  const cutoff = await getAutoCompleteCutoff();
 
   const activeDisputes = await prisma.booking_disputes.findMany({
     where: { status: { in: ACTIVE_DISPUTE_STATUSES } },
@@ -90,9 +91,15 @@ export async function autoCompleteCheckedOutBookings(): Promise<number> {
 export function startBookingAutoCompleteJob(): ScheduledTask {
   const cronExpression = getCronExpression();
 
-  console.log(
-    `[booking-auto-complete] Started. holdHours=${getBookingAutoCompleteHours()}, cron="${cronExpression}"`,
-  );
+  void getBookingAutoCompleteHours()
+    .then((holdHours) => {
+      console.log(
+        `[booking-auto-complete] Started. holdHours=${holdHours}, cron="${cronExpression}"`,
+      );
+    })
+    .catch((error: unknown) => {
+      console.error("[booking-auto-complete] Failed to load settings:", error);
+    });
 
   void autoCompleteCheckedOutBookings().catch((error: unknown) => {
     console.error("[booking-auto-complete] Initial run failed:", error);

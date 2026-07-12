@@ -9,6 +9,7 @@ import {
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import { notificationService } from "./notification.service.ts";
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
+import { getSystemSettingValue } from "./system-setting.service.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VALID_CATEGORIES = [
@@ -21,7 +22,6 @@ const VALID_CATEGORIES = [
 ] as const;
 
 type Category = (typeof VALID_CATEGORIES)[number];
-const MIN_PROVIDER_DEPOSIT = 300_000;
 
 // ─── Select ───────────────────────────────────────────────────────────────────
 const SERVICE_SELECT = {
@@ -79,6 +79,7 @@ function getOptionalReason(value: unknown): string | null {
 }
 
 async function getVerifiedProviderId(userId: string): Promise<string> {
+  const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
   const provider = await prisma.providers.findUnique({
     where: { userId },
     select: {
@@ -103,10 +104,10 @@ async function getVerifiedProviderId(userId: string): Promise<string> {
 
   if (
     provider.depositStatus !== "ACTIVE" ||
-    provider.depositBalance < MIN_PROVIDER_DEPOSIT
+    provider.depositBalance < minProviderDeposit
   ) {
     throw new ForbiddenException(
-      `Provider deposit must be ACTIVE and at least ${MIN_PROVIDER_DEPOSIT} VND before managing services.`,
+      `Provider deposit must be ACTIVE and at least ${minProviderDeposit} VND before managing services.`,
     );
   }
 
