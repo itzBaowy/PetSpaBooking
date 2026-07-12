@@ -18,6 +18,7 @@ import { api } from "@/lib/axios";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 import type { ApiResponse } from "@/types/api";
+import { useProviderNotificationMockOptional } from "@/components/provider/notifications/notification-context";
 
 type DashboardTopbarRole = "admin" | "provider";
 
@@ -151,6 +152,7 @@ function Chevron({ open }: { open: boolean }) {
 
 function Modal({ title, children, onClose }: { title: string; children: ReactNode; onClose: () => void }) {
   const [mounted, setMounted] = useState(false);
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), []);
   if (!mounted) return null;
 
@@ -343,6 +345,7 @@ function SendNotificationModal({ onClose }: { onClose: () => void }) {
 }
 
 export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
+  const providerNotificationMock = useProviderNotificationMockOptional();
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<"notifications" | "profile" | null>(null);
   const [selectedNotification, setSelectedNotification] = useState<AdminEntity | null>(null);
@@ -393,10 +396,13 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
     role === "admin"
       ? groupedNotifications.length
       : scopedNotificationItems.length;
-  const unreadCount =
+  const apiUnreadCount =
     role === "admin"
       ? totalNotifications
       : scopedNotificationItems.filter((item) => !item.readAt).length;
+  const unreadCount = role === "provider" && providerNotificationMock
+    ? providerNotificationMock.unreadCount
+    : apiUnreadCount;
   const displayName = profile?.fullName || profile?.userName || (role === "admin" ? "Admin" : "Provider");
   const displayEmail = profile?.email ?? "Đang tải...";
   const displayRole = profile?.role ? roleLabels[profile.role] ?? profile.role : role === "admin" ? "Quản trị viên" : "Nhà cung cấp dịch vụ";
