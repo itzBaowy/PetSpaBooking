@@ -1,3 +1,3 @@
-import { CreateWithdrawalMock } from "@/components/provider/withdrawals/withdrawal-screens";
+import { CreateWithdrawalLive } from "@/components/provider/live/provider-live-screens";
 
-export default function CreateProviderWithdrawalPage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-6xl"><CreateWithdrawalMock /></div></main>; }
+export default function CreateProviderWithdrawalPage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-6xl"><CreateWithdrawalLive /></div></main>; }
