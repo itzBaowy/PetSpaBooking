@@ -1,10 +1,5 @@
-import { ProviderNavigationPlaceholder } from "@/components/provider/provider-navigation-placeholder";
+import { ProviderWalletOverviewMock } from "@/components/provider/wallet/wallet-overview";
 
 export default function ProviderWalletPage() {
-  return (
-    <ProviderNavigationPlaceholder
-      title="Wallet"
-      description="Theo dõi số dư ví, tiền ký quỹ và lịch sử giao dịch."
-    />
-  );
+  return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-7xl"><ProviderWalletOverviewMock /></div></main>;
 }
