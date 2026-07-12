@@ -2,65 +2,8 @@
 
 import { useState } from "react";
 import { formatCurrency } from "@/lib/currency";
-import { cn, formatInitials } from "@/lib/utils";
-
-interface ProviderData {
-  firstName: string;
-  lastName: string;
-  shopName: string;
-  bookings: number;
-  revenue: number;
-  rating: number;
-  reviews: number;
-}
-
-const PROVIDERS: ProviderData[] = [
-  {
-    firstName: "Anh",
-    lastName: "Nguyen",
-    shopName: "Happy Paws Spa",
-    bookings: 342,
-    revenue: 38400000,
-    rating: 4.9,
-    reviews: 124,
-  },
-  {
-    firstName: "Binh",
-    lastName: "Tran",
-    shopName: "Pet Haven Grooming",
-    bookings: 298,
-    revenue: 29500000,
-    rating: 4.8,
-    reviews: 98,
-  },
-  {
-    firstName: "Chi",
-    lastName: "Le",
-    shopName: "Royal Pet Care",
-    bookings: 256,
-    revenue: 27800000,
-    rating: 4.7,
-    reviews: 86,
-  },
-  {
-    firstName: "Duy",
-    lastName: "Pham",
-    shopName: "Meow & Woof Salon",
-    bookings: 212,
-    revenue: 21900000,
-    rating: 4.6,
-    reviews: 72,
-  },
-  {
-    firstName: "Huong",
-    lastName: "Vu",
-    shopName: "Golden Pet Wellness",
-    bookings: 189,
-    revenue: 19800000,
-    rating: 4.9,
-    reviews: 54,
-  },
-];
+import { cn } from "@/lib/utils";
+import type { ProviderPerformance } from "@/apis/admin/reports/schema";
 
 const AVATAR_COLORS = [
   "bg-blue-100 text-blue-800",
@@ -113,12 +56,14 @@ function SortButton({
   );
 }
 
-export function TopProvidersTable() {
+export function TopProvidersTable({ providers }: { providers: ProviderPerformance[] }) {
   const [sortKey, setSortKey] = useState<SortKey>("revenue");
   const [sortDirection, setSortDirection] = useState<SortDirection>("desc");
-  const records = [...PROVIDERS].sort((a, b) => {
+  const records = [...providers].sort((a, b) => {
     const multiplier = sortDirection === "asc" ? 1 : -1;
-    return (a[sortKey] - b[sortKey]) * multiplier;
+    const left = sortKey === "bookings" ? a.completedBookings : a.totalRevenue;
+    const right = sortKey === "bookings" ? b.completedBookings : b.totalRevenue;
+    return (left - right) * multiplier;
   });
 
   const handleSort = (key: SortKey) => {
@@ -167,18 +112,20 @@ export function TopProvidersTable() {
       </table>
 
       <div className="max-h-250 overflow-y-auto">
+        {records.length === 0 && (
+          <div className="p-8 text-center text-sm font-medium text-gray-400">
+            Chưa có dữ liệu hiệu suất nhà cung cấp.
+          </div>
+        )}
         <table className="w-full table-fixed border-collapse text-left">
           <tbody className="divide-y divide-gray-100">
             {records.map((provider, index) => {
-              const initials = formatInitials(
-                provider.firstName,
-                provider.lastName,
-              );
+              const initials = provider.businessName.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
               const colorClass = AVATAR_COLORS[index % AVATAR_COLORS.length];
 
               return (
                 <tr
-                  key={provider.shopName}
+                  key={provider.providerId}
                   className="transition-colors hover:bg-gray-50/50"
                 >
                   <td className="w-[52%] px-6 py-3.5">
@@ -193,13 +140,9 @@ export function TopProvidersTable() {
                       </div>
                       <div className="min-w-0">
                         <div className="truncate text-sm font-semibold text-gray-800">
-                          {provider.shopName}
+                          {provider.businessName}
                         </div>
                         <div className="flex items-center gap-1 text-xs text-gray-400">
-                          <span>
-                            {provider.firstName} {provider.lastName}
-                          </span>
-                          <span className="text-gray-300">-</span>
                           <span className="flex items-center gap-0.5 text-amber-500">
                             <svg
                               className="h-3 w-3 fill-amber-500"
@@ -208,7 +151,7 @@ export function TopProvidersTable() {
                               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                             </svg>
                             <span className="font-medium text-gray-600">
-                              {provider.rating}
+                              {provider.averageRating}
                             </span>
                           </span>
                         </div>
@@ -216,10 +159,10 @@ export function TopProvidersTable() {
                     </div>
                   </td>
                   <td className="w-[20%] px-6 py-3.5 text-right text-sm font-medium text-gray-600">
-                    {provider.bookings}
+                    {provider.completedBookings}
                   </td>
                   <td className="w-[28%] px-6 py-3.5 text-right text-sm font-semibold text-gray-900">
-                    {formatCurrency(provider.revenue, "VND")}
+                    {formatCurrency(provider.totalRevenue, "VND")}
                   </td>
                 </tr>
               );

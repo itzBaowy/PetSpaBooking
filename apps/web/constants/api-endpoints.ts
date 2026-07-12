@@ -40,6 +40,13 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/bookings/${id}`,
     CANCEL: (id: string) => `/bookings/${id}/cancel`,
   },
+  MOBILE: {
+    NOTIFICATIONS: {
+      LIST: "/mobile/notifications",
+      MARK_READ: (id: string) => `/mobile/notifications/${id}/read`,
+      MARK_ALL_READ: "/mobile/notifications/read-all",
+    },
+  },
   VERIFICATION: {
     LIST: "/verification",
     DETAIL: (id: string) => `/verification/${id}`,
@@ -61,6 +68,12 @@ export const API_ENDPOINTS = {
       REJECT: (id: string) => `/admin/providers/${id}/reject`,
       SUSPEND: (id: string) => `/admin/providers/${id}/suspend`,
     },
+    PROVIDER_DOCUMENTS: {
+      APPROVE: (documentId: string) =>
+        `/admin/provider-documents/${documentId}/approve`,
+      REJECT: (documentId: string) =>
+        `/admin/provider-documents/${documentId}/reject`,
+    },
     BOOKINGS: {
       LIST: "/admin/bookings",
       DETAIL: (id: string) => `/admin/bookings/${id}`,
@@ -75,6 +88,13 @@ export const API_ENDPOINTS = {
     PROVIDER_WALLET: (id: string) => `/admin/providers/${id}/wallet`,
     ADJUST_PROVIDER_WALLET: (id: string) =>
       `/admin/providers/${id}/wallet/adjust`,
+    REFUNDS: {
+      LIST: "/admin/refunds",
+      DETAIL: (bookingId: string) => `/admin/refunds/${bookingId}`,
+      MARK_REFUNDED: (bookingId: string) =>
+        `/admin/refunds/${bookingId}/mark-refunded`,
+      REJECT: (bookingId: string) => `/admin/refunds/${bookingId}/reject`,
+    },
     WITHDRAWALS: {
       LIST: "/admin/withdrawals",
       DETAIL: (id: string) => `/admin/withdrawals/${id}`,
@@ -83,6 +103,17 @@ export const API_ENDPOINTS = {
       MARK_PAID: (id: string) => `/admin/withdrawals/${id}/mark-paid`,
     },
     AUDIT_LOGS: "/admin/audit-logs",
+    NOTIFICATIONS: {
+      LIST: "/admin/notifications",
+      SEND: "/admin/notifications/send",
+      BROADCAST: "/admin/notifications/broadcast",
+    },
+    REPORTS: {
+      REVENUE: "/admin/reports/revenue",
+      DAILY_REVENUE: "/admin/reports/revenue/daily",
+      PROVIDERS: "/admin/reports/providers",
+      DISPUTES: "/admin/reports/disputes",
+    },
     FINANCE: {
       BALANCES: "/admin/finance/balances",
       LEDGER: "/admin/finance/ledger",
@@ -101,6 +132,7 @@ export const API_ENDPOINTS = {
     },
     SERVICES: {
       LIST: "/admin/services",
+      DETAIL: (serviceId: string) => `/admin/services/${serviceId}`,
       MODERATE: (serviceId: string) =>
         `/admin/services/${serviceId}/moderation`,
       HIDE: (serviceId: string) => `/admin/services/${serviceId}/hide`,

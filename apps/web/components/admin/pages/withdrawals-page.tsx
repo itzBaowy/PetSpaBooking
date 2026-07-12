@@ -9,7 +9,9 @@ import {
   FilterSelect,
   EntityTable,
   Pager,
+  displayValue,
 } from "../shared";
+import { nested, textValue } from "@/apis/admin/supported-api";
 
 export function AdminWithdrawalsPage() {
   const [page, setPage] = useState(1);
@@ -52,8 +54,20 @@ export function AdminWithdrawalsPage() {
       <EntityTable
         loading={query.isLoading}
         items={query.data?.items}
-        columns={["providerId", "amount", "status", "reason", "createAt"]}
+        columns={["provider.businessName", "amount", "status", "reason", "createAt"]}
         detailBase="/admin/finance/withdrawals"
+        renderers={{
+          "provider.businessName": (item) => (
+            <div className="min-w-0">
+              <p className="break-words font-semibold text-foreground">
+                {textValue(nested(item, "provider", "businessName"))}
+              </p>
+              <p className="mt-1 break-all text-xs font-medium text-muted">
+                {displayValue(item.providerId, "providerId")}
+              </p>
+            </div>
+          ),
+        }}
       />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />
     </div>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { Pagination } from "@/components/ui/pagination";
-import { entitySchema, textValue } from "@/apis/admin/supported-api";
+import { entitySchema, nested, textValue } from "@/apis/admin/supported-api";
 import {
   LoadState,
   useAdminDetail,
@@ -25,7 +25,6 @@ export function AdminBookingDetailPage({ id }: { id: string }) {
   if (query.isLoading) return <p>Đang tải...</p>;
   if (query.isError || !query.data) return <LoadState error={query.error ?? new Error("Không tìm thấy lịch đặt.")} retry={() => void query.refetch()} />;
 
-  const relations = ["customer", "provider", "service", "dispute", "review"] as const;
   const relationLabels = { customer: "Khách hàng", provider: "Nhà cung cấp", service: "Dịch vụ", dispute: "Tranh chấp", review: "Đánh giá" };
   const allTransactions = Array.isArray(query.data.walletTransactions)
     ? query.data.walletTransactions.flatMap((x: unknown) => { const parsed = entitySchema.safeParse(x); return parsed.success ? [parsed.data] : []; })
@@ -43,7 +42,7 @@ export function AdminBookingDetailPage({ id }: { id: string }) {
       </div>
 
       <div className="relative overflow-hidden rounded-2xl border border-border-subtle bg-surface p-6 shadow-sm">
-        <div className="absolute top-0 right-0 -mt-4 -mr-4 h-32 w-32 rounded-full bg-brand-soft/20 blur-2xl" />
+        <div className="absolute -right-4 -top-4 h-32 w-32 rounded-full bg-brand-soft/20 blur-2xl" />
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 shadow-md">
@@ -101,7 +100,17 @@ export function AdminBookingDetailPage({ id }: { id: string }) {
       </div>
 
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {(["customer", "provider", "service"] as const).map(key => (
+        <section className="rounded-2xl border border-border-subtle bg-surface p-5 shadow-sm space-y-3">
+          <h3 className="font-bold text-foreground border-b border-border-subtle pb-2">Khách hàng</h3>
+          <dl className="grid gap-3">
+            <DetailItem label="fullName" value={nested(b, "customer", "users", "fullName")} />
+            <DetailItem label="userName" value={nested(b, "customer", "users", "userName")} />
+            <DetailItem label="phone" value={nested(b, "customer", "users", "phone")} />
+            <DetailItem label="email" value={nested(b, "customer", "users", "email")} />
+            <DetailItem label="location" value={nested(b, "customer", "location")} />
+          </dl>
+        </section>
+        {(["provider", "service"] as const).map(key => (
           <section key={key} className="rounded-2xl border border-border-subtle bg-surface p-5 shadow-sm space-y-3">
             <h3 className="font-bold text-foreground border-b border-border-subtle pb-2">{relationLabels[key]}</h3>
             {b[key] && typeof b[key] === "object"

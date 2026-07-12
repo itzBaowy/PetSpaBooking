@@ -1,9 +1,17 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { queryKeys } from "@/constants/query-keys";
+import { api } from "@/lib/axios";
 import { formatVietnameseDateTime } from "@/lib/date";
+import type { ApiResponse } from "@/types/api";
+import { Button } from "@/components/ui/button";
+import { useConfirmDialog, useToast } from "@/components/ui/feedback-provider";
 import {
   providerDocumentTypeLabels,
+  type AdminProviderDetail,
   type AdminProviderStatus,
   type ProviderDocument,
 } from "../schema";
@@ -17,6 +25,7 @@ function getDocumentDisplayStatus(
   if (providerStatus === "VERIFIED") return "Đã xác thực";
   if (providerStatus === "REJECTED") return "Đã từ chối";
   if (providerStatus === "SUSPENDED") return "Tạm ngưng";
+  if (document.status === "APPROVED") return "Đã phê duyệt";
 
   return document.status === "PENDING" ? "Chờ duyệt" : document.status;
 }
@@ -48,17 +57,150 @@ export function ProviderDocumentPanel({
   documents?: ProviderDocument[];
   providerStatus: AdminProviderStatus;
 }) {
+  const queryClient = useQueryClient();
+  const confirm = useConfirmDialog();
+  const { showToast } = useToast();
+  const [localDocuments, setLocalDocuments] = useState(documents);
   const [selectedDocumentId, setSelectedDocumentId] = useState(
     documents[0]?.id ?? "",
   );
+  useEffect(() => {
+    setLocalDocuments(documents);
+    setSelectedDocumentId((current) => current || documents[0]?.id || "");
+  }, [documents]);
   const selectedDocument = useMemo(
     () =>
-      documents.find((document) => document.id === selectedDocumentId) ??
-      documents[0],
-    [documents, selectedDocumentId],
+      localDocuments.find((document) => document.id === selectedDocumentId) ??
+      localDocuments[0],
+    [localDocuments, selectedDocumentId],
   );
 
-  if (documents.length === 0) {
+  const approveMutation = useMutation({
+    mutationFn: async (documentId: string) => {
+      const response = await api.patch<ApiResponse<ProviderDocument>>(
+        API_ENDPOINTS.ADMIN.PROVIDER_DOCUMENTS.APPROVE(documentId),
+      );
+      return response.data.data;
+    },
+    onSuccess: (updatedDocument) => {
+      setLocalDocuments((current) =>
+        current.map((document) =>
+          document.id === updatedDocument.id ? updatedDocument : document,
+        ),
+      );
+      queryClient.setQueryData<AdminProviderDetail | null>(
+        queryKeys.adminProviders.detail(updatedDocument.providerId),
+        (current) => {
+          if (!current) return current;
+
+          return {
+            ...current,
+            documents: current.documents.map((document) =>
+              document.id === updatedDocument.id ? updatedDocument : document,
+            ),
+          };
+        },
+      );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders.detail(updatedDocument.providerId) });
+      showToast("Đã phê duyệt tài liệu.", "success");
+    },
+  });
+
+  const rejectMutation = useMutation({
+    mutationFn: async ({
+      documentId,
+      reason,
+    }: {
+      documentId: string;
+      reason: string;
+    }) => {
+      const response = await api.patch<ApiResponse<ProviderDocument>>(
+        API_ENDPOINTS.ADMIN.PROVIDER_DOCUMENTS.REJECT(documentId),
+        { reason },
+      );
+      return response.data.data;
+    },
+    onSuccess: (updatedDocument) => {
+      setLocalDocuments((current) =>
+        current.map((document) =>
+          document.id === updatedDocument.id ? updatedDocument : document,
+        ),
+      );
+      queryClient.setQueryData<AdminProviderDetail | null>(
+        queryKeys.adminProviders.detail(updatedDocument.providerId),
+        (current) => {
+          if (!current) return current;
+
+          return {
+            ...current,
+            documents: current.documents.map((document) =>
+              document.id === updatedDocument.id ? updatedDocument : document,
+            ),
+          };
+        },
+      );
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.adminProviders.detail(updatedDocument.providerId) });
+      showToast("Đã từ chối tài liệu.", "success");
+    },
+  });
+
+  const handleApproveDocument = async () => {
+    if (!selectedDocument || selectedDocument.status === "APPROVED") return;
+
+    const result = await confirm({
+      title: "Phê duyệt tài liệu",
+      description: `Bạn có chắc chắn muốn phê duyệt tài liệu ${providerDocumentTypeLabels[selectedDocument.documentType] ?? selectedDocument.documentType}?`,
+      confirmLabel: "Phê duyệt",
+      cancelLabel: "Hủy",
+      tone: "success",
+    });
+
+    if (!result.confirmed) return;
+
+    try {
+      await approveMutation.mutateAsync(selectedDocument.id);
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : "Không thể phê duyệt tài liệu.",
+        "error",
+      );
+    }
+  };
+
+  const handleRejectDocument = async () => {
+    if (!selectedDocument || selectedDocument.status === "REJECTED") return;
+
+    const result = await confirm({
+      title: "Từ chối tài liệu",
+      description: `Nhập lý do từ chối tài liệu ${providerDocumentTypeLabels[selectedDocument.documentType] ?? selectedDocument.documentType}.`,
+      confirmLabel: "Từ chối",
+      cancelLabel: "Hủy",
+      tone: "danger",
+      input: {
+        label: "Lý do từ chối",
+        placeholder: "Ví dụ: giấy phép kinh doanh bị mờ...",
+        required: true,
+      },
+    });
+
+    if (!result.confirmed || !result.value?.trim()) return;
+
+    try {
+      await rejectMutation.mutateAsync({
+        documentId: selectedDocument.id,
+        reason: result.value.trim(),
+      });
+    } catch (error) {
+      showToast(
+        error instanceof Error ? error.message : "Không thể từ chối tài liệu.",
+        "error",
+      );
+    }
+  };
+
+  if (localDocuments.length === 0) {
     return (
       <p className="mt-4 rounded-xl bg-gray-50 p-4 text-sm text-gray-600">
         Chưa có tài liệu nào.
@@ -80,9 +222,9 @@ export function ProviderDocumentPanel({
     : "Tài liệu";
 
   return (
-    <div className="mt-5 grid gap-5 lg:grid-cols-[360px_1fr]">
-      <div className="space-y-3">
-        {documents.map((document) => {
+    <div className="mt-5 grid items-start gap-5 lg:grid-cols-[300px_minmax(0,1fr)]">
+      <div className="max-h-140 space-y-3 overflow-y-auto pr-1 lg:sticky lg:top-4">
+        {localDocuments.map((document) => {
           const active = document.id === selectedDocument?.id;
           const label =
             providerDocumentTypeLabels[document.documentType] ??
@@ -112,7 +254,7 @@ export function ProviderDocumentPanel({
         })}
       </div>
 
-      <div className="overflow-hidden rounded-2xl border border-border-subtle bg-surface-muted">
+      <div className="overflow-hidden rounded-2xl border border-border-subtle bg-surface-muted lg:sticky lg:top-4">
         <div className="flex items-center justify-between border-b border-border-subtle bg-surface px-4 py-3">
           <div>
             <p className="text-sm font-bold text-foreground">{selectedLabel}</p>
@@ -133,13 +275,13 @@ export function ProviderDocumentPanel({
             </a>
           )}
         </div>
-        <div className="grid min-h-[440px] place-items-center bg-gray-100 p-4">
+        <div className="flex min-h-110 items-center justify-center bg-gray-100 p-4">
           {canPreviewImage ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={previewSrc}
               alt={selectedLabel}
-              className="max-h-[560px] w-full rounded-xl object-contain"
+              className="max-h-140 max-w-full rounded-xl object-contain"
               onError={(event) => {
                 event.currentTarget.src = fallbackPreview;
               }}
@@ -155,6 +297,29 @@ export function ProviderDocumentPanel({
             </div>
           )}
         </div>
+        {selectedDocument && selectedDocument.status !== "APPROVED" && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-subtle bg-surface px-4 py-3">
+            <p className="text-xs font-semibold text-muted">
+              Trạng thái hiện tại: {getDocumentDisplayStatus(selectedDocument, providerStatus)}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                onClick={handleRejectDocument}
+                disabled={rejectMutation.isPending}
+                className="bg-red-600 text-white hover:bg-red-700"
+              >
+                {rejectMutation.isPending ? "Đang từ chối..." : "Từ chối tài liệu"}
+              </Button>
+              <Button
+                onClick={handleApproveDocument}
+                disabled={approveMutation.isPending}
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                {approveMutation.isPending ? "Đang phê duyệt..." : "Phê duyệt tài liệu"}
+              </Button>
+            </div>
+          </div>
+        )}
         {!/^(https?:)?\/\//i.test(
           selectedDocument ? getDocumentUrl(selectedDocument) : "",
         ) &&

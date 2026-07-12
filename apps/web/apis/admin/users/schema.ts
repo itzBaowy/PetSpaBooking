@@ -31,18 +31,26 @@ export const adminUserCustomerSchema = z.object({
   pets: z.array(adminUserPetSchema),
 });
 
+export const adminUserProviderSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  businessName: z.string(),
+});
+
 export const adminUserSchema = z.object({
   id: z.string(),
   userName: z.string(),
   email: z.string(),
   phone: z.string(),
   fullName: z.string().nullable(),
+  displayName: z.string().optional(),
   avatar: z.string().nullable(),
   role: adminUserRoleSchema,
   status: adminUserStatusSchema,
   createAt: z.string(),
   updateAt: z.string(),
   customers: adminUserCustomerSchema.nullable().optional(),
+  provider: adminUserProviderSchema.nullable().optional(),
 });
 
 export const adminUserListSchema = z.object({
@@ -134,6 +142,7 @@ export type AdminUserRole = z.infer<typeof adminUserRoleSchema>;
 export type AdminUserStatus = z.infer<typeof adminUserStatusSchema>;
 export type AdminUserPet = z.infer<typeof adminUserPetSchema>;
 export type AdminUserCustomer = z.infer<typeof adminUserCustomerSchema>;
+export type AdminUserProvider = z.infer<typeof adminUserProviderSchema>;
 export type AdminUser = z.infer<typeof adminUserSchema>;
 export type AdminUserList = z.infer<typeof adminUserListSchema>;
 export type AdminUserListParams = z.infer<typeof adminUserListParamsSchema>;

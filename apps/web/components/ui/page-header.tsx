@@ -24,7 +24,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between",
+        "mb-2 flex flex-col gap-4 px-5 pb-3 pt-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8",
         className,
       )}
     >
@@ -32,27 +32,27 @@ export function PageHeader({
         {backHref && (
           <Link
             href={backHref}
-            className="mb-3 inline-flex text-sm font-semibold text-brand transition-colors hover:text-brand-hover"
+            className="mb-4 inline-flex text-sm font-semibold text-brand transition-colors hover:text-brand-hover"
           >
             {backLabel}
           </Link>
         )}
         {eyebrow && (
-          <nav className="mb-1 text-xs font-semibold uppercase tracking-wider text-subtle">
+          <nav className="mb-2 text-xs font-bold uppercase tracking-[0.16em] text-muted/70">
             {eyebrow}
           </nav>
         )}
-        <h1 className="wrap-break-word text-3xl font-extrabold tracking-tight text-foreground">
+        <h1 className="break-words text-3xl font-extrabold leading-tight tracking-tight text-foreground">
           {title}
         </h1>
         {description && (
-          <div className="mt-2 max-w-3xl text-sm text-muted">
+          <div className="mt-3 max-w-3xl text-sm leading-6 text-muted">
             {description}
           </div>
         )}
       </div>
       {actions && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 pt-0.5 lg:pt-0">
           {actions}
         </div>
       )}
