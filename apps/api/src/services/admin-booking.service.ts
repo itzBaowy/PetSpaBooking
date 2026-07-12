@@ -6,6 +6,8 @@ import {
   BadRequestException,
   NotFoundException,
 } from "../common/helpers/exception.helper.ts";
+import { autoCompleteCheckedOutBookings } from "../jobs/booking-auto-complete.job.ts";
+import { getBookingAutoCompleteHours } from "./mobile-services/booking.service.ts";
 
 const BOOKING_STATUSES = [
   "PENDING",
@@ -154,6 +156,15 @@ function getDateQuery(value: unknown, name: string) {
 }
 
 export const adminBookingService = {
+  async runAutoCompleteScan() {
+    const completedCount = await autoCompleteCheckedOutBookings();
+
+    return {
+      completedCount,
+      holdHours: getBookingAutoCompleteHours(),
+    };
+  },
+
   async getAll(req: Request) {
     const { page, pageSize, index, where } = buildQueryPrisma(
       req.query as Record<string, unknown>,
