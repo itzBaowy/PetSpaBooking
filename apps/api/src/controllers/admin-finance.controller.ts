@@ -46,6 +46,62 @@ export const adminFinanceController = {
     }
   },
 
+  async getRefunds(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminFinanceService.getRefunds(req);
+      const response = responseSuccess(
+        result,
+        "Refund requests retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getRefundByBookingId(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await adminFinanceService.getRefundByBookingId(req);
+      const response = responseSuccess(
+        result,
+        "Refund request retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markRefunded(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminFinanceService.markRefunded(req);
+      const response = responseSuccess(
+        result,
+        "Refund marked as completed successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async rejectRefund(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminFinanceService.rejectRefund(req);
+      const response = responseSuccess(
+        result,
+        "Refund rejected successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async adjustProviderWallet(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await adminFinanceService.adjustProviderWallet(req);
