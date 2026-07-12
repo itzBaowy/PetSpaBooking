@@ -19,4 +19,16 @@ export const providerWalletStates: Record<ProviderDepositStatus, ProviderWalletM
   restricted: { status: "restricted", availableBalance: 980000, pendingBalance: 0, reservedCommission: 0, depositBalance: 0, debtBalance: 640000, withdrawableBalance: 0, minimumDeposit: 1000000, cashBookingEligible: false, transactions: transactions.slice(2), pendingSettlements: [] },
 };
 
+export const providerDepositMock = {
+  currentBalance: providerWalletStates.low_balance.depositBalance,
+  minimumRecommendedBalance: 1000000,
+  lowBalanceThreshold: 300000,
+  suggestedAmounts: [500000, 1000000, 2000000, 5000000],
+  paymentMethods: [
+    { value: "bank_transfer", label: "Bank transfer", description: "Mock transfer from a linked business bank account." },
+    { value: "momo", label: "MoMo", description: "Demo option only. No MoMo request is created." },
+    { value: "vnpay", label: "VNPay", description: "Demo option only. No VNPay checkout is opened." },
+  ],
+};
+
 export async function getMockProviderWallet(status: ProviderDepositStatus = "active") { await new Promise<void>((resolve) => window.setTimeout(resolve, 550)); return structuredClone(providerWalletStates[status]); }
