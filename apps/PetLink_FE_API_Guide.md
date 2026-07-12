@@ -370,12 +370,17 @@ Backend cần cấu hình MoMo sandbox trước khi API tạo payment gọi đư
 
 ```env
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
+MOMO_REQUEST_TYPE=payWithMethod
 MOMO_PARTNER_CODE=...
 MOMO_ACCESS_KEY=...
 MOMO_SECRET_KEY=...
 MOMO_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/return
 MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
 ```
+
+`MOMO_REQUEST_TYPE=payWithMethod` dùng MoMo Collection Link để payment page có thể hiển thị nhiều phương thức như ví MoMo, ATM hoặc thẻ nếu sandbox merchant được MoMo bật các phương thức đó. Nếu đổi về `captureWallet`, page thường chỉ tập trung vào ví MoMo/QR/deeplink.
+
+Với ATM/card, amount nên từ `10000` VND trở lên. Backend hiện validate theo request type: `payWithMethod` tối thiểu `10000` VND, `captureWallet` tối thiểu `1000` VND.
 
 ### 3.2 Xem booking của customer
 
@@ -966,6 +971,7 @@ Rule:
 ```http
 GET /api/admin/bookings
 GET /api/admin/bookings/{id}
+POST /api/admin/bookings/auto-complete/run
 ```
 
 List filters:
@@ -993,6 +999,31 @@ service
 dispute
 review
 walletTransactions
+```
+
+Manual auto-complete scan:
+
+```http
+POST /api/admin/bookings/auto-complete/run
+```
+
+API này cho admin chạy quét booking thủ công thay vì đợi cron job. Backend sẽ tìm booking:
+
+```txt
+status = CHECKED_OUT
+checkedOutAt đã quá BOOKING_AUTO_COMPLETE_HOURS
+không có dispute active PENDING
+```
+
+Booking hợp lệ sẽ chuyển sang `COMPLETED` và chạy commission giống cron job.
+
+Response `data`:
+
+```json
+{
+  "completedCount": 3,
+  "holdHours": 10
+}
 ```
 
 ### 6.6 Admin disputes

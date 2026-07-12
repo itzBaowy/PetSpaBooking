@@ -3,6 +3,19 @@ import { responseSuccess } from "../common/helpers/function.helper.ts";
 import { adminBookingService } from "../services/admin-booking.service.ts";
 
 export const adminBookingController = {
+  async runAutoCompleteScan(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await adminBookingService.runAutoCompleteScan();
+      const response = responseSuccess(
+        result,
+        "Booking auto-complete scan completed successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await adminBookingService.getAll(req);
