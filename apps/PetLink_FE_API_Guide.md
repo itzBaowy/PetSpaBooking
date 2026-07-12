@@ -125,6 +125,79 @@ Rule:
 - `newPassword` phải khác `currentPassword`.
 - Sau khi đổi password, FE nên yêu cầu user login lại hoặc refresh local auth state.
 
+### 1.2 Realtime Socket.IO
+
+Socket endpoint dùng chung host API:
+
+```txt
+http://localhost:5500
+```
+
+FE connect bằng access token:
+
+```ts
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5500", {
+  auth: {
+    token: accessToken,
+  },
+});
+
+socket.on("socket:connected", (payload) => {
+  console.log("socket connected", payload);
+});
+```
+
+Khi connect thành công, backend tự join:
+
+```txt
+user:{userId}
+role:{role}
+provider:{providerId} // nếu user là provider
+```
+
+FE có thể join room booking khi đang mở booking detail:
+
+```ts
+socket.emit("booking:join", { bookingId });
+socket.emit("booking:leave", { bookingId });
+```
+
+FE có thể join room chat thread khi đang mở màn chat:
+
+```ts
+socket.emit("chat:join", { threadId });
+socket.emit("chat:typing", { threadId, isTyping: true });
+socket.emit("chat:leave", { threadId });
+```
+
+Realtime events v1:
+
+```txt
+notification:new
+booking:new
+booking:updated
+payment:updated
+refund:updated
+chat:message:new
+chat:typing
+chat:read
+```
+
+Ý nghĩa:
+
+- `notification:new`: có notification mới, payload có `notification`.
+- `booking:new`: provider nhận booking mới.
+- `booking:updated`: booking đổi trạng thái hoặc dữ liệu thanh toán/refund liên quan.
+- `payment:updated`: MoMo payment thành công/thất bại được cập nhật.
+- `refund:updated`: admin mark refunded/reject refund.
+- `chat:message:new`: có tin nhắn chat mới.
+- `chat:typing`: user còn lại đang nhập trong thread.
+- `chat:read`: tin nhắn trong thread đã được đọc.
+
+REST API và DB vẫn là nguồn sự thật. Nếu socket disconnect, FE gọi lại REST list/detail để sync lại state.
+
 ## 2. Public Mobile Provider APIs
 
 Không cần token.
@@ -624,6 +697,68 @@ Các event hiện có thể tạo notification:
 - `SERVICE_UNHIDDEN_BY_ADMIN`
 - `ACCOUNT_STATUS_CHANGED`
 - `ADMIN_ANNOUNCEMENT`
+- `CHAT_MESSAGE_NEW`
+
+### 5.1 Mobile Chat
+
+Token required, dùng cho customer/provider trong booking mà họ sở hữu.
+
+```http
+GET /api/mobile/bookings/{bookingId}/chat/thread
+GET /api/mobile/chat/threads
+GET /api/mobile/chat/threads/{threadId}/messages
+POST /api/mobile/chat/threads/{threadId}/messages
+PATCH /api/mobile/chat/threads/{threadId}/read
+```
+
+Luồng FE gợi ý:
+
+1. Mở booking detail.
+2. Gọi `GET /api/mobile/bookings/{bookingId}/chat/thread` để lấy hoặc tạo thread.
+3. Gọi `GET /api/mobile/chat/threads/{threadId}/messages` để load lịch sử.
+4. Socket join room:
+
+```ts
+socket.emit("chat:join", { threadId });
+```
+
+5. Gửi tin nhắn bằng REST:
+
+```http
+POST /api/mobile/chat/threads/{threadId}/messages
+```
+
+Body:
+
+```json
+{
+  "content": "Hello, I have a question about the booking."
+}
+```
+
+6. FE nghe socket event:
+
+```ts
+socket.on("chat:message:new", ({ threadId, bookingId, message }) => {
+  // append message vào UI nếu đang ở đúng thread
+});
+
+socket.on("chat:typing", ({ threadId, userId, isTyping }) => {
+  // show typing indicator
+});
+
+socket.on("chat:read", ({ threadId, readerId, readAt, count }) => {
+  // update read state
+});
+```
+
+Rule:
+
+- Chỉ customer owner hoặc provider owner của booking được chat.
+- Booking `REJECTED` không tạo thread chat mới.
+- Message v1 chỉ hỗ trợ `TEXT`.
+- `content` không được rỗng và tối đa 2000 ký tự.
+- REST/DB là nguồn sự thật; socket chỉ dùng realtime.
 
 ## 6. Admin APIs
 

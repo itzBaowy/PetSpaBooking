@@ -11,6 +11,7 @@ import {
 import { buildQueryPrisma } from "../../common/helpers/build-query-prisma.helper.ts";
 import { notificationService } from "../notification.service.ts";
 import { assertProviderSlotAvailable } from "./availability.service.ts";
+import { socketService } from "../socket.service.ts";
 
 const VALID_PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
 const VALID_BOOKING_STATUSES = [
@@ -201,6 +202,24 @@ function getCancellationPaymentStatus(booking: {
   return booking.paymentStatus;
 }
 
+function emitBookingUpdated(booking: {
+  id: string;
+  provider: { id: string };
+  customer: { users: { id: string } };
+}) {
+  socketService.emitToBooking(booking.id, "booking:updated", { booking });
+  socketService.emitToUser(booking.customer.users.id, "booking:updated", {
+    booking,
+  });
+  socketService.emitToProvider(booking.provider.id, "booking:updated", {
+    booking,
+  });
+}
+
+function emitProviderBookingNew(booking: { provider: { id: string } }) {
+  socketService.emitToProvider(booking.provider.id, "booking:new", { booking });
+}
+
 async function getOrCreateCustomer(userId: string, location?: string) {
   const existing = await prisma.customers.findUnique({ where: { userId } });
   if (existing) return existing;
@@ -323,7 +342,7 @@ export const mobileBookingServices = {
     const end = new Date(start.getTime() + service.duration * 60_000);
     await assertProviderSlotAvailable(providerId, start, end);
 
-    return prisma.bookings.create({
+    const createdBooking = await prisma.bookings.create({
       data: {
         customerId: customer.id,
         providerId,
@@ -340,6 +359,11 @@ export const mobileBookingServices = {
       },
       include: BOOKING_INCLUDE,
     });
+
+    emitBookingUpdated(createdBooking);
+    emitProviderBookingNew(createdBooking);
+
+    return createdBooking;
   },
 
   async getMyBookings(req: Request) {
@@ -506,6 +530,7 @@ export const mobileBookingServices = {
       });
     }
 
+    emitBookingUpdated(updatedBooking);
     return updatedBooking;
   },
 
@@ -759,6 +784,7 @@ export const mobileBookingServices = {
       data: { bookingId: updatedBooking.id },
     });
 
+    emitBookingUpdated(updatedBooking);
     return updatedBooking;
   },
 
@@ -795,6 +821,7 @@ export const mobileBookingServices = {
       data: { bookingId: updatedBooking.id, reason: reason ?? null },
     });
 
+    emitBookingUpdated(updatedBooking);
     return updatedBooking;
   },
 
@@ -846,6 +873,7 @@ export const mobileBookingServices = {
       });
     }
 
+    emitBookingUpdated(updatedBooking);
     return updatedBooking;
   },
 
@@ -891,6 +919,7 @@ export const mobileBookingServices = {
       },
     });
 
+    emitBookingUpdated(updatedBooking);
     return updatedBooking;
   },
 
@@ -960,6 +989,7 @@ export const mobileBookingServices = {
       data: { bookingId: updatedBooking.id },
     });
 
+    emitBookingUpdated(updatedBooking);
     return updatedBooking;
   },
 
@@ -1022,6 +1052,7 @@ export const mobileBookingServices = {
       data: { bookingId: updatedBooking.id },
     });
 
+    emitBookingUpdated(updatedBooking);
     return updatedBooking;
   },
 };
