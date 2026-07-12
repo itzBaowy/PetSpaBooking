@@ -8,7 +8,11 @@ import {
   getDistanceKm,
 } from "../../common/helpers/provider.helper.ts";
 import { getQueryString } from "../../common/helpers/paramHelper.ts";
-import { ProviderItem } from "../../types/mobile-types/provider.types.ts";
+import {
+  GlobalSearchResponse,
+  GlobalSearchServiceItem,
+  ProviderItem,
+} from "../../types/mobile-types/provider.types.ts";
 import {
   BadRequestException,
   NotFoundException,
@@ -19,24 +23,236 @@ import { ObjectId } from "mongodb";
 const MIN_WITHDRAWAL_AMOUNT = 100_000;
 
 function getRequesterId(req: Request): string {
-  const userId = (req as Request & { user?: { userId?: string } }).user
-    ?.userId;
+  const userId = (req as Request & { user?: { userId?: string } }).user?.userId;
   if (!userId) throw new UnauthorizedException("Unauthorized");
   return userId;
 }
 
+function parseOptionalNumber(
+  value: unknown,
+  fieldName: string,
+): number | undefined {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+
+  const numericValue = Number(value);
+
+  if (!Number.isFinite(numericValue)) {
+    throw new BadRequestException(`${fieldName} must be a valid number`);
+  }
+
+  return numericValue;
+}
+
 export const mobileProviderServices = {
+  async searchGlobal(req: Request): Promise<GlobalSearchResponse> {
+    const { page, pageSize, index } = buildQueryPrisma(
+      req.query as Record<string, unknown>,
+    );
+
+    const { userLat, userLng, category } = req.query;
+    const searchTerm =
+      typeof req.query.q === "string"
+        ? req.query.q.trim()
+        : typeof req.query.searchKey === "string"
+          ? req.query.searchKey.trim()
+          : undefined;
+
+    if (!searchTerm) {
+      return {
+        providers: [],
+        services: [],
+      };
+    }
+
+    const providerWhere: Record<string, unknown> = {
+      providerStatus: "VERIFIED",
+      OR: [
+        {
+          businessName: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          slug: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          services: {
+            some: {
+              name: {
+                contains: searchTerm,
+                mode: "insensitive",
+              },
+              isActive: true,
+              isHiddenByAdmin: false,
+            },
+          },
+        },
+      ],
+    };
+
+    const serviceWhere: Record<string, unknown> = {
+      isActive: true,
+      isHiddenByAdmin: false,
+      OR: [
+        {
+          name: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          longDescription: {
+            contains: searchTerm,
+            mode: "insensitive",
+          },
+        },
+        {
+          provider: {
+            businessName: {
+              contains: searchTerm,
+              mode: "insensitive",
+            },
+          },
+        },
+      ],
+    };
+
+    if (typeof category === "string" && category) {
+      serviceWhere.category = category;
+    }
+
+    const [rawProviders, rawServices] = await Promise.all([
+      prisma.providers.findMany({
+        where: providerWhere,
+        select: {
+          businessName: true,
+        },
+        orderBy: { createAt: "desc" },
+        skip: index,
+        take: pageSize,
+      }),
+      prisma.services.findMany({
+        where: serviceWhere,
+        select: {
+          name: true,
+        },
+        orderBy: { createAt: "desc" },
+        skip: index,
+        take: pageSize,
+      }),
+    ]);
+
+    return {
+      providers: rawProviders.map((p) => p.businessName),
+      services: rawServices.map((s) => s.name),
+    };
+  },
+
   async getAllProviders(req: Request) {
     const { page, pageSize, index, where } = buildQueryPrisma(
       req.query as Record<string, unknown>,
     );
 
     const { userLat, userLng, category } = req.query;
+    const searchKey =
+      typeof req.query.searchKey === "string"
+        ? req.query.searchKey.trim()
+        : undefined;
 
-    const providerWhere = {
+    const minRating = parseOptionalNumber(req.query.minRating, "minRating");
+    const maxRating = parseOptionalNumber(req.query.maxRating, "maxRating");
+    const minPrice = parseOptionalNumber(req.query.minPrice, "minPrice");
+    const maxPrice = parseOptionalNumber(req.query.maxPrice, "maxPrice");
+
+    if (minRating !== undefined && (minRating < 0 || minRating > 5)) {
+      throw new BadRequestException("minRating must be between 0 and 5");
+    }
+
+    if (maxRating !== undefined && (maxRating < 0 || maxRating > 5)) {
+      throw new BadRequestException("maxRating must be between 0 and 5");
+    }
+
+    if (minPrice !== undefined && minPrice < 0) {
+      throw new BadRequestException(
+        "minPrice must be greater than or equal to 0",
+      );
+    }
+
+    if (maxPrice !== undefined && maxPrice < 0) {
+      throw new BadRequestException(
+        "maxPrice must be greater than or equal to 0",
+      );
+    }
+
+    if (
+      minRating !== undefined &&
+      maxRating !== undefined &&
+      minRating > maxRating
+    ) {
+      throw new BadRequestException(
+        "minRating cannot be greater than maxRating",
+      );
+    }
+
+    if (
+      minPrice !== undefined &&
+      maxPrice !== undefined &&
+      minPrice > maxPrice
+    ) {
+      throw new BadRequestException("minPrice cannot be greater than maxPrice");
+    }
+
+    const providerWhere: Record<string, unknown> = {
       ...where,
       providerStatus: "VERIFIED",
     };
+
+    if (searchKey) {
+      providerWhere.OR = [
+        {
+          businessName: {
+            contains: searchKey,
+            mode: "insensitive",
+          },
+        },
+        {
+          slug: {
+            contains: searchKey,
+            mode: "insensitive",
+          },
+        },
+        {
+          services: {
+            some: {
+              name: {
+                contains: searchKey,
+                mode: "insensitive",
+              },
+              isActive: true,
+              isHiddenByAdmin: false,
+            },
+          },
+        },
+      ];
+    }
 
     const serviceWhere: Record<string, unknown> = {
       isActive: true,
@@ -47,108 +263,149 @@ export const mobileProviderServices = {
       serviceWhere.category = category;
     }
 
-    const [totalItems, rawProviders] = await Promise.all([
-      prisma.providers.count({ where: providerWhere }),
-      prisma.providers.findMany({
-        where: providerWhere,
-        include: {
-          services: {
-            where: serviceWhere,
-          },
-          reviews: true,
-          workingHours: true,
+    const rawProviders = await prisma.providers.findMany({
+      where: providerWhere,
+      include: {
+        services: {
+          where: serviceWhere,
         },
-        skip: index,
-        take: pageSize,
-        orderBy: { createAt: "desc" },
-      }),
-    ]);
+        reviews: true,
+        workingHours: true,
+      },
+      orderBy: { createAt: "desc" },
+    });
 
-    const items = rawProviders.map((provider) => {
-      const totalReviews = provider.reviews.length;
-      const averageRating =
-        totalReviews > 0
-          ? provider.reviews.reduce((acc, r) => acc + r.rating, 0) /
-            totalReviews
-          : 0;
+    const filteredProviders = rawProviders
+      .map((provider) => {
+        const totalReviews = provider.reviews.length;
+        const averageRating =
+          totalReviews > 0
+            ? provider.reviews.reduce((acc, r) => acc + r.rating, 0) /
+              totalReviews
+            : 0;
 
-      const servicePrices = provider.services.map((s) => s.price);
-      const minPrice =
-        servicePrices.length > 0 ? Math.min(...servicePrices) : 0;
-      const maxPrice =
-        servicePrices.length > 0 ? Math.max(...servicePrices) : 0;
-      const uniqueCategories = Array.from(
-        new Set(provider.services.map((s) => s.category)),
+        const servicePrices = provider.services.map((s) => s.price);
+        const minServicePrice =
+          servicePrices.length > 0 ? Math.min(...servicePrices) : 0;
+        const maxServicePrice =
+          servicePrices.length > 0 ? Math.max(...servicePrices) : 0;
+
+        return {
+          provider,
+          ratingAverage: Math.round(averageRating * 10) / 10,
+          totalReviews,
+          servicePriceMin: minServicePrice,
+          servicePriceMax: maxServicePrice,
+        };
+      })
+      .filter(
+        ({ ratingAverage, servicePriceMin, servicePriceMax, totalReviews }) => {
+          const matchesRating =
+            (minRating === undefined || ratingAverage >= minRating) &&
+            (maxRating === undefined || ratingAverage <= maxRating);
+
+          const matchesPrice =
+            (minPrice === undefined || servicePriceMin >= minPrice) &&
+            (maxPrice === undefined || servicePriceMax <= maxPrice);
+
+          const matchesReviewCount =
+            minRating !== undefined || maxRating !== undefined
+              ? totalReviews > 0
+              : true;
+
+          return matchesRating && matchesPrice && matchesReviewCount;
+        },
       );
 
-      let distance = 0;
-      if (userLat && userLng && provider.lat && provider.lng) {
-        distance = getDistanceKm(
-          Number(userLat),
-          Number(userLng),
-          provider.lat,
-          provider.lng,
+    const totalItems = filteredProviders.length;
+    const paginatedProviders = filteredProviders.slice(index, index + pageSize);
+
+    const items = paginatedProviders.map(
+      ({
+        provider,
+        ratingAverage,
+        totalReviews,
+        servicePriceMin,
+        servicePriceMax,
+      }) => {
+        const uniqueCategories = Array.from(
+          new Set(provider.services.map((s) => s.category)),
         );
-      }
 
-      const availability = checkAvailability(provider.workingHours);
+        let distance = 0;
+        if (userLat && userLng && provider.lat && provider.lng) {
+          distance = getDistanceKm(
+            Number(userLat),
+            Number(userLng),
+            provider.lat,
+            provider.lng,
+          );
+        }
+        const canBookFuture =
+          provider.services.length > 0 &&
+          provider.workingHours.some((workingHour) => !workingHour.isClosed);
 
-      return {
-        id: provider.id,
-        slug: provider.slug,
-        businessName: provider.businessName,
-        description: provider.description || "",
-        avatarUrl: provider.avatarUrl || "",
-        coverImageUrl: provider.coverImageUrl || "",
+        const availability = checkAvailability(provider.workingHours);
 
-        isVerified: provider.providerStatus === "VERIFIED",
-        status: provider.providerStatus,
+        return {
+          id: provider.id,
+          slug: provider.slug,
+          businessName: provider.businessName,
+          description: provider.description || "",
+          avatarUrl: provider.avatarUrl || "",
+          coverImageUrl: provider.coverImageUrl || "",
 
-        location: {
-          address: provider.address || "",
-          ward: provider.ward || "",
-          district: provider.district || "",
-          province: provider.province || "",
-          coordinates: {
-            lat: provider.lat || 0,
-            lng: provider.lng || 0,
+          isVerified: provider.providerStatus === "VERIFIED",
+          status: provider.providerStatus,
+
+          location: {
+            address: provider.address || "",
+            ward: provider.ward || "",
+            district: provider.district || "",
+            province: provider.province || "",
+            coordinates: {
+              lat: provider.lat || 0,
+              lng: provider.lng || 0,
+            },
+            distanceKm: distance,
           },
-          distanceKm: distance,
-        },
 
-        rating: {
-          average: Math.round(averageRating * 10) / 10,
-          totalReviews: totalReviews,
-        },
-
-        services: {
-          total: provider.services.length,
-          categories: uniqueCategories,
-          priceRange: {
-            min: minPrice,
-            max: maxPrice,
-            currency: "VND",
+          rating: {
+            average: ratingAverage,
+            totalReviews,
           },
-          preview: provider.services.slice(0, 3).map((s) => ({
-            id: s.id,
-            name: s.name,
-            price: s.price,
-            durationMinutes: s.duration,
-            thumbnailUrl: s.imageUrls[0] || "",
-            description: s.description || undefined,
-          })),
-        },
 
-        availability: availability,
+          services: {
+            total: provider.services.length,
+            categories: uniqueCategories,
+            priceRange: {
+              min: servicePriceMin,
+              max: servicePriceMax,
+              currency: "VND",
+            },
+            preview: provider.services.slice(0, 3).map((s) => ({
+              id: s.id,
+              name: s.name,
+              price: s.price,
+              durationMinutes: s.duration,
+              thumbnailUrl: s.imageUrls[0] || "",
+              description: s.description || undefined,
+            })),
+          },
+          availability: {
+            ...availability,
+            canBookFuture,
+          },
 
-        paymentMethods: {
-          online: provider.payOnline,
-          cash: provider.payCash,
-        },
+          paymentMethods: {
+            online: provider.payOnline,
+            cash: provider.payCash,
+          },
 
-        createdAt: provider.createAt.toISOString(),
-      };
-    });
+          createdAt: provider.createAt.toISOString(),
+        };
+      },
+    );
 
     const totalPages = Math.ceil(totalItems / pageSize);
 
@@ -270,6 +527,9 @@ export const mobileProviderServices = {
     }
 
     const availability = checkAvailability(provider.workingHours);
+    const canBookFuture =
+      provider.services.length > 0 &&
+      provider.workingHours.some((workingHour) => !workingHour.isClosed);
 
     const totalReviews = provider.reviews.length;
 
@@ -320,7 +580,10 @@ export const mobileProviderServices = {
           description: s.description || undefined,
         })),
       },
-      availability: availability,
+      availability: {
+        ...availability,
+        canBookFuture,
+      },
       paymentMethods: {
         online: provider.payOnline,
         cash: provider.payCash,

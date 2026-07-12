@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import { responseSuccess } from "../../common/helpers/function.helper.ts";
 import { mobileProviderServices } from "../../services/mobile-services/provider.service.ts";
+import { mobileAvailabilityService } from "../../services/mobile-services/availability.service.ts";
 
 export const mobileProviderController = {
   async getAllProviders(
@@ -13,6 +14,23 @@ export const mobileProviderController = {
       const response = responseSuccess(
         result,
         "Providers retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async searchGlobal(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.searchGlobal(req);
+      const response = responseSuccess(
+        result,
+        "Global search results retrieved successfully",
       );
       res.status(response.statusCode).json(response);
     } catch (error) {
@@ -116,6 +134,109 @@ export const mobileProviderController = {
       const response = responseSuccess(
         result,
         "Provider withdrawals retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getWorkingHours(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileAvailabilityService.getWorkingHours(req);
+      const response = responseSuccess(
+        result,
+        "Provider working hours retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateWorkingHours(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileAvailabilityService.updateWorkingHours(req);
+      const response = responseSuccess(
+        result,
+        "Provider working hours updated successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getAvailabilityBlocks(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileAvailabilityService.getBlocks(req);
+      const response = responseSuccess(
+        result,
+        "Provider availability blocks retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createAvailabilityBlock(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileAvailabilityService.createBlock(req);
+      const response = responseSuccess(
+        result,
+        "Provider availability block created successfully",
+        201,
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteAvailabilityBlock(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileAvailabilityService.deleteBlock(req);
+      const response = responseSuccess(
+        result,
+        "Provider availability block deleted successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getAvailableSlots(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileAvailabilityService.getAvailableSlots(req);
+      const response = responseSuccess(
+        result,
+        "Provider available slots retrieved successfully",
       );
       res.status(response.statusCode).json(response);
     } catch (error) {

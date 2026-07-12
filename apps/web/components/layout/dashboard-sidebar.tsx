@@ -4,10 +4,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useProfile } from "@/apis/auth/queries";
 import { cn } from "@/lib/utils";
 import {
   adminNavGroups,
-  providerNavGroups,
+  getProviderNavGroups,
   type NavGroup,
 } from "@/components/layout/nav-items";
 
@@ -16,12 +17,20 @@ import {
 function ChevronIcon({ open }: { open: boolean }) {
   return (
     <svg
-      className={cn("h-3 w-3 shrink-0 transition-transform duration-200", open ? "rotate-0" : "-rotate-90")}
+      className={cn(
+        "h-3 w-3 shrink-0 transition-transform duration-200",
+        open ? "rotate-0" : "-rotate-90",
+      )}
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
     >
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="m19 9-7 7-7-7" />
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        strokeWidth={2.5}
+        d="m19 9-7 7-7-7"
+      />
     </svg>
   );
 }
@@ -30,16 +39,41 @@ function ChevronIcon({ open }: { open: boolean }) {
 
 function CollapseIcon({ collapsed }: { collapsed: boolean }) {
   return (
-    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+    <svg
+      className="h-4 w-4"
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+    >
       {collapsed ? (
         <>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 5v14" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 8l4 4-4 4" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M8 5v14"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M11 8l4 4-4 4"
+          />
         </>
       ) : (
         <>
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 5v14" />
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 8l-4 4 4 4" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M16 5v14"
+          />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M13 8l-4 4 4 4"
+          />
         </>
       )}
     </svg>
@@ -50,9 +84,12 @@ function CollapseIcon({ collapsed }: { collapsed: boolean }) {
 
 export function DashboardSidebar() {
   const pathname = usePathname() || "";
+  const profileQuery = useProfile();
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   // Set of group labels that are manually collapsed by the user
-  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(
+    new Set(),
+  );
 
   const isAdmin = pathname.startsWith("/admin");
   const isProvider = pathname.startsWith("/provider");
@@ -60,7 +97,7 @@ export function DashboardSidebar() {
   const currentGroups: NavGroup[] = isAdmin
     ? adminNavGroups
     : isProvider
-      ? providerNavGroups
+      ? getProviderNavGroups(profileQuery.data?.providerStatus)
       : [];
 
   // Flatten all items for the active-link resolution logic
@@ -89,7 +126,9 @@ export function DashboardSidebar() {
       <div
         className={cn(
           "group relative flex h-16 items-center border-b border-shell-border bg-shell-strong transition-all duration-200",
-          isSidebarCollapsed ? "justify-center px-3" : "justify-between px-4 gap-3",
+          isSidebarCollapsed
+            ? "justify-center px-3"
+            : "justify-between px-4 gap-3",
         )}
       >
         {!isSidebarCollapsed ? (

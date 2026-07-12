@@ -7,6 +7,8 @@ import {
   UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
+import { notificationService } from "./notification.service.ts";
+import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VALID_CATEGORIES = [
@@ -37,6 +39,18 @@ const SERVICE_SELECT = {
   updateAt: true,
 } as const;
 
+const ADMIN_SERVICE_INCLUDE = {
+  provider: {
+    select: {
+      id: true,
+      userId: true,
+      businessName: true,
+      providerStatus: true,
+      depositStatus: true,
+    },
+  },
+} as const;
+
 // ─── Helper ───────────────────────────────────────────────────────────────────
 function getRequesterId(req: Request): string {
   const payload = (req as Request & { user?: { userId?: string } }).user;
@@ -53,6 +67,15 @@ function getRouteParam(req: Request, name: string): string {
   }
 
   return value;
+}
+
+function getOptionalReason(value: unknown): string | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "string" || !value.trim()) {
+    throw new BadRequestException("reason must be a non-empty string");
+  }
+
+  return value.trim();
 }
 
 async function getVerifiedProviderId(userId: string): Promise<string> {
@@ -311,11 +334,32 @@ export const serviceService = {
       where.isHiddenByAdmin = req.query.isHiddenByAdmin === "true";
     }
 
+    if (typeof req.query.providerId === "string" && req.query.providerId) {
+      where.providerId = req.query.providerId;
+    }
+
+    if (typeof req.query.keyword === "string" && req.query.keyword.trim()) {
+      where.OR = [
+        {
+          name: {
+            contains: req.query.keyword.trim(),
+            mode: "insensitive",
+          },
+        },
+        {
+          description: {
+            contains: req.query.keyword.trim(),
+            mode: "insensitive",
+          },
+        },
+      ];
+    }
+
     const [totalItem, items] = await Promise.all([
       prisma.services.count({ where }),
       prisma.services.findMany({
         where,
-        select: SERVICE_SELECT,
+        include: ADMIN_SERVICE_INCLUDE,
         skip: index,
         take: pageSize,
         orderBy: { createAt: "desc" },
@@ -336,7 +380,7 @@ export const serviceService = {
     const id = getRouteParam(req, "id");
     const service = await prisma.services.findUnique({
       where: { id },
-      select: SERVICE_SELECT,
+      include: ADMIN_SERVICE_INCLUDE,
     });
     if (!service) throw new NotFoundException("Service not found");
     return service;
@@ -344,8 +388,13 @@ export const serviceService = {
 
   // ── Admin ẩn service vi phạm ──────────────────────────────────────────────
   async adminHide(req: Request) {
+    const adminId = getRequesterId(req);
     const id = getRouteParam(req, "id");
-    const service = await prisma.services.findUnique({ where: { id } });
+    const reason = getOptionalReason(req.body?.reason);
+    const service = await prisma.services.findUnique({
+      where: { id },
+      include: ADMIN_SERVICE_INCLUDE,
+    });
     if (!service) throw new NotFoundException("Service not found");
 
     if (service.isHiddenByAdmin) {
@@ -358,13 +407,41 @@ export const serviceService = {
       select: SERVICE_SELECT,
     });
 
+    await notificationService.safeCreate({
+      userId: service.provider.userId,
+      type: "SERVICE_HIDDEN_BY_ADMIN",
+      title: "Service hidden by admin",
+      message: "One of your services was hidden by admin.",
+      data: {
+        serviceId: service.id,
+        providerId: service.providerId,
+        reason,
+      },
+    });
+
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "SERVICE_HIDE",
+      targetType: "SERVICE",
+      targetId: service.id,
+      metadata: {
+        providerId: service.providerId,
+        serviceName: service.name,
+        reason,
+      },
+    });
+
     return updated;
   },
 
   // ── Admin bỏ ẩn service ───────────────────────────────────────────────────
   async adminUnhide(req: Request) {
+    const adminId = getRequesterId(req);
     const id = getRouteParam(req, "id");
-    const service = await prisma.services.findUnique({ where: { id } });
+    const service = await prisma.services.findUnique({
+      where: { id },
+      include: ADMIN_SERVICE_INCLUDE,
+    });
     if (!service) throw new NotFoundException("Service not found");
 
     if (!service.isHiddenByAdmin) {
@@ -375,6 +452,28 @@ export const serviceService = {
       where: { id },
       data: { isHiddenByAdmin: false },
       select: SERVICE_SELECT,
+    });
+
+    await notificationService.safeCreate({
+      userId: service.provider.userId,
+      type: "SERVICE_UNHIDDEN_BY_ADMIN",
+      title: "Service unhidden by admin",
+      message: "One of your services is visible again.",
+      data: {
+        serviceId: service.id,
+        providerId: service.providerId,
+      },
+    });
+
+    await adminAuditLogService.safeLog({
+      adminId,
+      action: "SERVICE_UNHIDE",
+      targetType: "SERVICE",
+      targetId: service.id,
+      metadata: {
+        providerId: service.providerId,
+        serviceName: service.name,
+      },
     });
 
     return updated;

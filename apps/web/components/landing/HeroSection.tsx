@@ -34,7 +34,7 @@ export function HeroSection() {
               href="/login"
               className="rounded-full border border-[#dce8e0] bg-white px-6 py-3.5 text-center text-sm font-bold transition hover:-translate-y-0.5 hover:bg-[#f3faf6]"
             >
-              Đăng nhập chà cung cấp
+              Đăng nhập nhà cung cấp
             </Link>
           </AnimatedReveal>
           <AnimatedStagger className="mt-9 grid grid-cols-3 gap-3">

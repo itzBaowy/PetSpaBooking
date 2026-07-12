@@ -2,13 +2,36 @@ export type ProviderFilterPayload = {
   page?: number;
   pageSize?: number;
   search?: string;
+  searchKey?: string;
   category?: string;
+  minRating?: number;
+  maxRating?: number;
   minPrice?: number;
   maxPrice?: number;
   isOpenNow?: boolean;
   userLat?: number;
   userLng?: number;
   maxDistanceKm?: number;
+};
+
+export type GlobalSearchServiceItem = {
+  id: string;
+  providerId: string;
+  providerName: string;
+  name: string;
+  price: number;
+  durationMinutes: number;
+  thumbnailUrl: string;
+  description?: string;
+  category: string;
+  targetPets: string[];
+  benefits: string[];
+  createdAt: string;
+};
+
+export type GlobalSearchResponse = {
+  providers: string[];
+  services: string[];
 };
 
 export type ProviderItem = {
@@ -60,6 +83,7 @@ export type ProviderItem = {
 
   availability: {
     isOpenNow: boolean;
+    canBookFuture: boolean;
     todayOpeningHours: {
       open: string;
       close: string;
