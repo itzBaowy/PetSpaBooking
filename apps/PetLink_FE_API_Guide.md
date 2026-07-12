@@ -331,7 +331,31 @@ Body:
 
 Một booking chỉ có 1 dispute.
 
-### 3.5 Review
+### 3.5 Customer cancel booking
+
+Customer token required.
+
+```http
+PATCH /api/mobile/bookings/{id}/cancel
+```
+
+Body optional:
+
+```json
+{
+  "reason": "I need to reschedule"
+}
+```
+
+Rule:
+
+- Customer chỉ hủy booking của chính mình.
+- Chỉ hủy được booking `PENDING` hoặc `CONFIRMED`.
+- Booking chuyển sang `CANCELLED`.
+- Nếu booking `ONLINE` đã paid `SUCCESS`, `paymentStatus` chuyển sang `REFUND_PENDING`.
+- Nếu booking `ONLINE` còn `PENDING`, `paymentStatus` chuyển sang `CANCELLED`.
+
+### 3.6 Review
 
 Chỉ review được khi booking `COMPLETED`.
 
@@ -359,6 +383,8 @@ Provider token required.
 GET /api/mobile/provider/bookings
 PATCH /api/mobile/provider/bookings/{id}/confirm
 PATCH /api/mobile/provider/bookings/{id}/reject
+PATCH /api/mobile/provider/bookings/{id}/cancel
+PATCH /api/mobile/provider/bookings/{id}/no-arrival
 ```
 
 Reject body:
@@ -368,6 +394,29 @@ Reject body:
   "reason": "Provider is unavailable"
 }
 ```
+
+Cancel body optional:
+
+```json
+{
+  "reason": "Provider is unavailable"
+}
+```
+
+Provider cancel rule:
+
+- Provider owner mới được hủy.
+- Chỉ hủy được booking `CONFIRMED`.
+- Booking chuyển sang `CANCELLED`.
+- Nếu booking `ONLINE` đã paid `SUCCESS`, `paymentStatus` chuyển sang `REFUND_PENDING`.
+
+No-arrival rule:
+
+- Provider owner mới được mark no-arrival.
+- Chỉ mark được booking `CONFIRMED`.
+- Chỉ được mark sau `appointmentStart + BOOKING_NO_ARRIVAL_GRACE_MINUTES`.
+- Default grace period hiện tại là `15` phút.
+- Booking chuyển sang `NO_ARRIVAL`.
 
 ### 4.2 QR check-in/check-out
 
@@ -527,6 +576,9 @@ Các event hiện có thể tạo notification:
 - `BOOKING_CHECKED_IN`
 - `BOOKING_CHECKED_OUT`
 - `BOOKING_COMPLETED`
+- `BOOKING_CANCELLED`
+- `BOOKING_NO_ARRIVAL`
+- `REFUND_PENDING`
 - `DISPUTE_CREATED`
 - `DISPUTE_RESOLVED`
 - `WITHDRAWAL_APPROVED`
@@ -716,7 +768,7 @@ List filters:
 ```txt
 status
 paymentMethod=CASH|ONLINE
-paymentStatus=UNPAID|PENDING|SUCCESS|FAILED|REFUNDED
+paymentStatus=UNPAID|PENDING|SUCCESS|FAILED|REFUND_PENDING|REFUNDED|CANCELLED
 providerId
 customerId
 from
@@ -966,6 +1018,19 @@ Rejected:
 
 ```txt
 PENDING -> REJECTED
+```
+
+Cancelled:
+
+```txt
+PENDING -> CANCELLED
+CONFIRMED -> CANCELLED
+```
+
+No-arrival:
+
+```txt
+CONFIRMED -> NO_ARRIVAL
 ```
 
 Dispute:

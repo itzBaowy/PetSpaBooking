@@ -220,6 +220,51 @@ mobileBookingRouter.get(
 
 /**
  * @swagger
+ * /api/mobile/bookings/{id}/cancel:
+ *   patch:
+ *     summary: Cancel my booking
+ *     description: Customer cancels their own PENDING or CONFIRMED booking. Paid online bookings move to REFUND_PENDING.
+ *     tags: [Mobile-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 example: "I need to reschedule"
+ *     responses:
+ *       200:
+ *         description: Booking cancelled successfully
+ *       400:
+ *         description: Booking cannot be cancelled
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Customer role required
+ *       404:
+ *         description: Booking not found
+ */
+mobileBookingRouter.patch(
+  "/bookings/:id/cancel",
+  protect,
+  checkRole("CUSTOMER"),
+  mobileBookingController.cancelMyBooking,
+);
+
+/**
+ * @swagger
  * /api/mobile/bookings/{id}/momo/create-payment:
  *   post:
  *     summary: Create MoMo sandbox payment
@@ -554,6 +599,86 @@ mobileBookingRouter.patch(
   protect,
   checkRole("PROVIDER"),
   mobileBookingController.reject,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/bookings/{id}/cancel:
+ *   patch:
+ *     summary: Cancel a confirmed booking
+ *     description: Provider cancels their own CONFIRMED booking. Paid online bookings move to REFUND_PENDING.
+ *     tags: [Mobile-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 example: "Provider is unavailable"
+ *     responses:
+ *       200:
+ *         description: Booking cancelled successfully
+ *       400:
+ *         description: Booking is not CONFIRMED
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role and active deposit required
+ *       404:
+ *         description: Booking not found
+ */
+mobileBookingRouter.patch(
+  "/provider/bookings/:id/cancel",
+  protect,
+  checkRole("PROVIDER"),
+  mobileBookingController.cancelProviderBooking,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/bookings/{id}/no-arrival:
+ *   patch:
+ *     summary: Mark booking as no-arrival
+ *     description: Provider marks a CONFIRMED booking as NO_ARRIVAL after the configured grace period.
+ *     tags: [Mobile-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking ID
+ *     responses:
+ *       200:
+ *         description: Booking marked as no-arrival successfully
+ *       400:
+ *         description: Booking is not CONFIRMED or grace period has not passed
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role and active deposit required
+ *       404:
+ *         description: Booking not found
+ */
+mobileBookingRouter.patch(
+  "/provider/bookings/:id/no-arrival",
+  protect,
+  checkRole("PROVIDER"),
+  mobileBookingController.markNoArrival,
 );
 
 /**

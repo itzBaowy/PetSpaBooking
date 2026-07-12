@@ -71,6 +71,19 @@ export const mobileBookingController = {
     }
   },
 
+  async cancelMyBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.cancelMyBooking(req);
+      const response = responseSuccess(
+        result,
+        "Booking cancelled successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createReview(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await mobileBookingServices.createReview(req);
@@ -115,6 +128,32 @@ export const mobileBookingController = {
     try {
       const result = await mobileBookingServices.reject(req);
       const response = responseSuccess(result, "Booking rejected successfully");
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async cancelProviderBooking(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.cancelProviderBooking(req);
+      const response = responseSuccess(
+        result,
+        "Booking cancelled successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async markNoArrival(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.markNoArrival(req);
+      const response = responseSuccess(
+        result,
+        "Booking marked as no-arrival successfully",
+      );
       res.status(response.statusCode).json(response);
     } catch (error) {
       next(error);
