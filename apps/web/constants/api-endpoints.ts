@@ -81,6 +81,13 @@ export const API_ENDPOINTS = {
     PROVIDER_WALLET: (id: string) => `/admin/providers/${id}/wallet`,
     ADJUST_PROVIDER_WALLET: (id: string) =>
       `/admin/providers/${id}/wallet/adjust`,
+    REFUNDS: {
+      LIST: "/admin/refunds",
+      DETAIL: (bookingId: string) => `/admin/refunds/${bookingId}`,
+      MARK_REFUNDED: (bookingId: string) =>
+        `/admin/refunds/${bookingId}/mark-refunded`,
+      REJECT: (bookingId: string) => `/admin/refunds/${bookingId}/reject`,
+    },
     WITHDRAWALS: {
       LIST: "/admin/withdrawals",
       DETAIL: (id: string) => `/admin/withdrawals/${id}`,
@@ -89,6 +96,11 @@ export const API_ENDPOINTS = {
       MARK_PAID: (id: string) => `/admin/withdrawals/${id}/mark-paid`,
     },
     AUDIT_LOGS: "/admin/audit-logs",
+    NOTIFICATIONS: {
+      LIST: "/admin/notifications",
+      SEND: "/admin/notifications/send",
+      BROADCAST: "/admin/notifications/broadcast",
+    },
     REPORTS: {
       REVENUE: "/admin/reports/revenue",
       DAILY_REVENUE: "/admin/reports/revenue/daily",
@@ -113,6 +125,7 @@ export const API_ENDPOINTS = {
     },
     SERVICES: {
       LIST: "/admin/services",
+      DETAIL: (serviceId: string) => `/admin/services/${serviceId}`,
       MODERATE: (serviceId: string) =>
         `/admin/services/${serviceId}/moderation`,
       HIDE: (serviceId: string) => `/admin/services/${serviceId}/hide`,

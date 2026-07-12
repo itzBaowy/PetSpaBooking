@@ -4,6 +4,7 @@ import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
 import {
   dailyRevenuePointSchema,
+  disputeReportSchema,
   providerPerformanceListSchema,
   revenueSummarySchema,
 } from "./schema";
@@ -18,6 +19,7 @@ export const reportKeys = {
   revenue: (range: ReportDateRange) => [...reportKeys.all, "revenue", range] as const,
   dailyRevenue: (range: ReportDateRange) => [...reportKeys.all, "daily-revenue", range] as const,
   providers: (range: ReportDateRange) => [...reportKeys.all, "providers", range] as const,
+  disputes: (range: ReportDateRange) => [...reportKeys.all, "disputes", range] as const,
 };
 
 export function useRevenueSummary(range: ReportDateRange = {}) {
@@ -48,6 +50,16 @@ export function useProviderPerformance(range: ReportDateRange = {}) {
         params: { ...range, page: 1, pageSize: 5 },
       });
       return providerPerformanceListSchema.parse(response.data.data);
+    },
+  });
+}
+
+export function useDisputeReport(range: ReportDateRange = {}) {
+  return useQuery({
+    queryKey: reportKeys.disputes(range),
+    queryFn: async () => {
+      const response = await api.get<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.REPORTS.DISPUTES, { params: range });
+      return disputeReportSchema.parse(response.data.data);
     },
   });
 }

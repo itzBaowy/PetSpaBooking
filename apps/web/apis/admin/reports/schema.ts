@@ -48,6 +48,15 @@ export const providerPerformanceListSchema = z.object({
   }),
 });
 
+export const disputeReportSchema = z.object({
+  pending: z.number(),
+  resolvedProviderWin: z.number(),
+  resolvedCustomerWin: z.number(),
+  cancelled: z.number(),
+  byStatus: z.record(z.string(), z.number()).optional(),
+});
+
 export type RevenueSummary = z.infer<typeof revenueSummarySchema>;
 export type DailyRevenuePoint = z.infer<typeof dailyRevenuePointSchema>;
 export type ProviderPerformance = z.infer<typeof providerPerformanceSchema>;
+export type DisputeReport = z.infer<typeof disputeReportSchema>;

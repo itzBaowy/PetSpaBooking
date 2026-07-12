@@ -66,6 +66,19 @@ export const FIELD_LABELS: Record<string, string> = {
   "booking.id": "Mã booking",
   "booking.customer.users.fullName": "Khách hàng",
   "booking.service.name": "Dịch vụ",
+  name: "Tên",
+  category: "Danh mục",
+  price: "Giá",
+  duration: "Thời lượng",
+  isActive: "Đang hoạt động",
+  isHiddenByAdmin: "Admin đang ẩn",
+  title: "Tiêu đề",
+  message: "Nội dung",
+  userId: "Mã người nhận",
+  isRead: "Đã đọc",
+  cancelledAt: "Ngày hủy",
+  "user.fullName": "Người nhận",
+  "user.email": "Email",
 };
 
 export const VALUE_LABELS: Record<string, string> = {
@@ -128,6 +141,12 @@ export const VALUE_LABELS: Record<string, string> = {
   WithdrawalRequest: "Yêu cầu rút tiền",
   WITHDRAWAL: "Yêu cầu rút tiền",
   WITHDRAWAL_REQUEST: "Yêu cầu rút tiền",
+  GROOMING: "Chăm sóc lông",
+  SPA: "Spa",
+  BOARDING: "Lưu trú",
+  TRAINING: "Huấn luyện",
+  VETERINARY: "Thú y",
+  OTHER: "Khác",
 };
 
 export function fieldLabel(key: string) {
@@ -136,10 +155,11 @@ export function fieldLabel(key: string) {
 
 export function displayValue(value: unknown, key?: string) {
   if (typeof value === "string" && VALUE_LABELS[value]) return VALUE_LABELS[value];
-  if (key && ["walletBalance", "depositBalance", "totalAmount", "amount", "balanceAfter"].includes(key) && typeof value === "number") {
+  if (typeof value === "boolean") return value ? "Có" : "Không";
+  if (key && ["walletBalance", "depositBalance", "totalAmount", "amount", "balanceAfter", "price"].includes(key) && typeof value === "number") {
     return new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value);
   }
-  if (key && ["createAt", "updateAt", "createdAt", "updatedAt", "resolvedAt", "appointmentStart"].includes(key) && typeof value === "string") {
+  if (key && ["createAt", "updateAt", "createdAt", "updatedAt", "resolvedAt", "appointmentStart", "cancelledAt"].includes(key) && typeof value === "string") {
     const date = new Date(value);
     if (!Number.isNaN(date.getTime())) return date.toLocaleString("vi-VN");
   }
@@ -278,7 +298,7 @@ export function EntityTable({
   const router = useRouter();
   if (loading) return <p className="rounded-2xl border bg-white p-6">Đang tải dữ liệu...</p>;
 
-  const statusKeys = new Set(["status", "providerStatus", "depositStatus", "paymentStatus", "balanceType", "type", "action"]);
+  const statusKeys = new Set(["status", "providerStatus", "depositStatus", "paymentStatus", "balanceType", "type", "action", "category", "isActive", "isHiddenByAdmin", "isRead"]);
   const tableColumns: Array<DataTableColumn<AdminEntity>> = columns.map((key) => ({
     key,
     header: fieldLabel(key),

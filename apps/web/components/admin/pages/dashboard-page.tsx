@@ -9,7 +9,7 @@ import { nested, textValue } from "@/apis/admin/supported-api";
 import { PageTitle, LoadState } from "../shared";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
 import { formatCurrency } from "@/lib/currency";
-import { useDailyRevenue, useProviderPerformance, useRevenueSummary } from "@/apis/admin/reports/queries";
+import { useDailyRevenue, useDisputeReport, useProviderPerformance, useRevenueSummary } from "@/apis/admin/reports/queries";
 import { PlatformRevenueChart } from "@/apis/admin/analytics/components/platform-revenue-chart";
 import { TopProvidersTable } from "@/apis/admin/analytics/components/top-providers-table";
 
@@ -21,15 +21,16 @@ export function AdminDashboardPage() {
   const revenueQuery = useRevenueSummary();
   const dailyRevenueQuery = useDailyRevenue();
   const providersQuery = useProviderPerformance();
+  const disputeReportQuery = useDisputeReport();
 
-  const isLoading = query.isLoading || revenueQuery.isLoading || dailyRevenueQuery.isLoading || providersQuery.isLoading;
-  const failedQuery = [query, revenueQuery, dailyRevenueQuery, providersQuery].find((item) => item.isError);
+  const isLoading = query.isLoading || revenueQuery.isLoading || dailyRevenueQuery.isLoading || providersQuery.isLoading || disputeReportQuery.isLoading;
+  const failedQuery = [query, revenueQuery, dailyRevenueQuery, providersQuery, disputeReportQuery].find((item) => item.isError);
   if (isLoading) return <p>Đang tải tổng quan...</p>;
   if (failedQuery?.isError) {
     return (
       <LoadState
         error={failedQuery.error}
-        retry={() => void Promise.all([query.refetch(), revenueQuery.refetch(), dailyRevenueQuery.refetch(), providersQuery.refetch()])}
+        retry={() => void Promise.all([query.refetch(), revenueQuery.refetch(), dailyRevenueQuery.refetch(), providersQuery.refetch(), disputeReportQuery.refetch()])}
       />
     );
   }
@@ -88,6 +89,14 @@ export function AdminDashboardPage() {
         {dailyRevenueQuery.data && <PlatformRevenueChart data={dailyRevenueQuery.data} />}
         {providersQuery.data && <TopProvidersTable providers={providersQuery.data.items} />}
       </div>
+      {disputeReportQuery.data && (
+        <StatisticCardGrid columns={4}>
+          <StatisticCard title="Tranh chấp chờ xử lý" value={disputeReportQuery.data.pending} tone="amber" />
+          <StatisticCard title="Nhà cung cấp thắng" value={disputeReportQuery.data.resolvedProviderWin} tone="green" />
+          <StatisticCard title="Khách hàng thắng" value={disputeReportQuery.data.resolvedCustomerWin} tone="blue" />
+          <StatisticCard title="Đã hủy khiếu nại" value={disputeReportQuery.data.cancelled} tone="red" />
+        </StatisticCardGrid>
+      )}
     </div>
   );
 }

@@ -12,7 +12,7 @@ import {
 function IconGrid(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -31,7 +31,7 @@ function IconGrid(props: SVGProps<SVGSVGElement>) {
 function IconUsers(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -50,7 +50,7 @@ function IconUsers(props: SVGProps<SVGSVGElement>) {
 function IconBuilding(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -69,7 +69,7 @@ function IconBuilding(props: SVGProps<SVGSVGElement>) {
 function IconClipboard(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -88,7 +88,7 @@ function IconClipboard(props: SVGProps<SVGSVGElement>) {
 function IconWarning(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -107,7 +107,7 @@ function IconWarning(props: SVGProps<SVGSVGElement>) {
 function IconCoin(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -126,7 +126,7 @@ function IconCoin(props: SVGProps<SVGSVGElement>) {
 function IconReceipt(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -145,7 +145,7 @@ function IconReceipt(props: SVGProps<SVGSVGElement>) {
 function IconLog(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -164,7 +164,7 @@ function IconLog(props: SVGProps<SVGSVGElement>) {
 function IconHome(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -183,7 +183,7 @@ function IconHome(props: SVGProps<SVGSVGElement>) {
 function IconCalendar(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -202,7 +202,7 @@ function IconCalendar(props: SVGProps<SVGSVGElement>) {
 function IconGroup(props: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      className="w-5 h-5"
+      className="h-5 w-5"
       fill="none"
       viewBox="0 0 24 24"
       stroke="currentColor"
@@ -251,7 +251,7 @@ export const adminNavGroups: NavGroup[] = [
     items: [
       { label: "Đặt lịch", href: "/admin/bookings", icon: <IconClipboard /> },
       { label: "Tranh chấp", href: "/admin/bookings/disputes", icon: <IconWarning /> },
-      { label: "Kiểm duyệt", href: "/admin/moderation", icon: <IconWarning /> },
+      { label: "Dịch vụ", href: "/admin/services", icon: <IconClipboard /> },
     ],
   },
   {
@@ -269,6 +269,11 @@ export const adminNavGroups: NavGroup[] = [
         icon: <IconReceipt />,
       },
       {
+        label: "Hoàn tiền",
+        href: "/admin/finance/refunds",
+        icon: <IconReceipt />,
+      },
+      {
         label: "Cấu hình ký quỹ",
         href: "/admin/finance/deposit-config",
         icon: <IconCoin />,
@@ -277,7 +282,10 @@ export const adminNavGroups: NavGroup[] = [
   },
   {
     groupLabel: "Hệ thống",
-    items: [{ label: "Nhật ký", href: "/admin/audit-logs", icon: <IconLog /> }],
+    items: [
+      { label: "Thông báo", href: "/admin/notifications", icon: <IconWarning /> },
+      { label: "Nhật ký", href: "/admin/audit-logs", icon: <IconLog /> },
+    ],
   },
 ];
 
