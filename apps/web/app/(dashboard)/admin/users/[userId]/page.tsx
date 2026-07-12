@@ -1,11 +1,2 @@
-import { UserDetail } from "@/apis/admin/users/components/user-detail";
-
-interface PageProps {
-  params: Promise<{ userId: string }>;
-}
-
-export default async function UserDetailPage({ params }: PageProps) {
-  const { userId } = await params;
-
-  return <UserDetail userId={userId} />;
-}
+import { AdminUserDetailPage } from "@/components/admin/supported-pages";
+export default async function Page({ params }: { params: Promise<{ userId: string }> }) { const { userId } = await params; return <AdminUserDetailPage id={userId} />; }

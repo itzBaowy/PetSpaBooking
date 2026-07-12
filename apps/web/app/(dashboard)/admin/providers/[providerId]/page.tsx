@@ -1,11 +1,2 @@
-import { ProviderDetail } from "@/apis/admin/providers/components/provider-detail";
-
-interface PageProps {
-  params: Promise<{ providerId: string }>;
-}
-
-export default async function AdminProviderDetailPage({ params }: PageProps) {
-  const { providerId } = await params;
-
-  return <ProviderDetail providerId={providerId} />;
-}
+import { AdminProviderDetailPage } from "@/components/admin/supported-pages";
+export default async function Page({ params }: { params: Promise<{ providerId: string }> }) { const { providerId } = await params; return <AdminProviderDetailPage id={providerId} />; }

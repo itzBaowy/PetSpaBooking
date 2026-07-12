@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
-import { createCookieStorage } from "./cookie-store";
+import { clearAuthCookies, createCookieStorage } from "./cookie-store";
 
 interface Auth {
   accessToken: string | null;
@@ -22,7 +22,10 @@ export const useAuthStore = create<Auth>()(
       refreshToken: null,
       setTokens: ({ accessToken, refreshToken }) =>
         set({ accessToken, refreshToken }),
-      clearTokens: () => set({ accessToken: null, refreshToken: null }),
+      clearTokens: () => {
+        set({ accessToken: null, refreshToken: null });
+        clearAuthCookies();
+      },
     }),
     {
       name: "auth-storage",
