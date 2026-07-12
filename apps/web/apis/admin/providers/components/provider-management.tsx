@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import { Avatar } from "@/components/ui/avatar";
 import { formatVietnameseDate } from "@/lib/date";
 import { useAdminProviderList } from "../hooks/use-admin-provider-list";
 import { countProvidersByStatus, getProviderInitial, providerStatusFilterOptions } from "../provider-helpers";
@@ -32,14 +33,13 @@ export function ProviderManagement({
       widthClassName: "w-[26%]",
       render: (provider) => (
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-purple-50 text-sm font-bold text-purple-700">
-            {provider.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={provider.avatarUrl} alt={provider.businessName} className="h-full w-full object-cover" />
-            ) : (
-              getProviderInitial(provider)
-            )}
-          </div>
+          <Avatar
+            src={provider.avatarUrl}
+            alt={provider.businessName}
+            fallback={getProviderInitial(provider)}
+            size="list"
+            className="bg-purple-50 text-purple-700"
+          />
           <div className="min-w-0">
             <p className="break-words text-sm font-semibold text-gray-950">{provider.businessName}</p>
             <p className="text-xs font-medium text-gray-500">{provider.id}</p>

@@ -20,19 +20,48 @@ export function PendingProviderState({
   isLoadingDocuments: boolean;
   onLogout: () => void;
 }) {
+  const providerStatus = provider?.providerStatus ?? "PENDING_VERIFICATION";
+  const statusContent = {
+    PENDING_VERIFICATION: {
+      icon: "⏳",
+      title: "Hồ sơ nhà cung cấp đang chờ duyệt",
+      description:
+        "Hồ sơ nhà cung cấp của bạn đang chờ Admin xác thực. Sau khi được duyệt, tài khoản sẽ có quyền truy cập Provider Dashboard.",
+    },
+    REJECTED: {
+      icon: "!",
+      title: "Hồ sơ nhà cung cấp đã bị từ chối",
+      description:
+        "Vui lòng xem lý do từ chối bên dưới và bạn cần đăng kí lại.",
+    },
+    SUSPENDED: {
+      icon: "!",
+      title: "Tài khoản nhà cung cấp đang bị tạm khóa",
+      description:
+        "Bạn không thể truy cập Provider Dashboard hoặc nhận booking trong thời gian bị tạm khóa.",
+    },
+    VERIFIED: {
+      icon: "✓",
+      title: "Hồ sơ nhà cung cấp đã được xác minh",
+      description: "Tài khoản đã đủ điều kiện truy cập Provider Dashboard.",
+    },
+  }[providerStatus] ?? {
+    icon: "⏳",
+    title: "Trạng thái hồ sơ nhà cung cấp",
+    description: "Vui lòng theo dõi trạng thái hồ sơ tại đây.",
+  };
+
   return (
     <div className="flex min-h-[560px] flex-col items-center justify-center space-y-6 text-center">
       <div className="grid h-20 w-20 place-items-center rounded-full bg-warning-soft text-4xl text-warning">
-        ⏳
+        {statusContent.icon}
       </div>
       <div>
         <h1 className="text-3xl font-bold">
-          Đăng ký thành công, hồ sơ đang chờ duyệt
+          {statusContent.title}
         </h1>
         <p className="mx-auto mt-3 max-w-2xl text-sm leading-6 text-muted">
-          Tài khoản của bạn đang ở trạng thái chờ duyệt. Bạn chỉ có thể xem hồ
-          sơ đã gửi; sau khi quản trị viên duyệt, tài khoản sẽ tự động trở
-          thành nhà cung cấp.
+          {statusContent.description}
         </p>
       </div>
 
@@ -81,6 +110,17 @@ export function PendingProviderState({
                 <p className="mt-1 break-all text-xs text-muted">
                   {document.imageUrl}
                 </p>
+                {document.imageUrl && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={document.imageUrl}
+                    alt={
+                      providerDocumentTypeLabels[document.documentType] ??
+                      document.documentType
+                    }
+                    className="mt-3 h-40 w-full rounded-lg border border-border-subtle bg-white object-contain"
+                  />
+                )}
                 <p className="mt-3 text-xs font-semibold text-brand">
                   Trạng thái: {document.status}
                 </p>

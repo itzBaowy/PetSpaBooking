@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useProfile } from "@/apis/auth/queries";
 import { ThemeMenuItem } from "@/components/ui/theme-menu-item";
+import { Avatar, getAvatarInitials } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
 
@@ -32,7 +33,6 @@ const notifications = [
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Quản trị viên",
-  PENDING_PROVIDER: "Nhà cung cấp chờ duyệt",
   PROVIDER: "Nhà cung cấp dịch vụ",
   CUSTOMER: "Khách hàng",
 };
@@ -85,16 +85,6 @@ function Chevron({ open }: { open: boolean }) {
   );
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .map((part) => part.charAt(0))
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
-}
-
 export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<"notifications" | "profile" | null>(
@@ -113,7 +103,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
     : role === "admin"
       ? "Quản trị viên"
       : "Nhà cung cấp dịch vụ";
-  const initials = getInitials(displayName);
+  const initials = getAvatarInitials(displayName);
 
   const closeSoon = (menu: "notifications" | "profile") =>
     window.setTimeout(() => {
@@ -188,9 +178,12 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
           onClick={() => setOpenMenu(openMenu === "profile" ? null : "profile")}
           className="inline-flex h-10 items-center gap-3 rounded-xl border border-shell-border bg-surface py-1 pl-1 pr-3 text-left text-muted shadow-sm transition hover:border-brand hover:bg-brand-soft hover:text-brand focus:outline-none focus:ring-4 focus:ring-brand/20 dark:bg-shell dark:text-shell-muted"
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-sm font-bold text-brand-foreground">
-            {initials}
-          </span>
+          <Avatar
+            src={profile?.avatar}
+            alt={displayName}
+            fallback={initials}
+            size="topbar"
+          />
           <span className="hidden min-w-0 sm:block">
             <span className="block text-sm font-bold leading-4 text-foreground dark:text-white">
               {displayName}
@@ -206,9 +199,12 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
           <div className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-xl border border-border-subtle bg-surface text-foreground shadow-xl">
             <div className="border-b border-border-subtle p-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-soft text-sm font-bold text-brand">
-                  {initials}
-                </div>
+                <Avatar
+                  src={profile?.avatar}
+                  alt={displayName}
+                  fallback={initials}
+                  size="list"
+                />
                 <div className="min-w-0">
                   <p className="truncate text-sm font-bold">{displayName}</p>
                   <p className="truncate text-xs text-muted">{displayEmail}</p>

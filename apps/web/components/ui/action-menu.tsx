@@ -22,7 +22,7 @@ export function ActionMenu({ items, align = "right" }: ActionMenuProps) {
     <div className="relative inline-flex">
       <button
         type="button"
-        aria-label="Open actions"
+        aria-label="Mở danh sách thao tác"
         aria-haspopup="menu"
         aria-expanded={isOpen}
         aria-controls={menuId}

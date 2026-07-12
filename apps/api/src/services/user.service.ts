@@ -1,13 +1,17 @@
 import { Request } from "express";
+import bcrypt from "bcrypt";
 import prisma from "../../connect.prisma.ts";
 import {
     BadRequestException,
     ForbiddenException,
     NotFoundException,
+    UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
+import cloudinary from "../common/cloudinary/init.cloudinary.ts";
 
-const USER_SELECT = {
+const FOLDER_IMAGE = "public/images";
+const USER_LIST_SELECT = {
     id: true,
     userName: true,
     email: true,
@@ -20,22 +24,71 @@ const USER_SELECT = {
     updateAt: true,
 } as const;
 
+const USER_DETAIL_SELECT = {
+    ...USER_LIST_SELECT,
+    customers: {
+        select: {
+            id: true,
+            location: true,
+            pets: {
+                select: {
+                    id: true,
+                    name: true,
+                    breed: true,
+                    gender: true,
+                    ageLabel: true,
+                    imageUrl: true,
+                    status: true,
+                    weight: true,
+                    height: true,
+                    color: true,
+                    criticalNote: true,
+                    nextVaccineDate: true,
+                    photos: true,
+                    createAt: true,
+                    updateAt: true,
+                },
+                orderBy: { createAt: "desc" },
+            },
+        },
+    },
+} as const;
+
 const VALID_STATUSES = ["ACTIVE", "INACTIVE", "BANNED"] as const;
 const VALID_ROLES = ["CUSTOMER", "ADMIN", "PROVIDER"] as const;
 
 type UserStatus = (typeof VALID_STATUSES)[number];
 type UserRole = (typeof VALID_ROLES)[number];
 
+function getCloudinaryPublicId(avatar?: string | null) {
+    if (!avatar) return null;
+
+    let path = avatar;
+    try {
+        if (avatar.startsWith("http://") || avatar.startsWith("https://")) {
+            const pathname = new URL(avatar).pathname;
+            const uploadIndex = pathname.indexOf("/upload/");
+            path = uploadIndex >= 0 ? pathname.slice(uploadIndex + "/upload/".length) : pathname;
+            path = path.replace(/^v\d+\//, "");
+        }
+    } catch {
+        path = avatar;
+    }
+
+    path = path.replace(/^\/+/, "").replace(/^v\d+\//, "");
+    if (!path.startsWith(`${FOLDER_IMAGE}/`)) return null;
+
+    return path.replace(/\.[^/.]+$/, "");
+}
+
 export const userService = {
     async getAll(req: Request) {
         const { page, pageSize, where, index } = buildQueryPrisma(req.query as Record<string, unknown>);
 
-        // Lọc theo role nếu có và hợp lệ
         if (req.query.role && VALID_ROLES.includes(req.query.role as UserRole)) {
             where.role = req.query.role;
         }
 
-        // Lọc theo status nếu có và hợp lệ
         if (req.query.status && VALID_STATUSES.includes(req.query.status as UserStatus)) {
             where.status = req.query.status;
         }
@@ -44,7 +97,7 @@ export const userService = {
             prisma.users.count({ where }),
             prisma.users.findMany({
                 where,
-                select: USER_SELECT,
+                select: USER_LIST_SELECT,
                 skip: index,
                 take: pageSize,
                 orderBy: { createAt: "desc" },
@@ -61,11 +114,10 @@ export const userService = {
     },
 
     async getById(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const payload = (req as Request & { user?: { userId?: string } }).user;
         const requesterId = payload?.userId;
 
-        // Chỉ admin hoặc chính user mới được xem
         const requester = await prisma.users.findUnique({
             where: { id: requesterId },
             select: { role: true },
@@ -84,7 +136,7 @@ export const userService = {
 
         const user = await prisma.users.findUnique({
             where: { id },
-            select: USER_SELECT,
+            select: USER_DETAIL_SELECT,
         });
 
         if (!user) {
@@ -95,20 +147,27 @@ export const userService = {
     },
 
     async create(req: Request) {
-        const { userName, email, phone, fullName, avatar, role, status } =
+        const { userName, email, phone, fullName, avatar, role, status, password } =
             req.body as {
                 userName: string;
                 email: string;
                 phone: string;
+                password: string;
                 fullName?: string;
                 avatar?: string;
                 role?: string;
                 status?: string;
             };
 
-        if (!userName || !email || !phone) {
+        if (!userName || !email || !phone || !password) {
             throw new BadRequestException(
-                "userName, email, and phone are required"
+                "userName, email, phone, and password are required"
+            );
+        }
+
+        if (password.length < 6) {
+            throw new BadRequestException(
+                "Password must be at least 6 characters"
             );
         }
 
@@ -124,7 +183,6 @@ export const userService = {
             );
         }
 
-        // Check unique
         const [existByUserName, existByEmail, existByPhone] = await Promise.all([
             prisma.users.findUnique({ where: { userName } }),
             prisma.users.findUnique({ where: { email } }),
@@ -135,10 +193,8 @@ export const userService = {
         if (existByEmail) throw new BadRequestException("Email already exists");
         if (existByPhone) throw new BadRequestException("Phone already exists");
 
-        // Admin tạo user không cần password — tự set random hoặc require
         const bcrypt = await import("bcrypt");
-        const tempPassword = Math.random().toString(36).slice(-10);
-        const hashedPassword = bcrypt.hashSync(tempPassword, 10);
+        const hashedPassword = bcrypt.hashSync(password, 10);
 
         const newUser = await prisma.users.create({
             data: {
@@ -151,15 +207,14 @@ export const userService = {
                 role: role ?? "CUSTOMER",
                 status: status ?? "ACTIVE",
             },
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return newUser;
     },
 
-    // ── UPDATE (Admin: full | User: chỉ profile cá nhân) ────────────────
     async update(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const payload = (req as Request & { user?: { userId?: string } }).user;
         const requesterId = payload?.userId;
 
@@ -181,7 +236,6 @@ export const userService = {
             );
         }
 
-        // Check user tồn tại
         const existing = await prisma.users.findUnique({ where: { id } });
         if (!existing) {
             throw new NotFoundException("User not found");
@@ -198,8 +252,6 @@ export const userService = {
                 status?: string;
             };
 
-        // Non-admin chỉ được update profile fields (fullName, avatar, phone)
-        // Admin được update tất cả
         const updateData: Record<string, unknown> = {};
 
         if (fullName !== undefined) updateData.fullName = fullName;
@@ -229,7 +281,6 @@ export const userService = {
             }
         }
 
-        // Check unique constraints khi update
         if (updateData.email && updateData.email !== existing.email) {
             const emailExist = await prisma.users.findUnique({
                 where: { email: updateData.email as string },
@@ -254,14 +305,71 @@ export const userService = {
         const updated = await prisma.users.update({
             where: { id },
             data: updateData,
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return updated;
     },
 
+    async changePassword(req: Request) {
+        const payload = (req as Request & { user?: { userId?: string } }).user;
+        const userId = payload?.userId;
+        if (!userId) {
+            throw new UnauthorizedException("Unauthorized");
+        }
+
+        const { currentPassword, newPassword, confirmPassword } = req.body as {
+            currentPassword?: string;
+            newPassword?: string;
+            confirmPassword?: string;
+        };
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            throw new BadRequestException(
+                "currentPassword, newPassword, and confirmPassword are required",
+            );
+        }
+
+        if (newPassword.length < 6) {
+            throw new BadRequestException("New password must be at least 6 characters");
+        }
+
+        if (newPassword !== confirmPassword) {
+            throw new BadRequestException("New password and confirmPassword do not match");
+        }
+
+        if (currentPassword === newPassword) {
+            throw new BadRequestException("New password must be different from current password");
+        }
+
+        const user = await prisma.users.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                password: true,
+            },
+        });
+
+        if (!user) {
+            throw new NotFoundException("User not found");
+        }
+
+        const isMatch = bcrypt.compareSync(currentPassword, user.password);
+        if (!isMatch) {
+            throw new UnauthorizedException("Current password is incorrect");
+        }
+
+        const hashedPassword = bcrypt.hashSync(newPassword, 10);
+        await prisma.users.update({
+            where: { id: user.id },
+            data: { password: hashedPassword },
+        });
+
+        return { changed: true };
+    },
+
     async remove(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
 
         const user = await prisma.users.findUnique({ where: { id } });
         if (!user) {
@@ -275,14 +383,14 @@ export const userService = {
         const updated = await prisma.users.update({
             where: { id },
             data: { status: "INACTIVE" },
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return updated;
     },
 
     async updateRole(req: Request) {
-        const { id } = req.params;
+        const id = req.params.id as string;
         const { role } = req.body as { role?: string };
 
         if (!role) {
@@ -303,9 +411,94 @@ export const userService = {
         const updated = await prisma.users.update({
             where: { id },
             data: { role },
-            select: USER_SELECT,
+            select: USER_LIST_SELECT,
         });
 
         return updated;
+    },
+
+    async avatarCloud(req: Request) {
+        if (!req.file) {
+            throw new BadRequestException("No file uploaded");
+        }
+
+        // Defensive service-layer validation (belt-and-suspenders after multer fileFilter)
+        const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+        const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
+        if (!ALLOWED_MIME_TYPES.includes(req.file.mimetype)) {
+            throw new BadRequestException(
+                `Unsupported file type: ${req.file.mimetype}. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`,
+            );
+        }
+        if (req.file.size > MAX_FILE_SIZE) {
+            throw new BadRequestException("File size exceeds the 8 MB limit.");
+        }
+
+        const payload = (req as Request & { user?: { userId?: string } }).user;
+        const userId = payload?.userId;
+        if (!userId) {
+            throw new BadRequestException("User not authenticated");
+        }
+
+        const currentUser = await prisma.users.findUnique({
+            where: { id: userId },
+            select: { avatar: true },
+        });
+
+        if (!currentUser) {
+            throw new NotFoundException("User not found");
+        }
+
+        const uploadResult = await new Promise<{
+            public_id: string;
+            secure_url: string;
+        }>((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+                { folder: FOLDER_IMAGE },
+                (error, result) => {
+                    if (error || !result) {
+                        return reject(error ?? new Error("Cloudinary upload failed"));
+                    }
+                    resolve({
+                        public_id: result.public_id,
+                        secure_url: result.secure_url,
+                    });
+                }
+            ).end(req.file!.buffer);
+        });
+
+        const relativeAvatarPath = uploadResult.secure_url.includes(FOLDER_IMAGE)
+            ? uploadResult.secure_url.substring(uploadResult.secure_url.indexOf(FOLDER_IMAGE))
+            : uploadResult.secure_url;
+
+        const updatedUser = await prisma.users.update({
+            where: { id: userId },
+            data: {
+                avatar: relativeAvatarPath,
+            },
+            select: USER_LIST_SELECT,
+        });
+
+        const oldPublicId = getCloudinaryPublicId(currentUser.avatar);
+        if (oldPublicId) {
+            cloudinary.uploader.destroy(oldPublicId).catch((err: unknown) => {
+                console.error("[avatarCloud] Failed to destroy old Cloudinary asset:", err);
+            });
+        }
+
+        const providerProfile = await prisma.providers.findUnique({
+            where: { userId },
+            select: {
+                id: true,
+                providerStatus: true,
+            },
+        });
+
+        return {
+            ...updatedUser,
+            providerProfileId: providerProfile?.id ?? null,
+            providerStatus: providerProfile?.providerStatus ?? null,
+            providerVerificationStatus: providerProfile?.providerStatus ?? null,
+        };
     },
 };

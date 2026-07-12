@@ -1,5 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/apis/auth/queries";
 import {
   useMyProviderDocuments,
@@ -12,13 +14,24 @@ import { ProviderRegistrationLoadingState } from "./provider-registration/loadin
 import { PendingProviderState } from "./provider-registration/pending-provider-state";
 
 export function ProviderVerificationForm() {
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const accessToken = useAuthStore((state) => state.accessToken);
   const clearTokens = useAuthStore((state) => state.clearTokens);
+
+  const handleLogout = () => {
+    clearTokens();
+    queryClient.clear();
+    router.replace("/login");
+  };
+
   const profileQuery = useProfile();
   const role = profileQuery.data?.role;
-  const providerQuery = useMyProviderInfo(
-    Boolean(accessToken && role === "PENDING_PROVIDER"),
-  );
+  const providerStatus = profileQuery.data?.providerStatus;
+
+  // Chỉ query provider info nếu tài khoản đang đăng nhập là PROVIDER
+  const isProvider = Boolean(accessToken && role === "PROVIDER");
+  const providerQuery = useMyProviderInfo(isProvider);
   const documentQuery = useMyProviderDocuments(Boolean(providerQuery.data));
 
   if (accessToken && profileQuery.isLoading) {
@@ -27,7 +40,11 @@ export function ProviderVerificationForm() {
     );
   }
 
-  if (role === "ADMIN" || role === "PROVIDER") {
+  // Admin hoặc Provider đã VERIFIED thì báo đã có quyền
+  if (
+    role === "ADMIN" ||
+    (role === "PROVIDER" && providerStatus === "VERIFIED")
+  ) {
     return (
       <ProviderAlreadyPrivilegedState
         roleLabel={role === "ADMIN" ? "quản trị viên" : "nhà cung cấp"}
@@ -35,22 +52,23 @@ export function ProviderVerificationForm() {
     );
   }
 
-  if (role === "PENDING_PROVIDER") {
-    if (providerQuery.isLoading) {
-      return (
-        <ProviderRegistrationLoadingState text="Đang tải hồ sơ chờ duyệt..." />
-      );
-    }
+  // Nếu là tài khoản PROVIDER và đang tải hồ sơ
+  if (isProvider && providerQuery.isLoading) {
+    return (
+      <ProviderRegistrationLoadingState text="Đang kiểm tra hồ sơ nhà cung cấp..." />
+    );
+  }
 
+  // Nếu là tài khoản PROVIDER và đã có dữ liệu hồ sơ (PENDING/REJECTED/SUSPENDED)
+  if (isProvider && providerQuery.data) {
     return (
       <PendingProviderState
         provider={providerQuery.data}
         documents={documentQuery.data ?? []}
         isLoadingDocuments={documentQuery.isLoading}
-        onLogout={clearTokens}
+        onLogout={handleLogout}
       />
     );
   }
-
   return <ProviderApplicationWizard />;
 }

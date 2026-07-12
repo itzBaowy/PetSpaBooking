@@ -1,26 +1,17 @@
 "use client";
 
-import axios from "axios";
+import { getErrorMessage } from "@/lib/error";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { useLogin, useProfile } from "@/apis/auth/queries";
 import { Button, Input, PasswordInput } from "@/components/ui";
 import { useAuthStore } from "@/stores/auth-store";
+import { getProviderRouteAccess } from "@/lib/provider-access";
 import { loginSchema } from "../schema";
 
-const roleHomePath: Record<string, string> = {
-  ADMIN: "/admin",
-  PENDING_PROVIDER: "/provider-verification",
-  PROVIDER: "/provider",
-};
-
-function getErrorMessage(error: unknown): string {
-  if (axios.isAxiosError<{ message?: string }>(error)) {
-    return error.response?.data?.message ?? "Đăng nhập thất bại.";
-  }
-
-  return "Đăng nhập thất bại.";
+function getSafeNextPath(value: string | null) {
+  return value?.startsWith("/") && !value.startsWith("//") ? value : null;
 }
 
 export function LoginForm() {
@@ -43,7 +34,9 @@ export function LoginForm() {
     });
 
     if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? "Thông tin không hợp lệ.");
+      setFormError(
+        parsed.error.issues[0]?.message ?? "Thông tin không hợp lệ.",
+      );
       return;
     }
 
@@ -52,28 +45,35 @@ export function LoginForm() {
       setTokens(tokens);
 
       const profile = await profileQuery.refetch();
-      const nextPath = searchParams.get("next");
+      const nextPath = getSafeNextPath(searchParams.get("next"));
       const userRole = profile.data?.role;
-      const isProviderRegistrationPath =
-        nextPath === "/register-provider" || nextPath === "/provider-verification";
+      const providerStatus = profile.data?.providerStatus;
 
-      if (userRole !== "ADMIN" && userRole !== "PROVIDER" && userRole !== "PENDING_PROVIDER") {
-        if (isProviderRegistrationPath) {
-          router.push(nextPath);
-          return;
-        }
+      if (userRole === "ADMIN") {
+        router.push(nextPath?.startsWith("/admin") ? nextPath : "/admin");
+        return;
+      }
 
+      if (userRole === "PROVIDER") {
+        const destination =
+          nextPath?.startsWith("/provider") &&
+          getProviderRouteAccess(nextPath, providerStatus).allowed
+            ? nextPath
+            : "/provider";
+        router.push(destination);
+        return;
+      }
+
+      if (userRole === "CUSTOMER") {
         setFormError(
-          "Cổng web này chỉ dành cho quản trị viên và nhà cung cấp đã được duyệt. Bạn có muốn đăng ký trở thành nhà cung cấp không?",
+          "Tài khoản Customer không có quyền truy cập Web Dashboard. Web Dashboard chỉ dành cho Admin và Provider. Bạn có muốn đăng ký một tài khoản Provider mới không?",
         );
         return;
       }
 
-      const fallbackPath = roleHomePath[userRole] ?? "/login";
-
-      router.push(nextPath || fallbackPath);
+      router.push("/login");
     } catch (error) {
-      setFormError(getErrorMessage(error));
+      setFormError(getErrorMessage(error, "Đăng nhập thất bại."));
     }
   }
 
@@ -107,6 +107,7 @@ export function LoginForm() {
           <Link
             href="/forgot-password"
             className="font-medium text-secondary hover:underline"
+            tabIndex={-1}
           >
             Quên mật khẩu?
           </Link>
@@ -127,12 +128,12 @@ export function LoginForm() {
           className="space-y-3 rounded-xl bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
         >
           <p>{formError}</p>
-          {formError.includes("đăng ký trở thành nhà cung cấp") && (
+          {formError.includes("Đăng ký một tài khoản Provider mới") && (
             <Link
               href="/register-provider"
               className="inline-flex text-secondary underline underline-offset-4"
             >
-              Đăng ký hồ sơ nhà cung cấp
+              Đăng ký tài khoản Provider mới
             </Link>
           )}
         </div>

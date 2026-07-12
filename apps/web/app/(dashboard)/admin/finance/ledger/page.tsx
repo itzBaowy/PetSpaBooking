@@ -1,5 +1,2 @@
-import { FinanceLedgerPage } from "@/apis/admin/finance/components/finance-ledger-page";
-
-export default function AdminFinanceLedgerRoute() {
-  return <FinanceLedgerPage />;
-}
+import { AdminLedgerPage } from "@/components/admin/supported-pages";
+export default function Page() { return <AdminLedgerPage />; }

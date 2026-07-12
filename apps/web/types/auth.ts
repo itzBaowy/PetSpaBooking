@@ -1,3 +1,11 @@
+export type UserRole = "CUSTOMER" | "PROVIDER" | "ADMIN";
+
+export type ProviderStatus =
+  | "PENDING_VERIFICATION"
+  | "VERIFIED"
+  | "REJECTED"
+  | "SUSPENDED";
+
 export interface User {
   id: string;
   userName: string;
@@ -5,8 +13,11 @@ export interface User {
   phone: string;
   fullName: string | null;
   avatar: string | null;
-  role: "CUSTOMER" | "PENDING_PROVIDER" | "PROVIDER" | "ADMIN";
+  role: UserRole;
   status: "ACTIVE" | "INACTIVE" | "BANNED" | string;
+  providerProfileId: string | null;
+  providerStatus: ProviderStatus | null;
+  providerVerificationStatus: ProviderStatus | null;
   createAt: string;
   updateAt: string;
 }

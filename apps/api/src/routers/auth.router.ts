@@ -176,7 +176,8 @@ authRouter.get("/get-info", protect, authController.getInfo);
  *       401:
  *         description: Token không hợp lệ
  */
-authRouter.post("/refresh-token", protect, authController.refreshToken);
+authRouter.post("/refresh-token", authController.refreshToken);
+authRouter.get("/check-availability", authController.checkAvailability);
 
 export default authRouter;
 

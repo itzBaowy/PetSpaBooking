@@ -7,6 +7,9 @@ import {
     UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
+import cloudinary from "../common/cloudinary/init.cloudinary.ts";
+import { notificationService } from "./notification.service.ts";
+import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VALID_PROVIDER_STATUSES = [
@@ -22,6 +25,11 @@ const VALID_DOC_TYPES = [
     "id_card_back",
     "tax_code",
     "other",
+] as const;
+const REQUIRED_PROVIDER_DOC_TYPES = [
+    "business_license",
+    "id_card_front",
+    "id_card_back",
 ] as const;
 
 type ProviderStatus = (typeof VALID_PROVIDER_STATUSES)[number];
@@ -64,6 +72,7 @@ const DOC_SELECT = {
     providerId: true,
     documentType: true,
     imageUrl: true,
+    cloudinaryPublicId: true,
     status: true,
     adminNote: true,
     createAt: true,
@@ -76,6 +85,15 @@ function getRequesterId(req: Request): string {
     const userId = payload?.userId;
     if (!userId) throw new UnauthorizedException("Unauthorized");
     return userId;
+}
+
+function getRouteParam(req: Request, name: string): string {
+    const value = req.params[name];
+    if (typeof value !== "string" || !value) {
+        throw new BadRequestException(`Invalid route parameter: ${name}`);
+    }
+
+    return value;
 }
 
 function generateSlug(name: string): string {
@@ -104,28 +122,13 @@ async function ensureUniqueSlug(base: string): Promise<string> {
 export const providerService = {
 
     async register(req: Request) {
-        const userId = getRequesterId(req);
-
-        const user = await prisma.users.findUnique({ where: { id: userId } });
-        if (!user) throw new NotFoundException("User not found");
-        if (user.role === "ADMIN") {
-            throw new BadRequestException("Admin accounts cannot register as providers");
-        }
-
-        const existing = await prisma.providers.findUnique({ where: { userId } });
-
-        // Chỉ chặn nếu đang PENDING hoặc đã VERIFIED/SUSPENDED
-        if (existing && existing.providerStatus !== "REJECTED") {
-            throw new BadRequestException(
-                `You already have a provider application (status: ${existing.providerStatus})`
-            );
-        }
-
         const {
+            userName,
+            password,
+            email,
+            phone,
             businessName,
             description,
-            phone,
-            email,
             address,
             taxCode,
             identityNumber,
@@ -137,80 +140,69 @@ export const providerService = {
             bankAccountName,
             lat,
             lng,
-        } =
-            req.body as {
-                businessName: string;
-                description?: string;
-                phone?: string;
-                email?: string;
-                address?: string;
-                taxCode?: string;
-                identityNumber?: string;
-                identityFullName?: string;
-                identityDob?: string;
-                identityAddress?: string;
-                bankCode?: string;
-                bankAccountNumber?: string;
-                bankAccountName?: string;
-                lat?: number;
-                lng?: number;
-            };
+        } = req.body as {
+            userName?: string;
+            password?: string;
+            email?: string;
+            phone?: string;
+            businessName?: string;
+            description?: string;
+            address?: string;
+            taxCode?: string;
+            identityNumber?: string;
+            identityFullName?: string;
+            identityDob?: string;
+            identityAddress?: string;
+            bankCode?: string;
+            bankAccountNumber?: string;
+            bankAccountName?: string;
+            lat?: number;
+            lng?: number;
+        };
 
-        if (!businessName) {
-            throw new BadRequestException("businessName is required");
+        if (!userName || !password || !email || !phone || !businessName) {
+            throw new BadRequestException("userName, password, email, phone, and businessName are required");
         }
 
-        // Nếu bị REJECTED trước đó → cập nhật lại thay vì tạo mới
-        if (existing && existing.providerStatus === "REJECTED") {
-            const baseSlug = generateSlug(businessName);
-            // Chỉ tạo slug mới nếu businessName thay đổi
-            const slug =
-                generateSlug(businessName) === generateSlug(existing.businessName)
-                    ? existing.slug
-                    : await ensureUniqueSlug(baseSlug);
-
-            const [updated] = await prisma.$transaction([
-                prisma.providers.update({
-                    where: { userId },
-                    data: {
-                        businessName,
-                        slug,
-                        description: description ?? null,
-                        phone: phone ?? null,
-                        email: email ?? null,
-                        address: address ?? null,
-                        taxCode: taxCode ?? null,
-                        identityNumber: identityNumber ?? null,
-                        identityFullName: identityFullName ?? null,
-                        identityDob: identityDob ?? null,
-                        identityAddress: identityAddress ?? null,
-                        bankCode: bankCode ?? null,
-                        bankAccountNumber: bankAccountNumber ?? null,
-                        bankAccountName: bankAccountName ?? null,
-                        lat: lat ?? null,
-                        lng: lng ?? null,
-                        providerStatus: "PENDING_VERIFICATION",
-                        adminNote: null, // xóa lý do reject cũ
-                    },
-                    select: PROVIDER_SELECT,
-                }),
-                prisma.users.update({
-                    where: { id: userId },
-                    data: { role: "PENDING_PROVIDER" },
-                }),
-            ]);
-
-            return updated;
+        if (password.length < 6) {
+            throw new BadRequestException("Password must be at least 6 characters");
         }
 
-        // Tạo mới lần đầu
+        // Kiểm tra unique trong bảng users
+        const [existByUserName, existByEmail, existByPhone] = await Promise.all([
+            prisma.users.findUnique({ where: { userName } }),
+            prisma.users.findUnique({ where: { email } }),
+            prisma.users.findUnique({ where: { phone } }),
+        ]);
+
+        if (existByUserName) throw new BadRequestException("Username already exists");
+        if (existByEmail) throw new BadRequestException("Email already exists");
+        if (existByPhone) throw new BadRequestException("Phone number already exists");
+
+        // Hash password
+        const bcrypt = await import("bcrypt");
+        const hashedPassword = bcrypt.hashSync(password, 10);
+
+        // Tạo slug duy nhất cho Provider
         const baseSlug = generateSlug(businessName);
         const slug = await ensureUniqueSlug(baseSlug);
 
-        const [provider] = await prisma.$transaction([
-            prisma.providers.create({
+        // Transaction tạo User (role: PROVIDER) + ProviderProfile (status: PENDING_VERIFICATION)
+        const [newUser, provider] = await prisma.$transaction(async (tx) => {
+            const createdUser = await tx.users.create({
                 data: {
-                    userId,
+                    userName,
+                    email,
+                    phone,
+                    password: hashedPassword,
+                    role: "PROVIDER",
+                    status: "ACTIVE",
+                },
+            });
+
+            const createdProvider = await tx.providers.create({
+                data: {
+                    userId: createdUser.id,
                     businessName,
                     slug,
                     description: description ?? null,
@@ -227,16 +219,18 @@ export const providerService = {
                     bankAccountName: bankAccountName ?? null,
                     lat: lat ?? null,
                     lng: lng ?? null,
+                    providerStatus: "PENDING_VERIFICATION",
                 },
                 select: PROVIDER_SELECT,
-            }),
-            prisma.users.update({
-                where: { id: userId },
-                data: { role: "PENDING_PROVIDER" },
-            }),
-        ]);
+            });
 
-        return provider;
+            return [createdUser, createdProvider];
+        });
+
+        const tokenService = (await import("./token.service.ts")).tokenService;
+        const tokens = tokenService.createTokens(newUser.id);
+
+        return { tokens, provider };
     },
 
     // ── Provider xem profile của mình ────────────────────────────────────────
@@ -315,13 +309,12 @@ export const providerService = {
             throw new BadRequestException("Your account is already verified");
         }
 
-        const { documentType, imageUrl } = req.body as {
+        const { documentType } = req.body as {
             documentType?: string;
-            imageUrl?: string;
         };
 
-        if (!documentType || !imageUrl) {
-            throw new BadRequestException("documentType and imageUrl are required");
+        if (!documentType || !req.file) {
+            throw new BadRequestException("documentType and file are required");
         }
 
         if (!VALID_DOC_TYPES.includes(documentType as DocType)) {
@@ -330,11 +323,47 @@ export const providerService = {
             );
         }
 
+        // Defensive service-layer validation (belt-and-suspenders after multer fileFilter)
+        const ALLOWED_MIME_TYPES = ["image/jpeg", "image/png", "image/webp"];
+        const MAX_FILE_SIZE = 8 * 1024 * 1024; // 8 MB
+        if (!ALLOWED_MIME_TYPES.includes(req.file.mimetype)) {
+            throw new BadRequestException(
+                `Unsupported file type: ${req.file.mimetype}. Allowed: ${ALLOWED_MIME_TYPES.join(", ")}`,
+            );
+        }
+        if (req.file.size > MAX_FILE_SIZE) {
+            throw new BadRequestException("File size exceeds the 8 MB limit.");
+        }
+
+        const uploadResult = await new Promise<{ public_id: string; secure_url: string }>(
+            (resolve, reject) => {
+                cloudinary.uploader
+                    .upload_stream(
+                        {
+                            folder: "petlink/provider-documents",
+                            resource_type: "image",
+                        },
+                        (error, result) => {
+                            if (error || !result) {
+                                reject(error ?? new Error("Cloudinary upload failed"));
+                                return;
+                            }
+                            resolve({
+                                public_id: result.public_id,
+                                secure_url: result.secure_url,
+                            });
+                        },
+                    )
+                    .end(req.file!.buffer);
+            },
+        );
+
         const doc = await prisma.provider_documents.create({
             data: {
                 providerId: provider.id,
                 documentType,
-                imageUrl,
+                imageUrl: uploadResult.secure_url,
+                cloudinaryPublicId: uploadResult.public_id,
             },
             select: DOC_SELECT,
         });
@@ -363,7 +392,7 @@ export const providerService = {
     // ── Provider xóa document (chỉ khi PENDING) ───────────────────────────────
     async deleteDocument(req: Request) {
         const userId = getRequesterId(req);
-        const { docId } = req.params;
+        const docId = getRouteParam(req, "docId");
 
         const provider = await prisma.providers.findUnique({ where: { userId } });
         if (!provider) {
@@ -378,6 +407,13 @@ export const providerService = {
         }
 
         await prisma.provider_documents.delete({ where: { id: docId } });
+
+        // Clean up Cloudinary asset — log failures but don't block the response
+        if (doc.cloudinaryPublicId) {
+            cloudinary.uploader.destroy(doc.cloudinaryPublicId).catch((err: unknown) => {
+                console.error("[deleteDocument] Failed to destroy Cloudinary asset:", err);
+            });
+        }
 
         return { id: docId };
     },
@@ -415,7 +451,7 @@ export const providerService = {
 
     // ── Admin xem provider theo ID ────────────────────────────────────────────
     async getById(req: Request) {
-        const { id } = req.params;
+        const id = getRouteParam(req, "id");
 
         const provider = await prisma.providers.findUnique({
             where: { id },
@@ -434,7 +470,8 @@ export const providerService = {
 
     // ── Admin duyệt provider ──────────────────────────────────────────────────
     async approve(req: Request) {
-        const { id } = req.params;
+        const adminId = getRequesterId(req);
+        const id = getRouteParam(req, "id");
 
         const provider = await prisma.providers.findUnique({ where: { id } });
         if (!provider) throw new NotFoundException("Provider not found");
@@ -443,25 +480,61 @@ export const providerService = {
             throw new BadRequestException("Provider is already verified");
         }
 
-        // Cập nhật provider status + user role trong 1 transaction
-        const [updatedProvider] = await Promise.all([
-            prisma.providers.update({
-                where: { id },
-                data: { providerStatus: "VERIFIED", adminNote: null },
-                select: PROVIDER_SELECT,
-            }),
-            prisma.users.update({
-                where: { id: provider.userId },
-                data: { role: "PROVIDER" },
-            }),
-        ]);
+        const documents = await prisma.provider_documents.findMany({
+            where: { providerId: id },
+            select: {
+                documentType: true,
+                status: true,
+            },
+        });
+        const approvedDocumentTypes = new Set(
+            documents
+                .filter((document) => document.status === "APPROVED")
+                .map((document) => document.documentType),
+        );
+        const missingRequiredDocuments = REQUIRED_PROVIDER_DOC_TYPES.filter(
+            (documentType) => !approvedDocumentTypes.has(documentType),
+        );
+
+        if (missingRequiredDocuments.length > 0) {
+            throw new BadRequestException(
+                `Provider requires approved documents before verification: ${missingRequiredDocuments.join(", ")}`,
+            );
+        }
+
+        // Cập nhật provider status (KHÔNG sửa user role)
+        const updatedProvider = await prisma.providers.update({
+            where: { id },
+            data: { providerStatus: "VERIFIED", adminNote: null },
+            select: PROVIDER_SELECT,
+        });
+
+        await notificationService.safeCreate({
+            userId: provider.userId,
+            type: "PROVIDER_VERIFIED",
+            title: "Provider verified",
+            message: "Your provider profile has been verified.",
+            data: { providerId: id },
+        });
+
+        await adminAuditLogService.safeLog({
+            adminId,
+            action: "PROVIDER_VERIFY",
+            targetType: "PROVIDER",
+            targetId: id,
+            metadata: {
+                previousStatus: provider.providerStatus,
+                status: "VERIFIED",
+            },
+        });
 
         return updatedProvider;
     },
 
     // ── Admin từ chối provider ────────────────────────────────────────────────
     async reject(req: Request) {
-        const { id } = req.params;
+        const adminId = getRequesterId(req);
+        const id = getRouteParam(req, "id");
         const { reason } = req.body as { reason?: string };
 
         if (!reason) throw new BadRequestException("Rejection reason is required");
@@ -473,24 +546,40 @@ export const providerService = {
             throw new BadRequestException("Cannot reject an already verified provider. Use suspend instead.");
         }
 
-        const [updated] = await Promise.all([
-            prisma.providers.update({
-                where: { id },
-                data: { providerStatus: "REJECTED", adminNote: reason },
-                select: PROVIDER_SELECT,
-            }),
-            prisma.users.update({
-                where: { id: provider.userId },
-                data: { role: "CUSTOMER" },
-            }),
-        ]);
+        // Cập nhật provider status (KHÔNG sửa user role)
+        const updated = await prisma.providers.update({
+            where: { id },
+            data: { providerStatus: "REJECTED", adminNote: reason },
+            select: PROVIDER_SELECT,
+        });
+
+        await notificationService.safeCreate({
+            userId: provider.userId,
+            type: "PROVIDER_REJECTED",
+            title: "Provider rejected",
+            message: "Your provider verification was rejected.",
+            data: { providerId: id, reason },
+        });
+
+        await adminAuditLogService.safeLog({
+            adminId,
+            action: "PROVIDER_REJECT",
+            targetType: "PROVIDER",
+            targetId: id,
+            metadata: {
+                previousStatus: provider.providerStatus,
+                status: "REJECTED",
+                reason,
+            },
+        });
 
         return updated;
     },
 
     // ── Admin suspend/unsuspend provider ──────────────────────────────────────
     async suspend(req: Request) {
-        const { id } = req.params;
+        const adminId = getRequesterId(req);
+        const id = getRouteParam(req, "id");
         const { reason } = req.body as { reason?: string };
 
         const provider = await prisma.providers.findUnique({ where: { id } });
@@ -500,17 +589,23 @@ export const providerService = {
             throw new BadRequestException("Only verified providers can be suspended");
         }
 
-        const [updatedProvider] = await Promise.all([
-            prisma.providers.update({
-                where: { id },
-                data: { providerStatus: "SUSPENDED", adminNote: reason ?? null },
-                select: PROVIDER_SELECT,
-            }),
-            prisma.users.update({
-                where: { id: provider.userId },
-                data: { role: "CUSTOMER" },
-            }),
-        ]);
+        const updatedProvider = await prisma.providers.update({
+            where: { id },
+            data: { providerStatus: "SUSPENDED", adminNote: reason ?? null },
+            select: PROVIDER_SELECT,
+        });
+
+        await adminAuditLogService.safeLog({
+            adminId,
+            action: "PROVIDER_SUSPEND",
+            targetType: "PROVIDER",
+            targetId: id,
+            metadata: {
+                previousStatus: provider.providerStatus,
+                status: "SUSPENDED",
+                reason: reason ?? null,
+            },
+        });
 
         return updatedProvider;
     },

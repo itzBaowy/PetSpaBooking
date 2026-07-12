@@ -2,6 +2,7 @@ import express from "express";
 import { userController } from "../controllers/user.controller.ts";
 import { protect } from "../middlewares/protect.middleware.ts";
 import { checkRole } from "../middlewares/authorization.middleware.ts";
+import { uploadMemory } from "../common/multer/memory.multer.ts";
 
 const userRouter = express.Router();
 
@@ -96,6 +97,47 @@ const userRouter = express.Router();
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 userRouter.get("/", protect, checkRole("ADMIN"), userController.getAll);
+
+/**
+ * @swagger
+ * /api/users/me/password:
+ *   patch:
+ *     summary: Change my password
+ *     description: Authenticated user changes their own password by providing the current password.
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - currentPassword
+ *               - newPassword
+ *               - confirmPassword
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *                 example: "Test@123"
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "NewTest@123"
+ *               confirmPassword:
+ *                 type: string
+ *                 minLength: 6
+ *                 example: "NewTest@123"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *       400:
+ *         description: Missing fields, weak password, or password confirmation mismatch
+ *       401:
+ *         description: Unauthorized or current password is incorrect
+ */
+userRouter.patch("/me/password", protect, userController.changePassword);
 
 
 /**
@@ -393,4 +435,57 @@ userRouter.delete("/:id", protect, checkRole("ADMIN"), userController.remove);
  */
 userRouter.patch("/:id/role", protect, checkRole("ADMIN"), userController.updateRole);
 
+/**
+ * @swagger
+ * /api/users/avatar-cloud:
+ *   post:
+ *     summary: Upload user avatar
+ *     tags: [Users]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - avatar
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *                 description: Avatar image file to upload
+ *     responses:
+ *       200:
+ *         description: Avatar uploaded successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       $ref: '#/components/schemas/UserObject'
+ *       400:
+ *         description: Bad request (e.g., no file uploaded or invalid format)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       401:
+ *         description: Unauthorized
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+userRouter.post("/avatar-cloud", protect, uploadMemory.single("avatar"), userController.uploadAvatar);
 export default userRouter;

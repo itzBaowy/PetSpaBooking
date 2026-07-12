@@ -1,7 +1,9 @@
 import express from "express";
 import { providerController } from "../controllers/provider.controller.ts";
+import { mobileProviderController } from "../controllers/mobile-controllers/provider.controller.ts";
 import { protect } from "../middlewares/protect.middleware.ts";
 import { checkRole } from "../middlewares/authorization.middleware.ts";
+import { uploadMemory } from "../common/multer/memory.multer.ts";
 
 const providerRouter = express.Router();
 
@@ -56,7 +58,7 @@ const providerRouter = express.Router();
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.post("/register", protect, providerController.register);
+providerRouter.post("/register", providerController.register);
 
 /**
  * @swagger
@@ -152,14 +154,14 @@ providerRouter.get("/me/documents", protect, providerController.getMyDocuments);
  * /api/providers/me/documents:
  *   post:
  *     summary: Upload a verification document image
- *     description: Frontend uploads image to Cloudinary first, then sends the URL here.
+ *     description: Uploads an image file to Cloudinary and stores its secure URL.
  *     tags: [Providers]
  *     security:
  *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/UploadDocumentRequest'
  *     responses:
@@ -181,7 +183,12 @@ providerRouter.get("/me/documents", protect, providerController.getMyDocuments);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.post("/me/documents", protect, providerController.uploadDocument);
+providerRouter.post(
+  "/me/documents",
+  protect,
+  uploadMemory.single("file"),
+  providerController.uploadDocument,
+);
 
 /**
  * @swagger
@@ -226,7 +233,11 @@ providerRouter.post("/me/documents", protect, providerController.uploadDocument)
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.delete("/me/documents/:docId", protect, providerController.deleteDocument);
+providerRouter.delete(
+  "/me/documents/:docId",
+  protect,
+  providerController.deleteDocument,
+);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ADMIN endpoints
@@ -316,7 +327,12 @@ providerRouter.get("/", protect, checkRole("ADMIN"), providerController.getAll);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.get("/:id", protect, checkRole("ADMIN"), providerController.getById);
+providerRouter.get(
+  "/:id",
+  protect,
+  checkRole("ADMIN"),
+  providerController.getById,
+);
 
 /**
  * @swagger
@@ -358,7 +374,12 @@ providerRouter.get("/:id", protect, checkRole("ADMIN"), providerController.getBy
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.patch("/:id/approve", protect, checkRole("ADMIN"), providerController.approve);
+providerRouter.patch(
+  "/:id/approve",
+  protect,
+  checkRole("ADMIN"),
+  providerController.approve,
+);
 
 /**
  * @swagger
@@ -399,7 +420,12 @@ providerRouter.patch("/:id/approve", protect, checkRole("ADMIN"), providerContro
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.patch("/:id/reject", protect, checkRole("ADMIN"), providerController.reject);
+providerRouter.patch(
+  "/:id/reject",
+  protect,
+  checkRole("ADMIN"),
+  providerController.reject,
+);
 
 /**
  * @swagger
@@ -441,6 +467,11 @@ providerRouter.patch("/:id/reject", protect, checkRole("ADMIN"), providerControl
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-providerRouter.patch("/:id/suspend", protect, checkRole("ADMIN"), providerController.suspend);
+providerRouter.patch(
+  "/:id/suspend",
+  protect,
+  checkRole("ADMIN"),
+  providerController.suspend,
+);
 
 export default providerRouter;

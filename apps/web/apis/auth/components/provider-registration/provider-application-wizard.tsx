@@ -1,6 +1,6 @@
 "use client";
 
-import { Button } from "@/components/ui";
+import { Button, ImageCropDialog } from "@/components/ui";
 import { providerRegistrationHeader } from "../../constants/provider-registration";
 import { useProviderApplicationWizard } from "../../hooks/use-provider-application-wizard";
 import { ProviderRegistrationAccountStep } from "./account-step";
@@ -14,6 +14,14 @@ export function ProviderApplicationWizard() {
 
   return (
     <form onSubmit={wizard.handleSubmit} className="space-y-10">
+      {wizard.cropper.pending && (
+        <ImageCropDialog
+          sourceUrl={wizard.cropper.pending.sourceUrl}
+          aspectRatio={wizard.cropper.pending.aspectRatio}
+          onCancel={wizard.cropper.cancel}
+          onConfirm={wizard.cropper.confirm}
+        />
+      )}
       <ProviderRegistrationHeader
         title={providerRegistrationHeader.title}
         description={providerRegistrationHeader.description}
@@ -24,6 +32,7 @@ export function ProviderApplicationWizard() {
       {wizard.step === 1 && (
         <ProviderRegistrationAccountStep
           form={wizard.form}
+          hasExistingAccount={wizard.hasExistingAccount}
           onInputChange={wizard.handleInput}
         />
       )}
@@ -33,6 +42,7 @@ export function ProviderApplicationWizard() {
           form={wizard.form}
           bankOptions={wizard.bankOptions}
           identityOcrStatus={wizard.identityOcrStatus}
+          previews={wizard.mediaPreviews}
           onInputChange={wizard.handleInput}
           onFileChange={(event, name) => void wizard.handleFileChange(event, name)}
           onFieldChange={wizard.updateField}
@@ -40,7 +50,10 @@ export function ProviderApplicationWizard() {
       )}
 
       {wizard.step === 3 && (
-        <ProviderRegistrationReviewStep reviewItems={wizard.reviewItems} />
+        <ProviderRegistrationReviewStep
+          reviewItems={wizard.reviewItems}
+          previews={wizard.mediaPreviews}
+        />
       )}
 
       {wizard.formError && (

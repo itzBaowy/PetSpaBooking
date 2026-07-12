@@ -8,37 +8,39 @@ import {
   useRegisterProviderApplication,
   useUploadProviderDocument,
 } from "@/apis/provider/verification/queries";
-import { useAuthStore } from "@/stores/auth-store";
-import { useRegister } from "../queries";
 import { useIdentityOcr } from "./use-identity-ocr";
+import {
+  type ProviderMediaField,
+  useProviderRegistrationMedia,
+} from "./use-provider-registration-media";
 import {
   type ProviderRegistrationFormState,
   useProviderRegistrationDraft,
 } from "./use-provider-registration-draft";
+import { api } from "@/lib/axios";
+import { getErrorMessage } from "@/lib/error";
 import {
-  getProviderDocumentPayloads,
   getProviderRegistrationErrorMessage,
   getProviderRegistrationReviewItems,
   validateProviderRegistrationStep,
 } from "../utils/provider-registration";
 
 export function useProviderApplicationWizard() {
-  const registerMutation = useRegister();
+  const [isCheckingAvailability, setIsCheckingAvailability] = useState(false);
   const registerProviderMutation = useRegisterProviderApplication();
   const uploadDocumentMutation = useUploadProviderDocument();
   const bankQuery = useBanks();
   const router = useRouter();
-  const setTokens = useAuthStore((state) => state.setTokens);
-  const clearTokens = useAuthStore((state) => state.clearTokens);
   const { form, setForm, step, setStep, updateField, clearDraft } =
     useProviderRegistrationDraft();
   const identityOcr = useIdentityOcr();
+  const media = useProviderRegistrationMedia();
   const [formError, setFormError] = useState("");
 
   const isSubmitting =
-    registerMutation.isLoading ||
     registerProviderMutation.isLoading ||
-    uploadDocumentMutation.isLoading;
+    uploadDocumentMutation.isLoading ||
+    isCheckingAvailability;
 
   const bankOptions = useMemo(
     () => [
@@ -72,22 +74,37 @@ export function useProviderApplicationWizard() {
     event: ChangeEvent<HTMLInputElement>,
     name: keyof ProviderRegistrationFormState,
   ) {
-    const file = event.target.files?.[0];
+    let result: { previews: string[]; files: File[] };
 
-    if (name === "businessImages") {
-      updateField(
-        name,
-        Array.from(event.target.files ?? []).map(
-          (selectedFile) => selectedFile.name,
-        ),
+    try {
+      result = await media.selectFiles(
+        name as ProviderMediaField,
+        event.target.files,
+      );
+    } catch (error) {
+      setFormError(
+        error instanceof Error ? error.message : "Không thể đọc ảnh đã chọn.",
       );
       return;
     }
 
-    updateField(name, file?.name ?? "");
+    const { previews, files: croppedFiles } = result;
 
-    if (file && name === "idCardFront") {
-      const parsed = await identityOcr.scan(file);
+    // Crop was canceled — clear the field and bail out (do not OCR)
+    if (previews.length === 0) {
+      updateField(name, name === "businessImages" ? [] : "");
+      return;
+    }
+
+    updateField(
+      name,
+      name === "businessImages" ? previews : previews[0] ?? "",
+    );
+    setFormError("");
+
+    // OCR the accepted cropped file so extracted data matches what will be uploaded
+    if (name === "idCardFront" && croppedFiles[0]) {
+      const parsed = await identityOcr.scan(croppedFiles[0]);
       if (!parsed) return;
 
       setForm((current) => ({
@@ -104,11 +121,26 @@ export function useProviderApplicationWizard() {
     return validateProviderRegistrationStep(form, targetStep);
   }
 
-  function goNext() {
+  async function goNext() {
     const message = validateStep();
     if (message) {
       setFormError(message);
       return;
+    }
+
+    if (step === 1) {
+      setIsCheckingAvailability(true);
+      setFormError("");
+      try {
+        await api.get(
+          `/auth/check-availability?userName=${encodeURIComponent(form.userName)}&email=${encodeURIComponent(form.email)}&phone=${encodeURIComponent(form.phone)}`
+        );
+      } catch (error) {
+        setFormError(getErrorMessage(error, "Thông tin đăng ký đã tồn tại trong hệ thống."));
+        return;
+      } finally {
+        setIsCheckingAvailability(false);
+      }
     }
 
     setFormError("");
@@ -136,15 +168,21 @@ export function useProviderApplicationWizard() {
     }
 
     try {
-      const tokens = await registerMutation.mutateAsync({
-        userName: form.userName,
-        email: form.email,
-        phone: form.phone,
-        password: form.password,
-      });
-      setTokens(tokens);
+      setIsCheckingAvailability(true);
+      await api.get(
+        `/auth/check-availability?userName=${encodeURIComponent(form.userName)}&email=${encodeURIComponent(form.email)}&phone=${encodeURIComponent(form.phone)}`
+      );
+    } catch (error) {
+      setFormError(getErrorMessage(error, "Thông tin đăng ký đã tồn tại trong hệ thống."));
+      return;
+    } finally {
+      setIsCheckingAvailability(false);
+    }
 
-      await registerProviderMutation.mutateAsync({
+    try {
+      const { tokens } = await registerProviderMutation.mutateAsync({
+        userName: form.userName,
+        password: form.password,
         businessName: form.businessName,
         email: form.email,
         phone: form.phone,
@@ -160,16 +198,17 @@ export function useProviderApplicationWizard() {
         identityAddress: form.identityAddress,
       });
 
+      // Upload tài liệu bằng token tạm vừa nhận từ kết quả đăng ký
       await Promise.all(
-        getProviderDocumentPayloads(form)
-          .filter(([, imageUrl]) => Boolean(imageUrl))
-          .map(([documentType, imageUrl]) =>
-            uploadDocumentMutation.mutateAsync({ documentType, imageUrl }),
-          ),
+        media.documentUploads.map((payload) =>
+          uploadDocumentMutation.mutateAsync({
+            ...payload,
+            token: tokens.accessToken,
+          }),
+        ),
       );
 
       clearDraft();
-      clearTokens();
       router.replace("/login?providerRegistered=1");
     } catch (error) {
       setFormError(getProviderRegistrationErrorMessage(error));
@@ -184,6 +223,9 @@ export function useProviderApplicationWizard() {
     bankOptions,
     reviewItems,
     identityOcrStatus: identityOcr.status,
+    hasExistingAccount: false,
+    mediaPreviews: media.previews,
+    cropper: media.cropper,
     goBack,
     goNext,
     handleInput,

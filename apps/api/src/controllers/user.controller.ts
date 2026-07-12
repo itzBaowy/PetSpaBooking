@@ -43,6 +43,16 @@ export const userController = {
         }
     },
 
+    async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const result = await userService.changePassword(req);
+            const response = responseSuccess(result, "Password changed successfully");
+            res.status(response.statusCode).json(response);
+        } catch (error) {
+            next(error);
+        }
+    },
+
     async remove(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const result = await userService.remove(req);
@@ -57,6 +67,16 @@ export const userController = {
         try {
             const result = await userService.updateRole(req);
             const response = responseSuccess(result, "User role updated successfully");
+            res.status(response.statusCode).json(response);
+        } catch (error) {
+            next(error);
+        }
+    },
+
+    async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const result = await userService.avatarCloud(req);
+            const response = responseSuccess(result, "User avatar uploaded successfully");
             res.status(response.statusCode).json(response);
         } catch (error) {
             next(error);

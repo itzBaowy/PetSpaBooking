@@ -14,59 +14,95 @@ datasource db {
 }
 
 model users {
-  id        String   @id @default(auto()) @map("_id") @db.ObjectId
-  userName  String   @unique
+  id        String     @id @default(auto()) @map("_id") @db.ObjectId
+  userName  String     @unique
   password  String
-  phone     String   @unique
-  email     String   @unique
-  fullName  String?
-  avatar    String?
-  role      String   @default("CUSTOMER")
-  status    String   @default("ACTIVE")
-  createAt  DateTime @default(now())
-  updateAt  DateTime @updatedAt
+  phone     String     @unique
+  email     String     @unique
+  fullName       String?
+  avatar         String?    @default("public/images/default_avatar")
+  role           String     @default("CUSTOMER")
+  status    String     @default("ACTIVE")
+  createAt  DateTime   @default(now())
+  updateAt  DateTime   @updatedAt
+  customers customers?
+  notifications notifications[]
+  adminAuditLogs admin_audit_logs[]
+}
+
+model customers {
+  id       String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String    @unique @db.ObjectId
+  location String
+  pets     pets[]
+  reviews  reviews[]
+  bookings bookings[]
+
+  users users @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model providers {
-  id               String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId           String   @unique @db.ObjectId
-  businessName     String
-  slug             String   @unique
-  description      String?
-  avatarUrl        String?
-  coverImageUrl    String?
-  phone            String?
-  email            String?
-  address          String?
-  taxCode          String?
-  identityNumber   String?
-  identityFullName String?
-  identityDob      String?
-  identityAddress  String?
-  bankCode         String?
+  id            String  @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String  @unique @db.ObjectId
+  businessName  String
+  slug          String  @unique
+  description   String?
+  avatarUrl     String?
+  coverImageUrl String?
+  phone         String?
+  email         String?
+
+  address  String?
+  ward     String?
+  district String?
+  province String?
+
+  taxCode           String?
+  identityNumber    String?
+  identityFullName  String?
+  identityDob       String?
+  identityAddress   String?
+  bankCode          String?
   bankAccountNumber String?
-  bankAccountName  String?
-  lat              Float?
-  lng              Float?
-  providerStatus   String   @default("PENDING_VERIFICATION")
-  depositStatus    String   @default("NOT_PAID")
-  depositBalance   Float    @default(0)
-  walletBalance    Float    @default(0)
-  cancellationRate Float    @default(0)
-  adminNote        String?
-  createAt         DateTime @default(now())
-  updateAt         DateTime @updatedAt
+  bankAccountName   String?
+  lat               Float?
+  lng               Float?
+  providerStatus    String  @default("PENDING_VERIFICATION")
+  depositStatus     String  @default("NOT_PAID")
+  depositBalance    Float   @default(0)
+  walletBalance     Float   @default(0)
+  cancellationRate  Float   @default(0)
+  adminNote         String?
+  statusBeforeUserSuspension String?
+
+  payOnline Boolean @default(true)
+  payCash   Boolean @default(true)
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  services          services[]
+  reviews           reviews[]
+  bookings          bookings[]
+  walletTransactions wallet_transactions[]
+  withdrawalRequests withdrawal_requests[]
+  workingHours      working_hours[]
+  availabilityBlocks provider_availability_blocks[]
+  providerDocuments provider_documents[]
 }
 
 model provider_documents {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
   providerId   String   @db.ObjectId
-  documentType String
-  imageUrl     String
-  status       String   @default("PENDING")
-  adminNote    String?
+  documentType       String
+  imageUrl           String
+  cloudinaryPublicId String?
+  status             String   @default("PENDING")
+  adminNote          String?
   createAt     DateTime @default(now())
   updateAt     DateTime @updatedAt
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
 }
 
 model services {
@@ -74,12 +110,312 @@ model services {
   providerId      String   @db.ObjectId
   name            String
   description     String?
+  longDescription String   @default("")
   price           Float
   duration        Int
   category        String   @default("OTHER")
   imageUrls       String[]
+
+  targetPets String[] @default([])
+  benefits   String[] @default([])
+
   isActive        Boolean  @default(true)
   isHiddenByAdmin Boolean  @default(false)
   createAt        DateTime @default(now())
   updateAt        DateTime @updatedAt
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  bookings bookings[]
+}
+
+model bookings {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  customerId String @db.ObjectId
+  providerId String @db.ObjectId
+  serviceId  String @db.ObjectId
+  petId      String? @db.ObjectId
+
+  appointmentStart DateTime
+  appointmentEnd   DateTime
+
+  status        String @default("PENDING")
+  paymentMethod String @default("CASH")
+  paymentStatus String @default("UNPAID")
+  paymentReference String?
+  paidAt        DateTime?
+
+  totalAmount Float
+  currency    String @default("VND")
+  note        String?
+
+  cancelReason String?
+  rejectReason String?
+
+  confirmedAt  DateTime?
+  checkedInAt  DateTime?
+  checkedOutAt DateTime?
+  completedAt  DateTime?
+  cancelledAt  DateTime?
+  rejectedAt   DateTime?
+  noArrivalAt  DateTime?
+
+  commissionAmount        Float?
+  providerEarning         Float?
+  walletCommissionAmount  Float?
+  depositCommissionAmount Float?
+  commissionProcessingStartedAt DateTime?
+  commissionProcessedAt   DateTime?
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  customer customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  service  services  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  qrLogs   booking_qr_logs[]
+  dispute  booking_disputes?
+  review   reviews?
+  walletTransactions wallet_transactions[]
+  paymentTransactions payment_transactions[]
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([serviceId])
+  @@index([status])
+  @@index([appointmentStart])
+}
+
+model payment_transactions {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId   String @db.ObjectId
+  customerId  String @db.ObjectId
+  providerId  String @db.ObjectId
+
+  provider    String @default("MOMO")
+  orderId     String @unique
+  requestId   String @unique
+  amount      Float
+  status      String @default("PENDING")
+  payUrl      String?
+  deeplink    String?
+  qrCodeUrl   String?
+  resultCode  Int?
+  message     String?
+  transId     String?
+  rawResponse String?
+  rawIpn      String?
+  paidAt      DateTime?
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  booking bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([providerId])
+  @@index([provider])
+  @@index([status])
+}
+
+model booking_qr_logs {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId  String @db.ObjectId
+  customerId String @db.ObjectId
+  providerId String @db.ObjectId
+
+  action    String
+  scannedBy String @db.ObjectId
+  scannedAt DateTime @default(now())
+  metadata  String?
+
+  booking bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([bookingId])
+  @@index([customerId])
+  @@index([providerId])
+}
+
+model booking_disputes {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId   String @unique @db.ObjectId
+  customerId  String @db.ObjectId
+  providerId  String @db.ObjectId
+  reason      String
+  description String?
+  status      String @default("PENDING")
+  resolvedBy  String? @db.ObjectId
+  resolvedAt  DateTime?
+  adminNote   String?
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  booking bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([status])
+}
+
+model reviews {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId  String   @unique @db.ObjectId
+  providerId String   @db.ObjectId
+  customerId String   @db.ObjectId
+  rating     Int
+  comment    String?
+  images     String[] @default([])
+  createAt   DateTime @default(now())
+  updateAt   DateTime @updatedAt
+
+  provider  providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  customers customers @relation(fields: [customerId], references: [id])
+  booking   bookings  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([customerId])
+}
+
+model wallet_transactions {
+  id           String @id @default(auto()) @map("_id") @db.ObjectId
+  providerId   String @db.ObjectId
+  bookingId    String? @db.ObjectId
+  idempotencyKey String @unique
+  type         String
+  balanceType  String
+  amount       Float
+  balanceAfter Float
+  note         String?
+  createAt     DateTime @default(now())
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+  booking  bookings? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([bookingId])
+  @@index([type])
+  @@index([createAt])
+}
+
+model withdrawal_requests {
+  id                String @id @default(auto()) @map("_id") @db.ObjectId
+  providerId        String @db.ObjectId
+  amount            Float
+  bankCode          String?
+  bankAccountNumber String?
+  bankAccountName   String?
+  status            String @default("PENDING")
+  reason            String?
+  adminNote         String?
+  requestedAt       DateTime @default(now())
+  reviewedBy        String? @db.ObjectId
+  reviewedAt        DateTime?
+  paidAt            DateTime?
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+model notifications {
+  id       String @id @default(auto()) @map("_id") @db.ObjectId
+  userId   String @db.ObjectId
+  type     String
+  title    String
+  message  String
+  data     String?
+  readAt   DateTime?
+  createAt DateTime @default(now())
+
+  user users @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([readAt])
+  @@index([createAt])
+}
+
+model admin_audit_logs {
+  id         String @id @default(auto()) @map("_id") @db.ObjectId
+  adminId    String @db.ObjectId
+  action     String
+  targetType String
+  targetId   String?
+  metadata   String?
+  createAt   DateTime @default(now())
+
+  admin users @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([targetType])
+  @@index([targetId])
+  @@index([createAt])
+}
+
+model working_hours {
+  id         String  @id @default(auto()) @map("_id") @db.ObjectId
+  providerId String  @db.ObjectId
+  dayOfWeek  Int
+  openTime   String
+  closeTime  String
+  isClosed   Boolean @default(false)
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+}
+
+model provider_availability_blocks {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  providerId  String   @db.ObjectId
+  startAt     DateTime
+  endAt       DateTime
+  reason      String?
+  createAt    DateTime @default(now())
+  updateAt    DateTime @updatedAt
+
+  provider providers @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@index([providerId])
+  @@index([startAt])
+  @@index([endAt])
+}
+
+model pets {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  customerId      String   @db.ObjectId
+  name            String
+  breed           String
+  gender          String
+  ageLabel        String
+  imageUrl        String
+  status          String
+  weight          String
+  height          String
+  color           String
+  criticalNote    String?
+  nextVaccineDate String?
+  photos          String[] @default([])
+
+  healthReminder HealthReminder?
+  medicalRecords MedicalRecord[]
+
+  createAt DateTime @default(now())
+  updateAt DateTime @updatedAt
+
+  customers customers @relation(fields: [customerId], references: [id], onDelete: Cascade)
+}
+
+type HealthReminder {
+  title String
+  date  String
+}
+
+type MedicalRecord {
+  id          String
+  title       String
+  description String
+  date        String
 }

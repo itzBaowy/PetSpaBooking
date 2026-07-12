@@ -55,13 +55,17 @@ export function useRegisterProviderApplication() {
   return useMutation({
     mutationFn: async (payload: ProviderRegistrationData) => {
       const parsedPayload = providerRegistrationSchema.parse(payload);
-      const response = await api.post<ApiResponse<ProviderInfo>>(
-        API_ENDPOINTS.PROVIDERS.REGISTER,
-        parsedPayload,
-      );
-      return providerInfoSchema.parse(response.data.data);
+      const response = await api.post<
+        ApiResponse<{ tokens: { accessToken: string; refreshToken: string }; provider: ProviderInfo }>
+      >(API_ENDPOINTS.PROVIDERS.REGISTER, parsedPayload);
+      
+      const { provider } = response.data.data;
+      return {
+        tokens: response.data.data.tokens,
+        provider: providerInfoSchema.parse(provider),
+      };
     },
-    onSuccess: (provider) => {
+    onSuccess: ({ provider }) => {
       queryClient.setQueryData(queryKeys.providerVerification.me(), provider);
     },
   });
@@ -71,11 +75,26 @@ export function useUploadProviderDocument() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: UploadProviderDocumentData) => {
-      const parsedPayload = uploadProviderDocumentSchema.parse(payload);
+    mutationFn: async (
+      payload: UploadProviderDocumentData & { token?: string },
+    ) => {
+      const { token, ...uploadPayload } = payload;
+      const parsedPayload = uploadProviderDocumentSchema.parse(uploadPayload);
+      const formData = new FormData();
+      formData.append("documentType", parsedPayload.documentType);
+      formData.append("file", parsedPayload.file);
+      
+      const headers: Record<string, string> = {
+        "Content-Type": "multipart/form-data",
+      };
+      if (token) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+
       const response = await api.post<ApiResponse<ProviderDocument>>(
         API_ENDPOINTS.PROVIDERS.MY_DOCUMENTS,
-        parsedPayload,
+        formData,
+        { headers },
       );
       return providerDocumentSchema.parse(response.data.data);
     },

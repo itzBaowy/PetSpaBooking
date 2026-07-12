@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/users/${id}`,
     DELETE: (id: string) => `/users/${id}`,
     UPDATE_ROLE: (id: string) => `/users/${id}/role`,
+    AVATAR: "/users/avatar-cloud",
   },
   SERVICES: {
     LIST: "/services",
@@ -46,6 +47,42 @@ export const API_ENDPOINTS = {
     REQUEST_INFO: (id: string) => `/verification/${id}/request-info`,
   },
   ADMIN: {
+    DASHBOARD: "/admin/dashboard/summary",
+    USERS: {
+      LIST: "/admin/users",
+      DETAIL: (id: string) => `/admin/users/${id}`,
+      STATUS: (id: string) => `/admin/users/${id}/status`,
+    },
+    PROVIDERS: {
+      LIST: "/admin/providers",
+      PENDING: "/admin/providers/pending",
+      DETAIL: (id: string) => `/admin/providers/${id}`,
+      VERIFY: (id: string) => `/admin/providers/${id}/verify`,
+      REJECT: (id: string) => `/admin/providers/${id}/reject`,
+      SUSPEND: (id: string) => `/admin/providers/${id}/suspend`,
+    },
+    BOOKINGS: {
+      LIST: "/admin/bookings",
+      DETAIL: (id: string) => `/admin/bookings/${id}`,
+      FINANCE: (id: string) => `/admin/bookings/${id}/finance`,
+    },
+    DISPUTES: {
+      LIST: "/admin/disputes",
+      DETAIL: (id: string) => `/admin/disputes/${id}`,
+      RESOLVE: (id: string) => `/admin/disputes/${id}/resolve`,
+    },
+    WALLET_TRANSACTIONS: "/admin/wallet-transactions",
+    PROVIDER_WALLET: (id: string) => `/admin/providers/${id}/wallet`,
+    ADJUST_PROVIDER_WALLET: (id: string) =>
+      `/admin/providers/${id}/wallet/adjust`,
+    WITHDRAWALS: {
+      LIST: "/admin/withdrawals",
+      DETAIL: (id: string) => `/admin/withdrawals/${id}`,
+      APPROVE: (id: string) => `/admin/withdrawals/${id}/approve`,
+      REJECT: (id: string) => `/admin/withdrawals/${id}/reject`,
+      MARK_PAID: (id: string) => `/admin/withdrawals/${id}/mark-paid`,
+    },
+    AUDIT_LOGS: "/admin/audit-logs",
     FINANCE: {
       BALANCES: "/admin/finance/balances",
       LEDGER: "/admin/finance/ledger",

@@ -9,12 +9,12 @@ import { PageHeader } from "@/components/ui/page-header";
 import { Pagination } from "@/components/ui/pagination";
 import { SearchInput } from "@/components/ui/search-input";
 import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import { Avatar } from "@/components/ui/avatar";
 import { formatVietnameseDate } from "@/lib/date";
 import { useAdminUserList } from "../hooks/use-admin-user-list";
 import type { AdminUser, AdminUserRole, AdminUserStatus } from "../schema";
 import {
   getUserDisplayName,
-  getUserInitial,
   roleFilterOptions,
   statusFilterOptions,
 } from "../user-helpers";
@@ -32,18 +32,13 @@ export function UserTable() {
       widthClassName: "w-[24%]",
       render: (user) => (
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-50 text-sm font-bold text-blue-700">
-            {user.avatar ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={user.avatar}
-                alt={user.userName}
-                className="h-full w-full object-cover"
-              />
-            ) : (
-              getUserInitial(user)
-            )}
-          </div>
+          <Avatar
+            src={user.avatar}
+            alt={user.userName}
+            fallback={user.userName.charAt(0).toUpperCase()}
+            size="list"
+            className="bg-blue-50 text-blue-700"
+          />
           <div className="min-w-0">
             <p className="wrap-break-word text-sm font-semibold text-gray-950">
               {getUserDisplayName(user)}
