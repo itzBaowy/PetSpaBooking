@@ -1211,7 +1211,59 @@ Rule:
 - Mobile user đọc bằng API notification sẵn có: `GET /api/mobile/notifications`.
 - Action này ghi audit log.
 
-### 6.10 Admin audit logs
+### 6.10 Admin support chat
+
+Admin token required. Admin có thể tham gia thread chat của booking để hỗ trợ customer/provider.
+
+```http
+GET /api/admin/chat/threads
+GET /api/admin/bookings/{bookingId}/chat/thread
+GET /api/admin/chat/threads/{threadId}/messages
+POST /api/admin/chat/threads/{threadId}/messages
+PATCH /api/admin/chat/threads/{threadId}/read
+```
+
+List filters:
+
+```txt
+bookingId
+page
+pageSize
+```
+
+Luồng FE admin gợi ý:
+
+1. Admin mở booking detail hoặc dispute detail.
+2. Gọi `GET /api/admin/bookings/{bookingId}/chat/thread` để lấy hoặc tạo thread.
+3. Gọi `GET /api/admin/chat/threads/{threadId}/messages` để load messages.
+4. Socket admin join room:
+
+```ts
+socket.emit("chat:join", { threadId });
+```
+
+5. Admin gửi support message:
+
+```http
+POST /api/admin/chat/threads/{threadId}/messages
+```
+
+Body:
+
+```json
+{
+  "content": "PetLink support is checking this booking."
+}
+```
+
+Rule:
+
+- Admin có thể xem mọi booking chat thread.
+- Message admin có `senderRole = ADMIN`.
+- Customer và provider trong booking đều nhận `chat:message:new` realtime và notification `CHAT_MESSAGE_NEW`.
+- Mobile chat API cũ vẫn dùng chung thread, nên customer/provider sẽ thấy message admin trong cùng màn chat booking.
+
+### 6.11 Admin audit logs
 
 ```http
 GET /api/admin/audit-logs
@@ -1252,7 +1304,7 @@ SERVICE_HIDE
 SERVICE_UNHIDE
 ```
 
-### 6.11 Admin reports
+### 6.12 Admin reports
 
 ```http
 GET /api/admin/reports/revenue
