@@ -13,6 +13,7 @@ import { CustomSelect } from "@/components/ui/custom-select";
 import { ThemeMenuItem } from "@/components/ui/theme-menu-item";
 import { useToast } from "@/components/ui";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { useNotificationSocket } from "@/hooks/use-notification-socket";
 import { api } from "@/lib/axios";
 import { cn } from "@/lib/utils";
 import { useAuthStore } from "@/stores/auth-store";
@@ -369,6 +370,12 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
         unreadCount: typeof rawData.unreadCount === "number" ? rawData.unreadCount : undefined,
       };
     },
+  });
+
+  useNotificationSocket({
+    enabled: Boolean(profile?.id),
+    role,
+    userId: profile?.id,
   });
 
   const notificationItems = notificationQuery.data?.items ?? [];
