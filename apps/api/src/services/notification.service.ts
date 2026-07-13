@@ -18,8 +18,7 @@ type CreateNotificationInput = {
 };
 
 function getRequesterId(req: Request): string {
-  const userId = (req as Request & { user?: { userId?: string } }).user
-    ?.userId;
+  const userId = (req as Request & { user?: { userId?: string } }).user?.userId;
   if (!userId) throw new UnauthorizedException("Unauthorized");
   return userId;
 }
@@ -37,7 +36,9 @@ function encodeData(data?: Record<string, unknown> | null) {
   return data ? JSON.stringify(data) : null;
 }
 
-function decodeNotification<T extends { data: string | null }>(notification: T) {
+function decodeNotification<T extends { data: string | null }>(
+  notification: T,
+) {
   return {
     ...notification,
     data: notification.data ? JSON.parse(notification.data) : null,
@@ -56,6 +57,68 @@ function emitNotification<T extends { userId: string; data: string | null }>(
   });
 }
 
+async function sendPushNotification(userId: string, notification: any) {
+  try {
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: { expoPushToken: true },
+    });
+
+    if (user?.expoPushToken) {
+      await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Accept-encoding": "gzip, deflate",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          to: user.expoPushToken,
+          title: notification.title,
+          body: notification.message,
+          data: notification.data ? JSON.parse(notification.data) : undefined,
+        }),
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send push notification:", error);
+  }
+}
+
+async function sendPushNotificationBatch(inputs: CreateNotificationInput[]) {
+  try {
+    const userIds = [...new Set(inputs.map((i) => i.userId))];
+    const users = await prisma.users.findMany({
+      where: { id: { in: userIds } },
+      select: { id: true, expoPushToken: true },
+    });
+    const tokenMap = new Map(users.map((u) => [u.id, u.expoPushToken]));
+
+    const messages = inputs
+      .filter((input) => tokenMap.get(input.userId))
+      .map((input) => ({
+        to: tokenMap.get(input.userId),
+        title: input.title,
+        body: input.message,
+        data: input.data,
+      }));
+
+    if (messages.length > 0) {
+      await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Accept-encoding": "gzip, deflate",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(messages),
+      });
+    }
+  } catch (error) {
+    console.error("Failed to send push notification batch:", error);
+  }
+}
+
 export const notificationService = {
   async create(input: CreateNotificationInput) {
     const notification = await prisma.notifications.create({
@@ -69,6 +132,7 @@ export const notificationService = {
     });
 
     emitNotification(notification);
+    sendPushNotification(input.userId, notification).catch(console.error);
     return notification;
   },
 
@@ -100,6 +164,8 @@ export const notificationService = {
         shouldRefetch: true,
       });
     }
+
+    sendPushNotificationBatch(inputs).catch(console.error);
 
     return result;
   },
@@ -135,10 +201,7 @@ export const notificationService = {
     }
 
     if (req.query.unread === "true") {
-      where.OR = [
-        { readAt: null },
-        { readAt: { isSet: false } },
-      ];
+      where.OR = [{ readAt: null }, { readAt: { isSet: false } }];
     }
 
     const [totalItems, unreadCount, items] = await Promise.all([
@@ -146,10 +209,7 @@ export const notificationService = {
       prisma.notifications.count({
         where: {
           userId,
-          OR: [
-            { readAt: null },
-            { readAt: { isSet: false } },
-          ],
+          OR: [{ readAt: null }, { readAt: { isSet: false } }],
         },
       }),
       prisma.notifications.findMany({
@@ -205,10 +265,7 @@ export const notificationService = {
     const updated = await prisma.notifications.updateMany({
       where: {
         userId,
-        OR: [
-          { readAt: null },
-          { readAt: { isSet: false } },
-        ],
+        OR: [{ readAt: null }, { readAt: { isSet: false } }],
       },
       data: { readAt: new Date() },
     });
