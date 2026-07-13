@@ -12,16 +12,18 @@ import {
   providerDate,
   providerErrorText,
   providerMoney,
+  providerStatusText,
 } from "@/apis/provider/_shared/provider-ui";
 import type { ProviderBookingApi } from "@/types/provider-api";
 import { useProviderBookingAction, useProviderBookingDetail } from "../queries";
-import { ProviderQrDialog } from "./provider-booking-dialogs";
+import { ProviderBookingReasonDialog, ProviderQrDialog } from "./provider-booking-dialogs";
 
 export function ProviderBookingDetailPage({ bookingId }: { bookingId: string }) {
   const query = useProviderBookingDetail(bookingId);
   const action = useProviderBookingAction();
   const { showToast } = useToast();
   const [qrAction, setQrAction] = useState<"check-in" | "check-out" | null>(null);
+  const [reasonAction, setReasonAction] = useState<"reject" | "cancel" | null>(null);
 
   if (query.isLoading) return <ProviderLoading />;
   if (query.isError || !query.data) {
@@ -29,12 +31,10 @@ export function ProviderBookingDetailPage({ bookingId }: { bookingId: string }) 
   }
 
   const booking = query.data;
-  const mutateAction = (type: "confirm" | "reject" | "cancel" | "no-arrival") => {
-    const needsReason = type === "reject" || type === "cancel";
-    const reason = needsReason ? window.prompt("Nhập lý do:")?.trim() : undefined;
-    if (needsReason && !reason) return;
+  const mutateAction = (type: "confirm" | "reject" | "cancel" | "no-arrival", actionReason?: string) => {
+    if ((type === "reject" || type === "cancel") && !actionReason) return;
     action.mutate(
-      { id: booking.id, action: type, reason },
+      { id: booking.id, action: type, reason: actionReason },
       {
         onSuccess: () => showToast("Đã cập nhật lịch đặt.", "success"),
         onError: (error) => showToast(providerErrorText(error), "error"),
@@ -47,7 +47,20 @@ export function ProviderBookingDetailPage({ bookingId }: { bookingId: string }) 
       <ProviderPageHeader
         title={`Lịch đặt #${booking.id.slice(-8)}`}
         description={providerDate(booking.appointmentStart)}
-        action={<BookingActions booking={booking} pending={action.isLoading} onAction={mutateAction} onQr={setQrAction} />}
+        action={
+          <BookingActions
+            booking={booking}
+            pending={action.isLoading}
+            onAction={(type) => {
+              if (type === "reject" || type === "cancel") {
+                setReasonAction(type);
+                return;
+              }
+              mutateAction(type);
+            }}
+            onQr={setQrAction}
+          />
+        }
       />
       <Link href="/provider/bookings" className="inline-flex text-sm font-bold text-brand hover:underline">
         Quay lại danh sách
@@ -56,9 +69,9 @@ export function ProviderBookingDetailPage({ bookingId }: { bookingId: string }) 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.4fr)_minmax(300px,.6fr)]">
         <section className="rounded-2xl border border-border-subtle bg-surface p-5 shadow-sm">
           <div className="flex flex-wrap gap-2">
-            <ProviderBadge value={booking.status} />
-            <ProviderBadge value={booking.paymentStatus} />
-            <ProviderBadge value={booking.paymentMethod} />
+            <ProviderBadge value={`Booking: ${formatStatus(booking.status)}`} />
+            <ProviderBadge value={`Thanh toán: ${formatStatus(booking.paymentStatus)}`} />
+            <ProviderBadge value={`Phương thức: ${formatStatus(booking.paymentMethod)}`} />
           </div>
           <dl className="mt-5 grid gap-4 md:grid-cols-2">
             <Detail label="Khách hàng" value={booking.customer?.users?.fullName ?? "Chưa có dữ liệu"} />
@@ -76,8 +89,8 @@ export function ProviderBookingDetailPage({ bookingId }: { bookingId: string }) 
           <h2 className="text-lg font-extrabold">Thanh toán</h2>
           <dl className="mt-5 space-y-3">
             <Price label="Tổng tiền" value={booking.totalAmount} />
-            <Detail label="Phương thức" value={booking.paymentMethod?.replaceAll("_", " ")} />
-            <Detail label="Trạng thái" value={booking.paymentStatus?.replaceAll("_", " ")} />
+            <Detail label="Phương thức" value={providerStatusText(booking.paymentMethod)} />
+            <Detail label="Trạng thái" value={providerStatusText(booking.paymentStatus)} />
             {booking.rejectReason ? <Detail label="Lý do từ chối" value={booking.rejectReason} /> : null}
             {booking.cancelReason ? <Detail label="Lý do hủy" value={booking.cancelReason} /> : null}
           </dl>
@@ -103,6 +116,24 @@ export function ProviderBookingDetailPage({ bookingId }: { bookingId: string }) 
               },
             )
           }
+        />
+      ) : null}
+
+      {reasonAction ? (
+        <ProviderBookingReasonDialog
+          title={reasonAction === "reject" ? "Từ chối lịch đặt" : "Hủy lịch đặt"}
+          description={
+            reasonAction === "reject"
+              ? "Lịch đang chờ xác nhận. Nhập lý do từ chối để khách hàng nhận được thông tin rõ ràng."
+              : "Lịch đã được xác nhận. Nhập lý do hủy để hệ thống ghi nhận và xử lý thanh toán nếu cần."
+          }
+          submitLabel={reasonAction === "reject" ? "Từ chối" : "Hủy lịch"}
+          pending={action.isLoading}
+          onClose={() => setReasonAction(null)}
+          onSubmit={(reason) => {
+            mutateAction(reasonAction, reason);
+            setReasonAction(null);
+          }}
         />
       ) : null}
     </div>
@@ -155,6 +186,10 @@ function BookingActions({
     );
   }
   return null;
+}
+
+function formatStatus(value?: string | null) {
+  return providerStatusText(value);
 }
 
 function Detail({ label, value }: { label: string; value?: string | null }) {

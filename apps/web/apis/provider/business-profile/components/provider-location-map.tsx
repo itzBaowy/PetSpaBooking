@@ -114,7 +114,7 @@ export function ProviderLocationMap({
 
   return (
     <div className="space-y-2">
-      <div ref={containerRef} className="h-[360px] overflow-hidden rounded-2xl border border-border-subtle bg-surface-muted" />
+      <div ref={containerRef} className="relative z-0 h-[360px] overflow-hidden rounded-2xl border border-border-subtle bg-surface-muted" />
       <p className="text-xs font-semibold text-muted">
         Bấm trực tiếp trên bản đồ hoặc kéo ghim để lấy vĩ độ và kinh độ cho địa chỉ cơ sở.
       </p>

@@ -8,6 +8,7 @@ import { useToast } from "@/components/ui/feedback-provider";
 import {
   providerErrorText,
   providerMoney,
+  providerStatusText,
 } from "@/apis/provider/_shared/provider-ui";
 import { useCreateProviderDepositPayment } from "../queries";
 
@@ -42,7 +43,7 @@ export function ProviderDepositDialog({
           <div className="rounded-2xl border border-border-subtle bg-surface-muted p-4">
             <p className="text-sm text-muted">Trạng thái</p>
             <p className="mt-1 text-2xl font-black">
-              {depositStatus ?? "UNKNOWN"}
+              {providerStatusText(depositStatus)}
             </p>
           </div>
         </div>

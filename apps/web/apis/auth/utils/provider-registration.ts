@@ -29,6 +29,9 @@ export function validateProviderRegistrationStep(
       return "Mật khẩu xác nhận không khớp.";
     }
     if (!form.address.trim()) return "Vui lòng nhập địa chỉ doanh nghiệp.";
+    if (!isCoordinate(form.lat) || !isCoordinate(form.lng)) {
+      return "Vui lòng chọn vị trí doanh nghiệp trên bản đồ.";
+    }
   }
 
   if (targetStep === 2) {
@@ -71,4 +74,8 @@ export function getProviderRegistrationReviewItems(
     ["Địa chỉ trên CCCD", form.identityAddress],
     ["Mã số thuế", form.taxCode],
   ];
+}
+
+function isCoordinate(value: string) {
+  return value.trim() !== "" && Number.isFinite(Number(value));
 }

@@ -72,6 +72,8 @@ export const providerRegistrationSchema = z.object({
   phone: z.string().min(1, "Số điện thoại là bắt buộc"),
   email: z.string().email("Email doanh nghiệp không hợp lệ"),
   address: z.string().min(1, "Địa chỉ cơ sở là bắt buộc"),
+  lat: z.number().optional(),
+  lng: z.number().optional(),
   taxCode: z.string().optional(),
   identityNumber: z.string().optional(),
   identityFullName: z.string().optional(),

@@ -13,10 +13,11 @@ import {
   providerDate,
   providerErrorText,
   providerMoney,
+  providerStatusText,
 } from "@/apis/provider/_shared/provider-ui";
 import type { ProviderBookingApi } from "@/types/provider-api";
 import { useProviderBookingAction, useProviderBookings } from "../queries";
-import { ProviderQrDialog } from "./provider-booking-dialogs";
+import { ProviderBookingReasonDialog, ProviderQrDialog } from "./provider-booking-dialogs";
 
 const statuses = ["PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "COMPLETED", "CANCELLED", "REJECTED", "NO_ARRIVAL"];
 
@@ -25,6 +26,10 @@ export function ProviderBookingsPage() {
   const [qrDialog, setQrDialog] = useState<{
     booking: ProviderBookingApi;
     action: "check-in" | "check-out";
+  } | null>(null);
+  const [reasonDialog, setReasonDialog] = useState<{
+    booking: ProviderBookingApi;
+    action: "reject" | "cancel";
   } | null>(null);
   const query = useProviderBookings({ page: 1, pageSize: 50, status: status || undefined });
   const action = useProviderBookingAction();
@@ -35,12 +40,10 @@ export function ProviderBookingsPage() {
     return <ProviderError error={query.error} retry={() => void query.refetch()} />;
   }
 
-  const mutateAction = (booking: ProviderBookingApi, type: "confirm" | "reject" | "cancel" | "no-arrival") => {
-    const needsReason = type === "reject" || type === "cancel";
-    const reason = needsReason ? window.prompt("Nhập lý do:")?.trim() : undefined;
-    if (needsReason && !reason) return;
+  const mutateAction = (booking: ProviderBookingApi, type: "confirm" | "reject" | "cancel" | "no-arrival", actionReason?: string) => {
+    if ((type === "reject" || type === "cancel") && !actionReason) return;
     action.mutate(
-      { id: booking.id, action: type, reason },
+      { id: booking.id, action: type, reason: actionReason },
       {
         onSuccess: () => showToast("Đã cập nhật lịch đặt.", "success"),
         onError: (error) => showToast(providerErrorText(error), "error"),
@@ -65,7 +68,7 @@ export function ProviderBookingsPage() {
         <option value="">Tất cả trạng thái</option>
         {statuses.map((value) => (
           <option key={value} value={value}>
-            {value.replaceAll("_", " ")}
+            {providerStatusText(value)}
           </option>
         ))}
       </select>
@@ -82,8 +85,8 @@ export function ProviderBookingsPage() {
                     <Link className="font-extrabold text-brand hover:underline" href={`/provider/bookings/${booking.id}`}>
                       #{booking.id.slice(-8)}
                     </Link>
-                    <ProviderBadge value={booking.status} />
-                    <ProviderBadge value={booking.paymentStatus} />
+                    <ProviderBadge value={`Booking: ${formatStatus(booking.status)}`} />
+                    <ProviderBadge value={`Thanh toán: ${formatStatus(booking.paymentStatus)}`} />
                   </div>
                   <p className="mt-2 text-sm font-semibold">
                     {booking.customer?.users?.fullName ?? "Khách hàng"} · {booking.pet?.name ?? "Thú cưng"}
@@ -99,7 +102,7 @@ export function ProviderBookingsPage() {
                       <Button disabled={action.isLoading} onClick={() => mutateAction(booking, "confirm")}>
                         Xác nhận
                       </Button>
-                      <Button variant="outline" disabled={action.isLoading} onClick={() => mutateAction(booking, "reject")}>
+                      <Button variant="outline" disabled={action.isLoading} onClick={() => setReasonDialog({ booking, action: "reject" })}>
                         Từ chối
                       </Button>
                     </>
@@ -112,7 +115,7 @@ export function ProviderBookingsPage() {
                       <Button variant="outline" disabled={action.isLoading} onClick={() => mutateAction(booking, "no-arrival")}>
                         Không đến
                       </Button>
-                      <Button variant="outline" disabled={action.isLoading} onClick={() => mutateAction(booking, "cancel")}>
+                      <Button variant="outline" disabled={action.isLoading} onClick={() => setReasonDialog({ booking, action: "cancel" })}>
                         Hủy
                       </Button>
                     </>
@@ -150,6 +153,28 @@ export function ProviderBookingsPage() {
           }
         />
       ) : null}
+
+      {reasonDialog ? (
+        <ProviderBookingReasonDialog
+          title={reasonDialog.action === "reject" ? "Từ chối lịch đặt" : "Hủy lịch đặt"}
+          description={
+            reasonDialog.action === "reject"
+              ? "Lịch đang chờ xác nhận. Nhập lý do từ chối để khách hàng nhận được thông tin rõ ràng."
+              : "Lịch đã được xác nhận. Nhập lý do hủy để hệ thống ghi nhận và xử lý thanh toán nếu cần."
+          }
+          submitLabel={reasonDialog.action === "reject" ? "Từ chối" : "Hủy lịch"}
+          pending={action.isLoading}
+          onClose={() => setReasonDialog(null)}
+          onSubmit={(reason) => {
+            mutateAction(reasonDialog.booking, reasonDialog.action, reason);
+            setReasonDialog(null);
+          }}
+        />
+      ) : null}
     </div>
   );
+}
+
+function formatStatus(value?: string | null) {
+  return providerStatusText(value);
 }

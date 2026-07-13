@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
+import axios from "axios";
 import { useEffect } from "react";
 import { useProfile } from "@/apis/auth/queries";
 import { ProviderAccessDenied } from "@/components/provider/provider-access-denied";
@@ -33,6 +34,15 @@ export function AuthGuard({
   const clearTokens = useAuthStore((state) => state.clearTokens);
   const profileQuery = useProfile();
 
+  function getLoginRedirectPath() {
+    const error = profileQuery.error;
+    if (axios.isAxiosError(error) && error.response?.status === 403) {
+      return `/login?next=${encodeURIComponent(pathname)}&authError=account_status`;
+    }
+
+    return `/login?next=${encodeURIComponent(pathname)}`;
+  }
+
   useEffect(() => {
     if (!accessToken) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`);
@@ -43,7 +53,9 @@ export function AuthGuard({
     if (!profileQuery.error) return;
 
     clearTokens();
-    router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    router.replace(getLoginRedirectPath());
+    // getLoginRedirectPath intentionally reads the latest query error.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clearTokens, pathname, profileQuery.error, router]);
 
   useEffect(() => {

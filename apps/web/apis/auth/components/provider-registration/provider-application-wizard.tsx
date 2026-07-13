@@ -34,6 +34,7 @@ export function ProviderApplicationWizard() {
           form={wizard.form}
           hasExistingAccount={wizard.hasExistingAccount}
           onInputChange={wizard.handleInput}
+          onFieldChange={wizard.updateField}
         />
       )}
 

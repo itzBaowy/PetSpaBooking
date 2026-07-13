@@ -53,8 +53,8 @@ export function ProviderChatPage() {
       {threads.length === 0 ? (
         <ProviderEmpty text="Chưa có cuộc trò chuyện." />
       ) : (
-        <div className="grid min-h-[620px] overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-sm lg:grid-cols-[360px_minmax(0,1fr)]">
-          <aside className="border-b border-border-subtle lg:border-b-0 lg:border-r">
+        <div className="grid h-[calc(100vh-12rem)] min-h-[620px] overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-sm lg:grid-cols-[360px_minmax(0,1fr)]">
+          <aside className="min-h-0 overflow-y-auto border-b border-border-subtle lg:border-b-0 lg:border-r">
             {threads.map((thread) => (
               <ThreadButton
                 key={thread.id}
@@ -66,10 +66,10 @@ export function ProviderChatPage() {
             ))}
           </aside>
 
-          <section className="flex min-h-[620px] flex-col">
+          <section className="flex min-h-0 flex-col">
             <ChatHeader thread={selectedThread} isTyping={typingThreadId === activeThreadId} />
 
-            <div className="flex-1 overflow-y-auto p-4">
+            <div className="min-h-0 flex-1 overflow-y-auto p-4">
               {messagesQuery.isLoading ? (
                 <ProviderLoading />
               ) : messagesQuery.isError ? (

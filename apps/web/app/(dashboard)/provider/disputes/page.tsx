@@ -1,3 +1,11 @@
-import { ProviderDisputeListMock } from "@/components/provider/disputes/dispute-list";
+import { ProviderDisputesPage } from "@/apis/provider/disputes/components/provider-disputes-page";
 
-export default function ProviderDisputesPage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-7xl"><ProviderDisputeListMock /></div></main>; }
+export default function ProviderDisputesRoute() {
+  return (
+    <main className="p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <ProviderDisputesPage />
+      </div>
+    </main>
+  );
+}

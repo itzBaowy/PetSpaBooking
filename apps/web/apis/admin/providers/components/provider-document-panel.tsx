@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { queryKeys } from "@/constants/query-keys";
@@ -22,6 +22,9 @@ function getDocumentDisplayStatus(
   document: ProviderDocument,
   providerStatus: AdminProviderStatus,
 ) {
+  if (document.status === "APPROVED") return "Đã phê duyệt";
+  if (document.status === "REJECTED") return "Đã từ chối";
+  if (document.status === "PENDING") return "Chờ duyệt";
   if (providerStatus === "VERIFIED") return "Đã xác thực";
   if (providerStatus === "REJECTED") return "Đã từ chối";
   if (providerStatus === "SUSPENDED") return "Tạm ngưng";
@@ -64,15 +67,12 @@ export function ProviderDocumentPanel({
   const [selectedDocumentId, setSelectedDocumentId] = useState(
     documents[0]?.id ?? "",
   );
-  useEffect(() => {
-    setLocalDocuments(documents);
-    setSelectedDocumentId((current) => current || documents[0]?.id || "");
-  }, [documents]);
+  const effectiveSelectedDocumentId = selectedDocumentId || localDocuments[0]?.id || "";
   const selectedDocument = useMemo(
     () =>
-      localDocuments.find((document) => document.id === selectedDocumentId) ??
+      localDocuments.find((document) => document.id === effectiveSelectedDocumentId) ??
       localDocuments[0],
-    [localDocuments, selectedDocumentId],
+    [localDocuments, effectiveSelectedDocumentId],
   );
 
   const approveMutation = useMutation({
@@ -85,7 +85,7 @@ export function ProviderDocumentPanel({
     onSuccess: (updatedDocument) => {
       setLocalDocuments((current) =>
         current.map((document) =>
-          document.id === updatedDocument.id ? updatedDocument : document,
+          document.id === updatedDocument.id ? { ...document, ...updatedDocument } : document,
         ),
       );
       queryClient.setQueryData<AdminProviderDetail | null>(
@@ -124,7 +124,7 @@ export function ProviderDocumentPanel({
     onSuccess: (updatedDocument) => {
       setLocalDocuments((current) =>
         current.map((document) =>
-          document.id === updatedDocument.id ? updatedDocument : document,
+          document.id === updatedDocument.id ? { ...document, ...updatedDocument } : document,
         ),
       );
       queryClient.setQueryData<AdminProviderDetail | null>(
