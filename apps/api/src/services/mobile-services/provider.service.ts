@@ -19,8 +19,7 @@ import {
   UnauthorizedException,
 } from "../../common/helpers/exception.helper.ts";
 import { ObjectId } from "mongodb";
-
-const MIN_WITHDRAWAL_AMOUNT = 100_000;
+import { getSystemSettingValue } from "../system-setting.service.ts";
 
 function getRequesterId(req: Request): string {
   const userId = (req as Request & { user?: { userId?: string } }).user?.userId;
@@ -670,9 +669,13 @@ export const mobileProviderServices = {
       throw new BadRequestException("amount must be a valid number");
     }
 
-    if (amount < MIN_WITHDRAWAL_AMOUNT) {
+    const minWithdrawalAmount = await getSystemSettingValue(
+      "minWithdrawalAmount",
+    );
+
+    if (amount < minWithdrawalAmount) {
       throw new BadRequestException(
-        `Minimum withdrawal amount is ${MIN_WITHDRAWAL_AMOUNT} VND`,
+        `Minimum withdrawal amount is ${minWithdrawalAmount} VND`,
       );
     }
 

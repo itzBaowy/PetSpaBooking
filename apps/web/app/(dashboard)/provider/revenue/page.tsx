@@ -1,14 +1,3 @@
-import { RevenueSummaryCards } from "@/apis/provider/revenue/components/revenue-summary-cards";
-import { RevenueChart } from "@/apis/provider/revenue/components/revenue-chart";
+import { ProviderRevenueDashboardMock } from "@/components/provider/revenue/revenue-dashboard";
 
-export default function Revenue() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Revenue Analytics</h1>
-      <RevenueSummaryCards />
-      <div className="mt-6">
-        <RevenueChart />
-      </div>
-    </div>
-  );
-}
+export default function ProviderRevenuePage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-7xl"><ProviderRevenueDashboardMock /></div></main>; }

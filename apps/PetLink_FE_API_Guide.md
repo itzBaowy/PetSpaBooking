@@ -787,6 +787,58 @@ services
 withdrawals
 ```
 
+### 6.1.1 Admin system settings
+
+Admin token required. Dùng để cấu hình các rule nghiệp vụ chính mà trước đây nằm trong ENV/code.
+
+```http
+GET /api/admin/settings
+PATCH /api/admin/settings
+```
+
+Response `data` trả từng setting theo format:
+
+```json
+{
+  "minProviderDeposit": {
+    "key": "MIN_PROVIDER_DEPOSIT",
+    "value": 300000,
+    "defaultValue": 300000,
+    "description": "Minimum active provider deposit balance in VND.",
+    "source": "DB",
+    "updatedBy": "<adminUserId>",
+    "updatedAt": "2026-07-13T10:00:00.000Z"
+  }
+}
+```
+
+Update body có thể gửi một hoặc nhiều field:
+
+```json
+{
+  "minProviderDeposit": 300000,
+  "platformCommissionRate": 0.15,
+  "bookingAutoCompleteHours": 10,
+  "bookingNoArrivalGraceMinutes": 15,
+  "minWithdrawalAmount": 100000
+}
+```
+
+Ý nghĩa:
+
+- `minProviderDeposit`: deposit tối thiểu để provider được nhận booking/quản lý service.
+- `platformCommissionRate`: tỷ lệ commission khi booking `COMPLETED`, ví dụ `0.15` là 15%.
+- `bookingAutoCompleteHours`: số giờ hold sau checkout trước khi auto-complete nếu không có dispute.
+- `bookingNoArrivalGraceMinutes`: số phút sau `appointmentStart` provider mới được mark `NO_ARRIVAL`.
+- `minWithdrawalAmount`: số tiền rút tối thiểu của provider.
+
+Rule:
+
+- `platformCommissionRate` phải từ `0` đến `1`.
+- Các setting còn lại không được âm; `bookingAutoCompleteHours` phải lớn hơn hoặc bằng `1`.
+- Nếu DB chưa có setting, backend dùng ENV tương ứng nếu hợp lệ, sau đó fallback default.
+- Khi admin update, backend ghi audit log `SYSTEM_SETTINGS_UPDATE`.
+
 ### 6.2 Admin users
 
 ```http
@@ -1211,7 +1263,59 @@ Rule:
 - Mobile user đọc bằng API notification sẵn có: `GET /api/mobile/notifications`.
 - Action này ghi audit log.
 
-### 6.10 Admin audit logs
+### 6.10 Admin support chat
+
+Admin token required. Admin có thể tham gia thread chat của booking để hỗ trợ customer/provider.
+
+```http
+GET /api/admin/chat/threads
+GET /api/admin/bookings/{bookingId}/chat/thread
+GET /api/admin/chat/threads/{threadId}/messages
+POST /api/admin/chat/threads/{threadId}/messages
+PATCH /api/admin/chat/threads/{threadId}/read
+```
+
+List filters:
+
+```txt
+bookingId
+page
+pageSize
+```
+
+Luồng FE admin gợi ý:
+
+1. Admin mở booking detail hoặc dispute detail.
+2. Gọi `GET /api/admin/bookings/{bookingId}/chat/thread` để lấy hoặc tạo thread.
+3. Gọi `GET /api/admin/chat/threads/{threadId}/messages` để load messages.
+4. Socket admin join room:
+
+```ts
+socket.emit("chat:join", { threadId });
+```
+
+5. Admin gửi support message:
+
+```http
+POST /api/admin/chat/threads/{threadId}/messages
+```
+
+Body:
+
+```json
+{
+  "content": "PetLink support is checking this booking."
+}
+```
+
+Rule:
+
+- Admin có thể xem mọi booking chat thread.
+- Message admin có `senderRole = ADMIN`.
+- Customer và provider trong booking đều nhận `chat:message:new` realtime và notification `CHAT_MESSAGE_NEW`.
+- Mobile chat API cũ vẫn dùng chung thread, nên customer/provider sẽ thấy message admin trong cùng màn chat booking.
+
+### 6.11 Admin audit logs
 
 ```http
 GET /api/admin/audit-logs
@@ -1250,9 +1354,10 @@ ADMIN_NOTIFICATION_SEND
 ADMIN_NOTIFICATION_BROADCAST
 SERVICE_HIDE
 SERVICE_UNHIDE
+SYSTEM_SETTINGS_UPDATE
 ```
 
-### 6.11 Admin reports
+### 6.12 Admin reports
 
 ```http
 GET /api/admin/reports/revenue

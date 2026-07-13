@@ -33,6 +33,8 @@ export const API_ENDPOINTS = {
     CREATE: "/services",
     UPDATE: (id: string) => `/services/${id}`,
     DELETE: (id: string) => `/services/${id}`,
+    MY: "/services/my",
+    TOGGLE: (id: string) => `/services/${id}/toggle`,
   },
   BOOKINGS: {
     LIST: "/bookings",
@@ -41,6 +43,29 @@ export const API_ENDPOINTS = {
     CANCEL: (id: string) => `/bookings/${id}/cancel`,
   },
   MOBILE: {
+    PROVIDER: {
+      BOOKINGS: "/mobile/provider/bookings",
+      CONFIRM_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/confirm`,
+      REJECT_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/reject`,
+      CANCEL_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/cancel`,
+      NO_ARRIVAL: (id: string) => `/mobile/provider/bookings/${id}/no-arrival`,
+      CHECK_IN: (id: string) => `/mobile/provider/bookings/${id}/check-in`,
+      CHECK_OUT: (id: string) => `/mobile/provider/bookings/${id}/check-out`,
+      WORKING_HOURS: "/mobile/provider/working-hours",
+      AVAILABILITY_BLOCKS: "/mobile/provider/availability-blocks",
+      DELETE_AVAILABILITY_BLOCK: (id: string) =>
+        `/mobile/provider/availability-blocks/${id}`,
+      WALLET: "/mobile/provider/wallet",
+      WALLET_TRANSACTIONS: "/mobile/provider/wallet/transactions",
+      WITHDRAWALS: "/mobile/provider/withdrawals",
+      CHAT_THREADS: "/mobile/chat/threads",
+      CHAT_THREAD_FOR_BOOKING: (bookingId: string) =>
+        `/mobile/bookings/${bookingId}/chat/thread`,
+      CHAT_MESSAGES: (threadId: string) =>
+        `/mobile/chat/threads/${threadId}/messages`,
+      MARK_CHAT_READ: (threadId: string) =>
+        `/mobile/chat/threads/${threadId}/read`,
+    },
     NOTIFICATIONS: {
       LIST: "/mobile/notifications",
       MARK_READ: (id: string) => `/mobile/notifications/${id}/read`,

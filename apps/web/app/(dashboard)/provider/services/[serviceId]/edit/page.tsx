@@ -1,12 +1,8 @@
-import { ServiceForm } from "@/apis/provider/services/components/service-form";
+import { ProviderServiceFormLive } from "@/components/provider/live/provider-live-screens";
 
-export default function EditService() {
+export default async function EditService({ params }: { params: Promise<{ serviceId: string }> }) {
+  const { serviceId } = await params;
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Edit Service</h1>
-      <div className="max-w-2xl">
-        <ServiceForm />
-      </div>
-    </div>
+    <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-5xl"><ProviderServiceFormLive serviceId={serviceId} /></div></main>
   );
 }

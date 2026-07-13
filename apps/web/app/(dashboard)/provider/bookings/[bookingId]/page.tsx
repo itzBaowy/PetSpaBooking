@@ -1,10 +1,8 @@
-import { BookingDetail } from "@/apis/provider/bookings/components/booking-detail";
+import { ProviderBookingDetailMock } from "@/components/provider/bookings/booking-detail";
 
-export default function BookingDetailPage() {
+export default async function BookingDetailPage({ params }: { params: Promise<{ bookingId: string }> }) {
+  const { bookingId } = await params;
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Booking Details</h1>
-      <BookingDetail />
-    </div>
+    <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-7xl"><ProviderBookingDetailMock bookingId={bookingId} /></div></main>
   );
 }

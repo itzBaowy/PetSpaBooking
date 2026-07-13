@@ -1017,7 +1017,8 @@ export const swaggerOptions = {
             ageLabel: { type: "string", example: "Adult" },
             imageUrl: {
               type: "string",
-              example: "https://example.com/buddy.jpg",
+              format: "binary",
+              description: "Image file to upload",
             },
             weight: { type: "string", example: "30kg" },
             height: { type: "string", example: "60cm" },
@@ -1059,7 +1060,8 @@ export const swaggerOptions = {
             ageLabel: { type: "string", example: "Adult" },
             imageUrl: {
               type: "string",
-              example: "https://example.com/buddy.jpg",
+              format: "binary",
+              description: "Image file to upload",
             },
             weight: { type: "string", example: "30kg" },
             height: { type: "string", example: "60cm" },

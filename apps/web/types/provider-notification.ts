@@ -1,0 +1,2 @@
+export type ProviderNotificationType = "verification_update" | "new_booking" | "booking_cancelled" | "upcoming_booking" | "new_message" | "dispute_update" | "withdrawal_update" | "low_balance" | "service_moderation";
+export interface ProviderNotificationMock { id: string; type: ProviderNotificationType; title: string; message: string; createdAt: string; read: boolean; route: string; reference?: string; }

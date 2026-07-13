@@ -1,0 +1,3 @@
+export type ProviderChatAttachment = { id: string; name: string; kind: "image" | "file"; url?: string; isLocal?: boolean };
+export interface ProviderChatMessageMock { id: string; sender: "provider" | "customer"; text?: string; attachments: ProviderChatAttachment[]; sentAt: string; read: boolean; }
+export interface ProviderConversationMock { id: string; customer: { name: string; initials: string; online: boolean; avatarUrl?: string }; booking: { code: string; service: string; appointmentAt: string; petName: string; status: string; totalAmount: number }; unreadCount: number; messages: ProviderChatMessageMock[]; }

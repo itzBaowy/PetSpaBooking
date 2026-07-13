@@ -1,0 +1,9 @@
+import type { ProviderConversationMock } from "@/types/provider-chat";
+
+const people = [["Nguyen Thu Linh", "TL", true, "Mochi", "Full Grooming Package"], ["Tran Gia Bao", "GB", false, "Milo", "Herbal Coat Spa"], ["Le Minh An", "MA", true, "Nala", "Gentle Bath & Blow Dry"], ["Pham Ha My", "HM", false, "Bun", "Basic Wellness Check"], ["Vo Thanh Nam", "TN", true, "Coco", "Full Grooming Package"]] as const;
+export const providerConversationsMock: ProviderConversationMock[] = people.map((person, index) => ({ id: `conversation-${index + 1}`, customer: { name: person[0], initials: person[1], online: person[2], avatarUrl: index % 2 ? undefined : `https://i.pravatar.cc/160?img=${12 + index}` }, booking: { code: `PB-2607-${String(112 + index).padStart(4, "0")}`, service: person[4], appointmentAt: new Date(2026, 6, 22 + index, 9 + index).toISOString(), petName: person[3], status: index % 2 ? "pending" : "confirmed", totalAmount: 280000 + index * 45000 }, unreadCount: index % 3, messages: [
+  { id: `message-${index}-1`, sender: "customer", text: `Hi, I have a question about ${person[3]}'s upcoming appointment.`, attachments: [], sentAt: new Date(2026, 6, 20, 9 + index).toISOString(), read: true },
+  { id: `message-${index}-2`, sender: "provider", text: "Of course. Please share any care notes and I will help you prepare.", attachments: [], sentAt: new Date(2026, 6, 20, 9 + index, 8).toISOString(), read: true },
+  { id: `message-${index}-3`, sender: "customer", text: index % 2 ? "Should I bring the vaccination record?" : "Thank you! We will arrive ten minutes early.", attachments: [], sentAt: new Date(2026, 6, 20, 9 + index, 14).toISOString(), read: index % 3 === 0 },
+] }));
+export async function getMockProviderConversations() { await new Promise<void>((resolve) => window.setTimeout(resolve, 500)); return structuredClone(providerConversationsMock); }

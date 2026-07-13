@@ -21,6 +21,7 @@ async function cleanDatabase() {
     const deletedProviders = await prisma.providers.deleteMany({});
     const deletedCustomers = await prisma.customers.deleteMany({});
     const deletedUsers = await prisma.users.deleteMany({});
+    const deletedSystemSettings = await prisma.system_settings.deleteMany({});
     console.log(`Deleted ${deletedChatMessages.count} chat message(s)`);
     console.log(`Deleted ${deletedChatThreads.count} chat thread(s)`);
     console.log(`Deleted ${deletedReviews.count} review(s)`);
@@ -37,6 +38,7 @@ async function cleanDatabase() {
     console.log(`Deleted ${deletedProviders.count} provider(s)`);
     console.log(`Deleted ${deletedCustomers.count} customer(s)`);
     console.log(`Deleted ${deletedUsers.count} user(s)`);
+    console.log(`Deleted ${deletedSystemSettings.count} system setting(s)`);
 
     console.log("\n🎉 Database cleaned successfully!");
   } catch (error) {

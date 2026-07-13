@@ -187,7 +187,7 @@ export const adminBookingService = {
 
     return {
       completedCount,
-      holdHours: getBookingAutoCompleteHours(),
+      holdHours: await getBookingAutoCompleteHours(),
     };
   },
 

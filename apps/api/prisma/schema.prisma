@@ -260,6 +260,16 @@ model chat_messages {
   @@index([createAt])
 }
 
+model system_settings {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  key         String   @unique
+  value       Float
+  description String?
+  updatedBy   String?  @db.ObjectId
+  createAt    DateTime @default(now())
+  updateAt    DateTime @updatedAt
+}
+
 model booking_qr_logs {
   id         String @id @default(auto()) @map("_id") @db.ObjectId
   bookingId  String @db.ObjectId

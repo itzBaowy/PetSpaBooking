@@ -1,10 +1,3 @@
-import { ProviderNavigationPlaceholder } from "@/components/provider/provider-navigation-placeholder";
+import { ProviderDisputeListMock } from "@/components/provider/disputes/dispute-list";
 
-export default function ProviderDisputesPage() {
-  return (
-    <ProviderNavigationPlaceholder
-      title="Disputes"
-      description="Theo dõi tranh chấp liên quan đến lịch đặt của nhà cung cấp."
-    />
-  );
-}
+export default function ProviderDisputesPage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-7xl"><ProviderDisputeListMock /></div></main>; }
