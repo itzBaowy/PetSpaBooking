@@ -144,6 +144,15 @@ model bookings {
   paymentStatus String @default("UNPAID")
   paymentReference String?
   paidAt        DateTime?
+  refundReason       String?
+  refundRequestedBy  String?
+  refundRequestedAt  DateTime?
+  refundResolvedAt   DateTime?
+  refundMethod       String?
+  refundAmount       Float?
+  refundReference    String?
+  refundEvidenceUrl  String?
+  refundAdminNote    String?
 
   totalAmount Float
   currency    String @default("VND")

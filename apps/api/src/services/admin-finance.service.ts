@@ -22,9 +22,11 @@ const WALLET_TRANSACTION_TYPES = [
 ] as const;
 
 const BALANCE_TYPES = ["WALLET", "DEPOSIT"] as const;
+const REFUND_METHODS = ["MOMO_MANUAL", "BANK_TRANSFER", "OTHER"] as const;
 
 type WalletTransactionType = (typeof WALLET_TRANSACTION_TYPES)[number];
 type BalanceType = (typeof BALANCE_TYPES)[number];
+type RefundMethod = (typeof REFUND_METHODS)[number];
 
 function getRouteParam(req: Request, name: string): string {
   const value = req.params[name];
@@ -113,6 +115,29 @@ function getOptionalNote(value: unknown): string | null {
   }
 
   return value.trim();
+}
+
+function getOptionalRefundMethod(value: unknown): RefundMethod | null {
+  if (value === undefined || value === null) return null;
+  if (
+    typeof value !== "string" ||
+    !REFUND_METHODS.includes(value as RefundMethod)
+  ) {
+    throw new BadRequestException(
+      `refundMethod must be one of: ${REFUND_METHODS.join(", ")}`,
+    );
+  }
+
+  return value as RefundMethod;
+}
+
+function getOptionalRefundAmount(value: unknown): number | null {
+  if (value === undefined || value === null) return null;
+  if (typeof value !== "number" || !Number.isFinite(value) || value < 0) {
+    throw new BadRequestException("refundAmount must be a non-negative number");
+  }
+
+  return value;
 }
 
 function getDepositStatusAfterAdjustment(
@@ -436,6 +461,10 @@ export const adminFinanceService = {
     const bookingId = getRouteParam(req, "bookingId");
     const adminNote = getOptionalNote(req.body?.adminNote);
     const refundReference = getOptionalNote(req.body?.refundReference);
+    const refundMethod =
+      getOptionalRefundMethod(req.body?.refundMethod) ?? "MOMO_MANUAL";
+    const refundAmount = getOptionalRefundAmount(req.body?.refundAmount);
+    const refundEvidenceUrl = getOptionalNote(req.body?.refundEvidenceUrl);
 
     const booking = await prisma.bookings.findUnique({
       where: { id: bookingId },
@@ -457,6 +486,12 @@ export const adminFinanceService = {
       data: {
         paymentStatus: "REFUNDED",
         paymentReference: refundReference ?? booking.paymentReference,
+        refundMethod,
+        refundAmount: refundAmount ?? booking.refundAmount ?? booking.totalAmount,
+        refundReference: refundReference ?? booking.refundReference,
+        refundEvidenceUrl: refundEvidenceUrl ?? booking.refundEvidenceUrl,
+        refundAdminNote: adminNote ?? booking.refundAdminNote,
+        refundResolvedAt: new Date(),
         note: adminNote ? `${booking.note ?? ""}\n[Refund] ${adminNote}`.trim() : booking.note,
       },
       include: {
@@ -480,24 +515,30 @@ export const adminFinanceService = {
       message: "Your cancelled online booking has been marked as refunded.",
       data: {
         bookingId: updatedBooking.id,
-        refundReference,
+        refundReference: updatedBooking.refundReference,
+        refundMethod: updatedBooking.refundMethod,
+        refundAmount: updatedBooking.refundAmount,
       },
     });
 
-    socketService.emitToUser(updatedBooking.customer.users.id, "refund:updated", {
+    const refundPayload = {
       bookingId: updatedBooking.id,
       paymentStatus: updatedBooking.paymentStatus,
-      refundReference,
+      refundReference: updatedBooking.refundReference,
+      refundMethod: updatedBooking.refundMethod,
+      refundAmount: updatedBooking.refundAmount,
+      refundEvidenceUrl: updatedBooking.refundEvidenceUrl,
+      refundResolvedAt: updatedBooking.refundResolvedAt,
+    };
+
+    socketService.emitToUser(updatedBooking.customer.users.id, "refund:updated", {
+      ...refundPayload,
     });
     socketService.emitToProvider(updatedBooking.provider.id, "refund:updated", {
-      bookingId: updatedBooking.id,
-      paymentStatus: updatedBooking.paymentStatus,
-      refundReference,
+      ...refundPayload,
     });
     socketService.emitToBooking(updatedBooking.id, "refund:updated", {
-      bookingId: updatedBooking.id,
-      paymentStatus: updatedBooking.paymentStatus,
-      refundReference,
+      ...refundPayload,
     });
     socketService.emitToBooking(updatedBooking.id, "booking:updated", {
       booking: updatedBooking,
@@ -511,7 +552,10 @@ export const adminFinanceService = {
       metadata: {
         previousPaymentStatus: booking.paymentStatus,
         paymentStatus: "REFUNDED",
-        refundReference,
+        refundReference: updatedBooking.refundReference,
+        refundMethod: updatedBooking.refundMethod,
+        refundAmount: updatedBooking.refundAmount,
+        refundEvidenceUrl: updatedBooking.refundEvidenceUrl,
         adminNote,
       },
     });
@@ -547,6 +591,8 @@ export const adminFinanceService = {
       where: { id: booking.id },
       data: {
         paymentStatus: "SUCCESS",
+        refundAdminNote: adminNote,
+        refundResolvedAt: new Date(),
         note: `${booking.note ?? ""}\n[Refund rejected] ${adminNote}`.trim(),
       },
       include: {
@@ -578,16 +624,19 @@ export const adminFinanceService = {
       bookingId: updatedBooking.id,
       paymentStatus: updatedBooking.paymentStatus,
       adminNote,
+      refundResolvedAt: updatedBooking.refundResolvedAt,
     });
     socketService.emitToProvider(updatedBooking.provider.id, "refund:updated", {
       bookingId: updatedBooking.id,
       paymentStatus: updatedBooking.paymentStatus,
       adminNote,
+      refundResolvedAt: updatedBooking.refundResolvedAt,
     });
     socketService.emitToBooking(updatedBooking.id, "refund:updated", {
       bookingId: updatedBooking.id,
       paymentStatus: updatedBooking.paymentStatus,
       adminNote,
+      refundResolvedAt: updatedBooking.refundResolvedAt,
     });
     socketService.emitToBooking(updatedBooking.id, "booking:updated", {
       booking: updatedBooking,
@@ -602,6 +651,7 @@ export const adminFinanceService = {
         previousPaymentStatus: booking.paymentStatus,
         paymentStatus: "SUCCESS",
         adminNote,
+        refundResolvedAt: updatedBooking.refundResolvedAt,
       },
     });
 

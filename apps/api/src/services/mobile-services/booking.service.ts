@@ -197,6 +197,35 @@ function getCancellationPaymentStatus(booking: {
   return booking.paymentStatus;
 }
 
+function buildRefundRequestData(
+  booking: {
+    paymentMethod: string;
+    paymentStatus: string;
+    totalAmount: number;
+  },
+  requestedBy: "CUSTOMER" | "PROVIDER",
+  reason?: string,
+) {
+  if (
+    booking.paymentMethod !== "ONLINE" ||
+    booking.paymentStatus !== "SUCCESS"
+  ) {
+    return {};
+  }
+
+  return {
+    refundReason: reason ?? `Booking cancelled by ${requestedBy}`,
+    refundRequestedBy: requestedBy,
+    refundRequestedAt: new Date(),
+    refundAmount: booking.totalAmount,
+    refundResolvedAt: null,
+    refundMethod: null,
+    refundReference: null,
+    refundEvidenceUrl: null,
+    refundAdminNote: null,
+  };
+}
+
 function emitBookingUpdated(booking: {
   id: string;
   provider: { id: string };
@@ -501,6 +530,7 @@ export const mobileBookingServices = {
         paymentStatus: getCancellationPaymentStatus(booking),
         cancelReason: reason ?? null,
         cancelledAt: new Date(),
+        ...buildRefundRequestData(booking, "CUSTOMER", reason),
       },
       include: BOOKING_INCLUDE,
     });
@@ -847,6 +877,7 @@ export const mobileBookingServices = {
         paymentStatus: getCancellationPaymentStatus(booking),
         cancelReason: reason ?? null,
         cancelledAt: new Date(),
+        ...buildRefundRequestData(booking, "PROVIDER", reason),
       },
       include: BOOKING_INCLUDE,
     });
