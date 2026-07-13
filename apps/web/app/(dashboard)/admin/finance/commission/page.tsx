@@ -1,5 +1,5 @@
-import { UnsupportedFeature } from "@/components/admin/unsupported-feature";
+import { CommissionManagementPage } from "@/apis/admin/commission/components/commission-management-page";
 
 export default function Page() {
-  return <UnsupportedFeature title="Commission management" />;
+  return <CommissionManagementPage />;
 }

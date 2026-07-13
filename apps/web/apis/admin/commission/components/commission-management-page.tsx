@@ -1,4 +1,3 @@
-﻿import Link from "next/link";
 import { PageHeader } from "@/components/ui/page-header";
 import { CommissionSummaryCards } from "./commission-summary-cards";
 import { CommissionTable } from "./commission-table";
@@ -11,14 +10,6 @@ export function CommissionManagementPage() {
         eyebrow="Quản trị / Tài chính"
         title="Quản lý hoa hồng"
         description="Theo dõi hoa hồng đang giữ, đã thu, đã hoàn và thất bại trên toàn sàn."
-        actions={
-          <Link
-            href="/admin/finance/commission/config"
-            className="inline-flex h-10 items-center rounded-xl bg-foreground px-4 text-sm font-bold text-background shadow-sm hover:bg-muted"
-          >
-            Cấu hình tỷ lệ
-          </Link>
-        }
       />
       <CommissionSummaryCards />
       <CommissionTable />

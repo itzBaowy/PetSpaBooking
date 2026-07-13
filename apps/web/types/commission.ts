@@ -14,9 +14,14 @@ export interface Commission {
   commissionAmount: number;
   rateLabel: string;
   status: CommissionStatus;
-  paymentMethod: PaymentMethod;
+  paymentMethod: PaymentMethod | "ONLINE";
   reservedAt?: string;
   chargedAt?: string;
+  releasedAt?: string;
+  failedAt?: string;
+  collectedFrom?: string | null;
+  failureReason?: string | null;
+  releaseReason?: string | null;
 }
 
 export interface CommissionConfig {

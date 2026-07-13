@@ -183,6 +183,7 @@ export const API_ENDPOINTS = {
       SUMMARY: "/admin/finance/commissions/summary",
       RECORDS: "/admin/finance/commissions",
       PENDING: "/admin/finance/commissions/pending",
+      DETAIL: (id: string) => `/admin/finance/commissions/${id}`,
       CONFIGS: "/admin/config/commissions",
       UPDATE_CONFIG: (configId: string) =>
         `/admin/config/commissions/${configId}`,
