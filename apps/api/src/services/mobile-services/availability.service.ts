@@ -298,16 +298,16 @@ export const mobileAvailabilityService = {
       throw new BadRequestException("endAt must be after startAt");
     }
 
-    const existingBlock = await prisma.provider_availability_blocks.findFirst({
-      where: {
-        providerId: provider.id,
-        startAt: { lt: end },
-        endAt: { gt: start },
-      },
-    });
+    const conflicts = await findSlotConflicts(provider.id, start, end);
 
-    if (existingBlock) {
+    if (conflicts.block) {
       throw new BadRequestException("Availability block overlaps an existing block");
+    }
+
+    if (conflicts.booking) {
+      throw new BadRequestException(
+        "Cannot create availability block while an active booking overlaps this time range",
+      );
     }
 
     return prisma.provider_availability_blocks.create({
