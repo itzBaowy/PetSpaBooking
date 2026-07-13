@@ -17,18 +17,18 @@ export const mobileCustomerServices = {
       throw new BadRequestException("Invalid user ID format");
     }
 
-    const customer = await prisma.customers.findUnique({
-      where: { userId: userId },
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
     });
 
-    if (!customer) {
+    if (!user) {
       throw new BadRequestException("User not found");
     }
 
     const { fullName, phone, location } = req.body;
 
     await prisma.customers.update({
-      where: { userId: customer.userId },
+      where: { userId: user.id },
       data: {
         users: {
           update: {
