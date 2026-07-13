@@ -11,7 +11,7 @@ export type ProviderBookingApi = {
   appointmentStart: string; appointmentEnd: string; totalAmount: number;
   rejectReason?: string | null; cancelReason?: string | null;
   customer?: { id?: string; users?: { fullName?: string; email?: string; phone?: string } };
-  pet?: { name?: string; species?: string; breed?: string };
+  pet?: { name?: string; species?: string; breed?: string; ageLabel?: string; imageUrl?: string | null };
   service?: { name?: string; price?: number; duration?: number };
 };
 

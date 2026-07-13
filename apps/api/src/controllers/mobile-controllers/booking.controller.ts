@@ -111,6 +111,19 @@ export const mobileBookingController = {
     }
   },
 
+  async getProviderBookingById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.getProviderBookingById(req);
+      const response = responseSuccess(
+        result,
+        "Provider booking retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async confirm(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await mobileBookingServices.confirm(req);

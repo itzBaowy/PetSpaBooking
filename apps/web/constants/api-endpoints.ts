@@ -56,6 +56,7 @@ export const API_ENDPOINTS = {
     },
     PROVIDER: {
       BOOKINGS: "/mobile/provider/bookings",
+      BOOKING_DETAIL: (id: string) => `/mobile/provider/bookings/${id}`,
       CONFIRM_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/confirm`,
       REJECT_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/reject`,
       CANCEL_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/cancel`,
