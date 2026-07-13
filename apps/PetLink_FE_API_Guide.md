@@ -1629,7 +1629,132 @@ DISPUTE + RESOLVED_CUSTOMER_WIN + ONLINE paid SUCCESS -> CANCELLED + REFUND_PEND
 DISPUTE + CANCELLED -> COMPLETED
 ```
 
-## 8. Error Handling FE Gợi Ý
+## 8. Admin Commission Management
+
+Mục đích: màn admin theo dõi hoa hồng toàn sàn theo 4 trạng thái:
+
+```txt
+PENDING  = hoa hồng đang giữ cho booking chưa kết thúc
+CHARGED  = hoa hồng đã thu khi booking COMPLETED và finance xử lý xong
+RELEASED = hoa hồng đã hoàn giữ do booking bị reject/cancel/no-arrival
+FAILED   = xử lý hoa hồng lỗi, cần admin kiểm tra
+```
+
+Lifecycle backend đang ghi `commission_records`:
+
+```txt
+Booking created/confirmed -> commission PENDING
+Booking rejected/cancelled/no-arrival -> commission RELEASED
+Booking completed + commission processed -> commission CHARGED
+Commission processing failed -> commission FAILED
+```
+
+### Summary
+
+```http
+GET /api/admin/finance/commissions/summary
+Authorization: Bearer <admin_accessToken>
+```
+
+Response `data`:
+
+```json
+{
+  "reservedAmount": 150000,
+  "chargedAmount": 850000,
+  "releasedAmount": 50000,
+  "failedAmount": 0,
+  "cashCommissionAmount": 500000,
+  "onlineCommissionAmount": 350000
+}
+```
+
+### List
+
+```http
+GET /api/admin/finance/commissions?page=1&pageSize=20&status=PENDING&paymentMethod=CASH
+Authorization: Bearer <admin_accessToken>
+```
+
+Query optional:
+
+```txt
+status: PENDING | CHARGED | RELEASED | FAILED
+paymentMethod: CASH | ONLINE
+providerId: ObjectId
+bookingId: ObjectId
+from: ISO date
+to: ISO date
+```
+
+Response `data`:
+
+```json
+{
+  "items": [
+    {
+      "id": "66f...",
+      "bookingId": "66f...",
+      "providerId": "66f...",
+      "providerName": "Happy Paws Spa",
+      "serviceName": "Grooming",
+      "bookingAmount": 500000,
+      "commissionAmount": 75000,
+      "rateLabel": "15%",
+      "status": "PENDING",
+      "paymentMethod": "CASH",
+      "reservedAt": "2026-07-13T10:00:00.000Z",
+      "chargedAt": null,
+      "releasedAt": null,
+      "failedAt": null,
+      "collectedFrom": null,
+      "failureReason": null,
+      "releaseReason": null
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "pageSize": 20,
+    "totalItems": 1,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPrevPage": false
+  }
+}
+```
+
+### Pending shortcut
+
+```http
+GET /api/admin/finance/commissions/pending?page=1&pageSize=20
+Authorization: Bearer <admin_accessToken>
+```
+
+Tương đương list với `status=PENDING`, dùng cho bảng "Hoa hồng chờ xử lý".
+
+### Detail
+
+```http
+GET /api/admin/finance/commissions/{commissionId}
+Authorization: Bearer <admin_accessToken>
+```
+
+FE page hiện tại:
+
+```txt
+/admin/finance/commission
+```
+
+Frontend đã fetch thật qua:
+
+```ts
+API_ENDPOINTS.ADMIN.COMMISSION.SUMMARY
+API_ENDPOINTS.ADMIN.COMMISSION.RECORDS
+API_ENDPOINTS.ADMIN.COMMISSION.PENDING
+API_ENDPOINTS.ADMIN.COMMISSION.DETAIL(id)
+```
+
+## 9. Error Handling FE Gợi Ý
 
 Status thường gặp:
 
@@ -1654,7 +1779,7 @@ try {
 }
 ```
 
-## 9. Quick Test Order Cho FE
+## 10. Quick Test Order Cho FE
 
 1. Login `admin_test`, `provider_test`, `customer_test`.
 2. Admin verify provider và đảm bảo deposit active trong DB/seed.

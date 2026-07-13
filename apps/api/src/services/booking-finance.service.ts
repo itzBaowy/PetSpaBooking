@@ -1,5 +1,6 @@
 import prisma from "../../connect.prisma.ts";
 import { notificationService } from "./notification.service.ts";
+import { commissionRecordService } from "./commission-record.service.ts";
 import { getSystemSettingValue } from "./system-setting.service.ts";
 
 const MAX_COMMISSION_PROCESSING_RETRIES = 5;
@@ -41,6 +42,20 @@ function wait(ms: number) {
   });
 }
 
+function getCommissionCollectedFrom(booking: {
+  paymentMethod: string;
+  walletCommissionAmount?: number | null;
+  depositCommissionAmount?: number | null;
+}) {
+  if (booking.paymentMethod === "ONLINE") return "ONLINE_PAYMENT";
+
+  const sources = [];
+  if ((booking.walletCommissionAmount ?? 0) > 0) sources.push("WALLET");
+  if ((booking.depositCommissionAmount ?? 0) > 0) sources.push("DEPOSIT");
+
+  return sources.length > 0 ? sources.join("_AND_") : "NONE";
+}
+
 export const bookingFinanceService = {
   async processCompletedBookingCommission(bookingId: string) {
     for (
@@ -54,7 +69,7 @@ export const bookingFinanceService = {
           getSystemSettingValue("minProviderDeposit"),
         ]);
 
-        return await prisma.$transaction(async (tx) => {
+        const processedBooking = await prisma.$transaction(async (tx) => {
           const now = new Date();
           const claim = await tx.bookings.updateMany({
             where: {
@@ -214,11 +229,34 @@ export const bookingFinanceService = {
             },
           });
         });
+
+        if (
+          processedBooking?.status === "COMPLETED" &&
+          processedBooking.commissionAmount !== null &&
+          processedBooking.providerEarning !== null
+        ) {
+          await commissionRecordService.chargeForBooking(processedBooking, {
+            commissionAmount: processedBooking.commissionAmount,
+            providerEarning: processedBooking.providerEarning,
+            collectedFrom: getCommissionCollectedFrom(processedBooking),
+            chargedAt: processedBooking.commissionProcessedAt ?? new Date(),
+          });
+        }
+
+        return processedBooking;
       } catch (error) {
         if (
           !isTransactionWriteConflict(error) ||
           attempt === MAX_COMMISSION_PROCESSING_RETRIES
         ) {
+          await commissionRecordService
+            .failForBooking(
+              bookingId,
+              error instanceof Error
+                ? error.message
+                : "Commission processing failed",
+            )
+            .catch(() => undefined);
           throw error;
         }
 

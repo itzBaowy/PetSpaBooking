@@ -13,6 +13,7 @@ import { notificationService } from "../notification.service.ts";
 import { assertProviderSlotAvailable } from "./availability.service.ts";
 import { socketService } from "../socket.service.ts";
 import { getSystemSettingValue } from "../system-setting.service.ts";
+import { commissionRecordService } from "../commission-record.service.ts";
 
 const VALID_PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
 const VALID_BOOKING_STATUSES = [
@@ -386,6 +387,7 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.holdForBooking(createdBooking);
     emitBookingUpdated(createdBooking);
     emitProviderBookingNew(createdBooking);
 
@@ -535,6 +537,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking cancelled by customer",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.provider.userId,
       type: "BOOKING_CANCELLED",
@@ -806,6 +812,7 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.holdForBooking(updatedBooking);
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_CONFIRMED",
@@ -843,6 +850,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking rejected by provider",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_REJECTED",
@@ -882,6 +893,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking cancelled by provider",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_CANCELLED",
@@ -943,6 +958,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking marked no-arrival",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_NO_ARRIVAL",
