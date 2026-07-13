@@ -251,6 +251,18 @@ export const mobileProviderServices = {
             },
           },
         },
+        {
+          services: {
+            some: {
+              category: {
+                contains: searchKey,
+                mode: "insensitive",
+              },
+              isActive: true,
+              isHiddenByAdmin: false,
+            },
+          },
+        },
       ];
     }
 

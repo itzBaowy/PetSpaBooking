@@ -43,7 +43,10 @@ mobilePetRouter.post(
   "/pets",
   protect,
   checkRole("CUSTOMER"),
-  uploadMemory.single("imageUrl"),
+  uploadMemory.fields([
+    { name: "imageUrl", maxCount: 1 },
+    { name: "photos", maxCount: 5 },
+  ]),
   mobilePetController.createPet,
 );
 
@@ -157,7 +160,10 @@ mobilePetRouter.patch(
   "/pets/:petId",
   protect,
   checkRole("CUSTOMER"),
-  uploadMemory.single("imageUrl"),
+  uploadMemory.fields([
+    { name: "imageUrl", maxCount: 1 },
+    { name: "photos", maxCount: 5 },
+  ]),
   mobilePetController.updatePet,
 );
 
