@@ -370,6 +370,7 @@ Backend cần cấu hình MoMo sandbox trước khi API tạo payment gọi đư
 
 ```env
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
+MOMO_QUERY_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/query
 MOMO_REQUEST_TYPE=payWithMethod
 MOMO_PARTNER_CODE=...
 MOMO_ACCESS_KEY=...
@@ -389,7 +390,7 @@ Redirect URL nên trỏ về frontend để user thấy màn hình kết quả:
 /provider/wallet/deposit/return
 ```
 
-IPN URL vẫn trỏ về backend vì đây là callback server-to-server dùng để verify signature và cập nhật trạng thái thanh toán thật.
+Frontend return page sẽ forward toàn bộ query params MoMo nhận được về backend return endpoint tương ứng để backend verify signature và cập nhật trạng thái. IPN URL vẫn trỏ về backend vì đây là callback server-to-server dùng để verify signature và cập nhật trạng thái thanh toán thật; trong local dev, IPN tới `localhost` thường không chạy được nếu MoMo không truy cập được máy dev.
 
 Với ATM/card, amount nên từ `10000` VND trở lên. Backend hiện validate theo request type: `payWithMethod` tối thiểu `10000` VND, `captureWallet` tối thiểu `1000` VND.
 
@@ -627,6 +628,7 @@ Rule:
 GET /api/mobile/provider/wallet
 GET /api/mobile/provider/wallet/transactions
 POST /api/mobile/provider/deposit/momo/create-payment
+POST /api/mobile/provider/deposit/momo/sync
 ```
 
 Provider nạp ký quỹ qua MoMo sandbox:
@@ -650,6 +652,8 @@ Rule:
 - Amount tối thiểu là giá trị lớn hơn giữa `minProviderDeposit` trong system settings và minimum amount theo MoMo request type.
 - FE redirect provider sang `payUrl`.
 - Khi MoMo callback success, backend tăng `depositBalance`, cập nhật `depositStatus`, ghi ledger `DEPOSIT_TOP_UP`.
+- Mỗi lần gọi create payment nạp ký quỹ sẽ tạo một MoMo order mới theo amount hiện tại. Không reuse payment `PENDING` cũ như luồng booking.
+- Nếu user thanh toán xong nhưng thoát MoMo trước khi redirect về frontend, FE tự gọi `POST /api/mobile/provider/deposit/momo/sync` khi provider mở lại trang ví hoặc bấm tải lại số dư. Backend query MoMo bằng pending order mới nhất; nếu MoMo báo success thì backend vẫn cộng ký quỹ và ghi ledger.
 
 Response `data`:
 
@@ -665,6 +669,16 @@ Response `data`:
   "status": "PENDING"
 }
 ```
+
+Sync body optional:
+
+```json
+{
+  "orderId": "provider-deposit-..."
+}
+```
+
+Nếu không truyền `orderId`, backend sync payment nạp ký quỹ `PENDING` mới nhất của provider đang login.
 
 Transaction type filter:
 

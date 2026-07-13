@@ -244,6 +244,23 @@ export const mobileBookingController = {
     }
   },
 
+  async syncProviderDepositMomoPayment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await momoPaymentService.syncProviderDepositPayment(req);
+      const response = responseSuccess(
+        result,
+        "Provider deposit MoMo payment synced successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async handleProviderDepositMomoIpn(
     req: Request,
     res: Response,

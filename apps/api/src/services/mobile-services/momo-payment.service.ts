@@ -37,6 +37,25 @@ type MomoCreateResponse = {
   qrCodeUrl?: string;
 };
 
+type MomoQueryResponse = MomoCreateResponse & {
+  orderInfo?: string;
+  orderType?: string;
+  payType?: string;
+  transId?: string | number;
+  signature?: string;
+};
+
+type PaymentRecord = {
+  id: string;
+  type: string;
+  bookingId: string | null;
+  customerId: string | null;
+  providerId: string;
+  amount: number;
+  status: string;
+  paidAt: Date | null;
+};
+
 function getRequesterId(req: Request): string {
   const userId = (req as Request & { user?: { userId?: string } }).user
     ?.userId;
@@ -64,6 +83,13 @@ function getRequiredEnv(name: string) {
 
 function getMomoEndpoint() {
   return process.env.MOMO_ENDPOINT || MOMO_DEFAULT_ENDPOINT;
+}
+
+function getMomoQueryEndpoint() {
+  return (
+    process.env.MOMO_QUERY_ENDPOINT ||
+    getMomoEndpoint().replace(/\/create$/, "/query")
+  );
 }
 
 function getMomoRequestType(): MomoRequestType {
@@ -141,6 +167,20 @@ function buildResultSignature(input: Record<string, unknown>, accessKey: string)
   ].join("&");
 }
 
+function buildQuerySignature(input: {
+  accessKey: string;
+  orderId: string;
+  partnerCode: string;
+  requestId: string;
+}) {
+  return [
+    `accessKey=${input.accessKey}`,
+    `orderId=${input.orderId}`,
+    `partnerCode=${input.partnerCode}`,
+    `requestId=${input.requestId}`,
+  ].join("&");
+}
+
 function verifyMomoResultSignature(payload: Record<string, unknown>) {
   const receivedSignature = payload.signature;
   if (typeof receivedSignature !== "string" || !receivedSignature) {
@@ -188,6 +228,56 @@ async function fetchMomoCreatePayment(body: Record<string, unknown>) {
   } catch (error) {
     if (error instanceof BadRequestException) throw error;
     throw new BadRequestException("MoMo create payment request failed");
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function fetchMomoQueryPayment(orderId: string) {
+  const partnerCode = getRequiredEnv("MOMO_PARTNER_CODE");
+  const accessKey = getRequiredEnv("MOMO_ACCESS_KEY");
+  const secretKey = getRequiredEnv("MOMO_SECRET_KEY");
+  const requestId = crypto.randomUUID();
+  const signature = hmacSha256(
+    buildQuerySignature({
+      accessKey,
+      orderId,
+      partnerCode,
+      requestId,
+    }),
+    secretKey,
+  );
+
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), MOMO_FETCH_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(getMomoQueryEndpoint(), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        partnerCode,
+        requestId,
+        orderId,
+        lang: "vi",
+        signature,
+      }),
+      signal: controller.signal,
+    });
+
+    const json = (await response.json()) as MomoQueryResponse;
+    if (!response.ok) {
+      throw new BadRequestException(
+        json.message || "MoMo query payment request failed",
+      );
+    }
+
+    return json;
+  } catch (error) {
+    if (error instanceof BadRequestException) throw error;
+    throw new BadRequestException("MoMo query payment request failed");
   } finally {
     clearTimeout(timeout);
   }
@@ -275,39 +365,29 @@ async function createMomoRequest(input: {
   };
 }
 
-async function markPaymentResult(payload: Record<string, unknown>, raw: string) {
-  verifyMomoResultSignature(payload);
-
+async function applyPaymentResult(
+  payment: PaymentRecord,
+  payload: Record<string, unknown>,
+  raw: string,
+  options: { markNonSuccessFailed?: boolean } = {},
+) {
   const orderId = String(payload.orderId ?? "");
-  const requestId = String(payload.requestId ?? "");
   const resultCode = Number(payload.resultCode);
   const message = typeof payload.message === "string" ? payload.message : null;
   const transId = payload.transId !== undefined ? String(payload.transId) : null;
 
-  if (!orderId || !requestId) {
-    throw new BadRequestException("Missing MoMo orderId or requestId");
-  }
-
-  const payment = await prisma.payment_transactions.findFirst({
-    where: {
-      orderId,
-      requestId,
-    },
-  });
-
-  if (!payment) {
-    throw new NotFoundException("Payment transaction not found");
-  }
-
   const isSuccess = resultCode === 0;
   const now = new Date();
+  const markNonSuccessFailed = options.markNonSuccessFailed ?? true;
 
   const updatedPayment = await prisma.$transaction(async (tx) => {
-    const previousStatus = payment.status;
-    const updated = await tx.payment_transactions.update({
-      where: { id: payment.id },
+    const claimed = await tx.payment_transactions.updateMany({
+      where: {
+        id: payment.id,
+        ...(isSuccess ? { status: { not: "SUCCESS" } } : {}),
+      },
       data: {
-        status: isSuccess ? "SUCCESS" : "FAILED",
+        status: isSuccess ? "SUCCESS" : markNonSuccessFailed ? "FAILED" : payment.status,
         resultCode: Number.isFinite(resultCode) ? resultCode : null,
         message,
         transId,
@@ -316,7 +396,17 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
       },
     });
 
-    if (isSuccess && payment.type === MOMO_PAYMENT_TYPE_BOOKING && payment.bookingId) {
+    const updated = await tx.payment_transactions.findUnique({
+      where: { id: payment.id },
+    });
+
+    if (!updated) {
+      throw new NotFoundException("Payment transaction not found");
+    }
+
+    const didClaimSuccess = isSuccess && claimed.count > 0;
+
+    if (didClaimSuccess && payment.type === MOMO_PAYMENT_TYPE_BOOKING && payment.bookingId) {
       await tx.bookings.updateMany({
         where: {
           id: payment.bookingId,
@@ -332,8 +422,7 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
     }
 
     if (
-      isSuccess &&
-      previousStatus !== "SUCCESS" &&
+      didClaimSuccess &&
       payment.type === MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT
     ) {
       const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
@@ -481,6 +570,30 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
   return updatedPayment;
 }
 
+async function markPaymentResult(payload: Record<string, unknown>, raw: string) {
+  verifyMomoResultSignature(payload);
+
+  const orderId = String(payload.orderId ?? "");
+  const requestId = String(payload.requestId ?? "");
+
+  if (!orderId || !requestId) {
+    throw new BadRequestException("Missing MoMo orderId or requestId");
+  }
+
+  const payment = await prisma.payment_transactions.findFirst({
+    where: {
+      orderId,
+      requestId,
+    },
+  });
+
+  if (!payment) {
+    throw new NotFoundException("Payment transaction not found");
+  }
+
+  return applyPaymentResult(payment, payload, raw);
+}
+
 export const momoPaymentService = {
   async createPayment(req: Request) {
     const userId = getRequesterId(req);
@@ -624,30 +737,6 @@ export const momoPaymentService = {
       process.env.MOMO_PROVIDER_DEPOSIT_IPN_URL ||
       getRequiredEnv("MOMO_IPN_URL");
 
-    const existingPayment = await prisma.payment_transactions.findFirst({
-      where: {
-        providerId: provider.id,
-        provider: MOMO_PROVIDER,
-        type: MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT,
-        status: "PENDING",
-        payUrl: { not: null },
-      },
-      orderBy: { createAt: "desc" },
-    });
-
-    if (existingPayment?.payUrl) {
-      return {
-        providerId: provider.id,
-        orderId: existingPayment.orderId,
-        requestId: existingPayment.requestId,
-        amount: existingPayment.amount,
-        payUrl: existingPayment.payUrl,
-        deeplink: existingPayment.deeplink,
-        qrCodeUrl: existingPayment.qrCodeUrl,
-        status: existingPayment.status,
-      };
-    }
-
     const orderId = `provider-deposit-${provider.id}-${Date.now()}`;
     const orderInfo = `PetLink provider deposit ${provider.id}`;
     const extraData = encodeExtraData({
@@ -700,6 +789,69 @@ export const momoPaymentService = {
       deeplink: payment.deeplink,
       qrCodeUrl: payment.qrCodeUrl,
       status: payment.status,
+    };
+  },
+
+  async syncProviderDepositPayment(req: Request) {
+    const userId = getRequesterId(req);
+    const provider = await getProviderByUser(userId);
+    const rawOrderId = req.body?.orderId;
+
+    if (
+      rawOrderId !== undefined &&
+      (typeof rawOrderId !== "string" || !rawOrderId.trim())
+    ) {
+      throw new BadRequestException("orderId must be a non-empty string");
+    }
+
+    const payment = await prisma.payment_transactions.findFirst({
+      where: {
+        ...(typeof rawOrderId === "string" && rawOrderId.trim()
+          ? { orderId: rawOrderId.trim() }
+          : {
+              providerId: provider.id,
+              type: MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT,
+              provider: MOMO_PROVIDER,
+              status: "PENDING",
+            }),
+      },
+      orderBy: { createAt: "desc" },
+    });
+
+    if (!payment || payment.providerId !== provider.id) {
+      throw new NotFoundException("Provider deposit payment not found");
+    }
+
+    if (payment.type !== MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT) {
+      throw new BadRequestException("Payment is not a provider deposit payment");
+    }
+
+    if (payment.status === "SUCCESS") {
+      return {
+        payment,
+        momoResponse: null,
+        synced: false,
+      };
+    }
+
+    const momoResponse = await fetchMomoQueryPayment(payment.orderId);
+    const responsePayload = {
+      ...momoResponse,
+      orderId: payment.orderId,
+      amount: momoResponse.amount ?? payment.amount,
+    };
+
+    const updatedPayment = await applyPaymentResult(
+      payment,
+      responsePayload as Record<string, unknown>,
+      JSON.stringify(momoResponse),
+      { markNonSuccessFailed: false },
+    );
+
+    return {
+      payment: updatedPayment,
+      momoResponse,
+      synced: Number(momoResponse.resultCode) === 0,
     };
   },
 
