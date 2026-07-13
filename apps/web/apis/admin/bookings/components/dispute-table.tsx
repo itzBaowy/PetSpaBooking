@@ -4,13 +4,13 @@ import { useState } from "react";
 import { Pagination } from "@/components/ui/pagination";
 import { useDisputeBookings } from "../queries";
 
-const disputeStatusStyles = {
+const disputeStatusStyles: Record<string, string> = {
   OPEN: "border-red-200 bg-red-50 text-red-700",
   REVIEWING: "border-blue-200 bg-blue-50 text-blue-700",
   RESOLVED: "border-green-200 bg-green-50 text-green-700",
 };
 
-const disputeStatusLabels = {
+const disputeStatusLabels: Record<string, string> = {
   OPEN: "Đang mở",
   REVIEWING: "Đang xem xét",
   RESOLVED: "Đã xử lý",

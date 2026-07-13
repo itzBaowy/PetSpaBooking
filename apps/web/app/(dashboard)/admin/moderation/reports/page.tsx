@@ -1,2 +1,5 @@
-import { ReportTable } from "@/apis/admin/moderation/components/report-table";
-export default function Page() { return <ReportTable />; }
+import { UnsupportedFeature } from "@/components/admin/unsupported-feature";
+
+export default function Page() {
+  return <UnsupportedFeature title="User reports moderation" />;
+}

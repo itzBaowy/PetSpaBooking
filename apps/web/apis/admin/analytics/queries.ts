@@ -1,5 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
+import type { ApiResponse } from "@/types/api";
 
 export const analyticsKeys = {
   all: ["admin", "analytics"] as const,
@@ -23,60 +26,52 @@ export interface ProviderRiskOverview {
   suspended: number;
 }
 
-export const commissionRevenueMockItems: CommissionRevenuePoint[] = [
-  { month: "Jan", cashCommission: 2300000, onlineCommission: 1800000 },
-  { month: "Feb", cashCommission: 2800000, onlineCommission: 2100000 },
-  { month: "Mar", cashCommission: 3200000, onlineCommission: 2400000 },
-  { month: "Apr", cashCommission: 4100000, onlineCommission: 2600000 },
-  { month: "May", cashCommission: 4700000, onlineCommission: 3100000 },
-  { month: "Jun", cashCommission: 5120000, onlineCommission: 3330000 },
-];
+type DefinedQuery<T> = UseQueryResult<T, unknown> & { data: T };
 
-export const providerRiskOverviewMock: ProviderRiskOverview = {
-  low: 38,
-  watch: 9,
-  restricted: 3,
-  suspended: 1,
-};
+function withDefault<T>(query: UseQueryResult<T, unknown>, fallback: T): DefinedQuery<T> {
+  return { ...query, data: query.data ?? fallback } as DefinedQuery<T>;
+}
 
 export function useAnalyticsMetrics() {
   return useQuery({
     queryKey: analyticsKeys.metrics(),
-    queryFn: () => api.get("/analytics/metrics"),
+    queryFn: async () =>
+      (await api.get<ApiResponse<Record<string, unknown>>>(API_ENDPOINTS.ADMIN.DASHBOARD)).data.data,
   });
 }
 
 export function useBookingTrends() {
   return useQuery({
     queryKey: analyticsKeys.trends(),
-    queryFn: () => api.get("/analytics/trends"),
+    queryFn: async () =>
+      (await api.get<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.REPORTS.DAILY_REVENUE)).data.data,
   });
 }
 
 export function useCommissionRevenueTrend() {
-  return useQuery<CommissionRevenuePoint[]>({
+  const query = useQuery<CommissionRevenuePoint[]>({
     queryKey: analyticsKeys.commissionRevenue(),
     queryFn: async () => {
-      const response = await api.get<CommissionRevenuePoint[]>(
-        "/admin/analytics/commission-revenue",
+      const response = await api.get<ApiResponse<Array<Record<string, unknown>>>>(
+        API_ENDPOINTS.ADMIN.REPORTS.DAILY_REVENUE,
       );
-      return response.data;
+      return response.data.data.map((item) => ({
+        month: String(item.date ?? ""),
+        cashCommission: Number(item.totalCommission ?? 0),
+        onlineCommission: 0,
+      }));
     },
-    initialData: commissionRevenueMockItems,
-    enabled: false,
   });
+  return withDefault(query, []);
 }
 
 export function useProviderRiskOverview() {
-  return useQuery<ProviderRiskOverview>({
+  const query = useQuery<ProviderRiskOverview>({
     queryKey: analyticsKeys.providerRisk(),
-    queryFn: async () => {
-      const response = await api.get<ProviderRiskOverview>(
-        "/admin/analytics/provider-risk",
-      );
-      return response.data;
+    queryFn: async (): Promise<ProviderRiskOverview> => {
+      throw new Error("Backend has no provider risk overview API yet.");
     },
-    initialData: providerRiskOverviewMock,
-    enabled: false,
+    retry: false,
   });
+  return withDefault(query, { low: 0, watch: 0, restricted: 0, suspended: 0 });
 }

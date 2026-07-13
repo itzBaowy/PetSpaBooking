@@ -1,76 +1,64 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
+import type { ApiResponse } from "@/types/api";
+import { listSchema, nested, textValue } from "@/apis/admin/supported-api";
 
 export interface AuditLogItem {
   id: string;
   actorName: string;
-  actorRole: "ADMIN" | "CUSTOMER" | "PROVIDER";
-  actionType:
-    | "CONTENT_APPROVED"
-    | "CONTENT_HIDDEN"
-    | "REPORT_RESOLVED"
-    | "DISPUTE_REFUNDED"
-    | "BOOKING_STATUS_UPDATED"
-    | "ACCOUNT_LOCKED";
+  actorRole: string;
+  action: string;
+  actionType: string;
   target: string;
+  targetType: string;
+  targetId: string;
   note: string;
   createdAt: string;
+  createAt: string;
 }
 
-export const auditLogMockItems: AuditLogItem[] = [
-  {
-    id: "AUD-90012",
-    actorName: "Quản trị viên cấp cao",
-    actorRole: "ADMIN",
-    actionType: "DISPUTE_REFUNDED",
-    target: "DSP-5014 / BK-92018",
-    note: "Đã duyệt hoàn tiền một phần sau khi xem xét bằng chứng tranh chấp dịch vụ grooming.",
-    createdAt: "2026-06-14 20:34",
-  },
-  {
-    id: "AUD-90008",
-    actorName: "Quản trị viên cấp cao",
-    actorRole: "ADMIN",
-    actionType: "CONTENT_HIDDEN",
-    target: "MOD-1038 / VetCare 24h",
-    note: "Đã ẩn bảng giá trong thời gian chờ nhà cung cấp chỉnh sửa.",
-    createdAt: "2026-06-14 18:12",
-  },
-  {
-    id: "AUD-89991",
-    actorName: "Quản trị viên vận hành",
-    actorRole: "ADMIN",
-    actionType: "REPORT_RESOLVED",
-    target: "RPT-7764 / Dịch vụ tắm cơ bản",
-    note: "Đã xử lý báo cáo sau khi xác nhận ảnh cập nhật và ghi chú phụ phí.",
-    createdAt: "2026-06-13 16:44",
-  },
-  {
-    id: "AUD-89960",
-    actorName: "Quản trị viên cấp cao",
-    actorRole: "ADMIN",
-    actionType: "BOOKING_STATUS_UPDATED",
-    target: "BK-91970",
-    note: "Đã điều chỉnh trạng thái đặt lịch thành Khách hủy bởi quản trị viên.",
-    createdAt: "2026-06-13 10:05",
-  },
-];
+type DefinedQuery<T> = UseQueryResult<T, unknown> & { data: T };
+
+function withDefault<T>(query: UseQueryResult<T, unknown>, fallback: T): DefinedQuery<T> {
+  return { ...query, data: query.data ?? fallback } as DefinedQuery<T>;
+}
 
 export const auditLogKeys = {
   all: ["admin", "audit-logs"] as const,
   lists: () => [...auditLogKeys.all, "list"] as const,
 };
 
+function normalizeAuditLog(log: Record<string, unknown>): AuditLogItem {
+  const actionType = textValue(log.actionType ?? log.action, "SYSTEM");
+  const createdAt = textValue(log.createdAt ?? log.createAt ?? log.updatedAt, "");
+
+  return {
+    id: textValue(log.id, ""),
+    actorName: textValue(log.actorName ?? nested(log, "admin", "fullName") ?? nested(log, "actor", "fullName")),
+    actorRole: textValue(log.actorRole ?? nested(log, "actor", "role"), "ADMIN"),
+    action: actionType,
+    actionType,
+    target: textValue(log.target ?? log.targetType ?? log.entityType),
+    targetType: textValue(log.targetType ?? log.entityType),
+    targetId: textValue(log.targetId ?? log.entityId),
+    note: textValue(log.note ?? log.adminNote ?? log.description),
+    createdAt,
+    createAt: createdAt,
+  };
+}
+
 export function useAuditLogs() {
-  return useQuery<AuditLogItem[]>({
+  const query = useQuery<AuditLogItem[]>({
     queryKey: auditLogKeys.lists(),
     queryFn: async () => {
-      const response = await api.get<AuditLogItem[]>("/admin/audit-logs");
-      return response.data;
+      const response = await api.get<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.AUDIT_LOGS);
+      return listSchema.parse(response.data.data).items
+        .map((item) => normalizeAuditLog(item as Record<string, unknown>));
     },
-    initialData: auditLogMockItems,
-    enabled: false,
   });
+  return withDefault(query, []);
 }
