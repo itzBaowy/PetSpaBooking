@@ -1018,7 +1018,51 @@ Rule:
 - Provider vẫn thấy field `isHiddenByAdmin` trong service của mình để hiển thị trạng thái bị admin ẩn.
 - Hide/unhide gửi notification cho provider và ghi audit log.
 
-### 6.5 Admin bookings
+### 6.5 Admin reviews
+
+```http
+GET /api/admin/reviews
+GET /api/admin/reviews/{id}
+PATCH /api/admin/reviews/{id}/hide
+PATCH /api/admin/reviews/{id}/unhide
+```
+
+List filters:
+
+```txt
+providerId
+customerId
+isHiddenByAdmin=true|false
+page
+pageSize
+```
+
+Hide body:
+
+```json
+{
+  "reason": "Review contains inappropriate language"
+}
+```
+
+Unhide body optional:
+
+```json
+{
+  "reason": "Review was restored after moderation"
+}
+```
+
+Rule:
+
+- `hide` set `isHiddenByAdmin = true` và lưu `adminNote`.
+- `unhide` set `isHiddenByAdmin = false`.
+- Public/mobile provider review list không trả review bị ẩn.
+- Public/mobile provider rating không tính review bị ẩn.
+- Admin review list/detail vẫn thấy cả review ẩn và không ẩn.
+- Action này ghi audit log `REVIEW_HIDE` hoặc `REVIEW_UNHIDE`.
+
+### 6.6 Admin bookings
 
 ```http
 GET /api/admin/bookings
@@ -1078,7 +1122,7 @@ Response `data`:
 }
 ```
 
-### 6.6 Admin disputes
+### 6.7 Admin disputes
 
 ```http
 GET /api/admin/disputes
@@ -1101,7 +1145,7 @@ Resolution rules:
 - `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission. Nếu booking `ONLINE` đã paid `SUCCESS`, backend set `paymentStatus = REFUND_PENDING` và tạo refund metadata để admin hoàn tiền thủ công bên ngoài hệ thống.
 - `CANCELLED`: hiểu là hủy khiếu nại, booking -> `COMPLETED`, chạy commission.
 
-### 6.7 Admin finance
+### 6.8 Admin finance
 
 ```http
 GET /api/admin/wallet-transactions
@@ -1198,7 +1242,7 @@ refundResolvedAt = now
 refundAdminNote = adminNote
 ```
 
-### 6.8 Admin withdrawals
+### 6.9 Admin withdrawals
 
 ```http
 GET /api/admin/withdrawals
@@ -1241,7 +1285,7 @@ PENDING -> REJECTED
 
 `mark-paid` trừ `provider.walletBalance` và ghi ledger `WITHDRAWAL_PAYOUT`.
 
-### 6.9 Admin notifications
+### 6.10 Admin notifications
 
 ```http
 GET /api/admin/notifications
@@ -1295,7 +1339,7 @@ Rule:
 - Mobile user đọc bằng API notification sẵn có: `GET /api/mobile/notifications`.
 - Action này ghi audit log.
 
-### 6.10 Admin support chat
+### 6.11 Admin support chat
 
 Admin token required. Admin có thể tham gia thread chat của booking để hỗ trợ customer/provider.
 
@@ -1347,7 +1391,7 @@ Rule:
 - Customer và provider trong booking đều nhận `chat:message:new` realtime và notification `CHAT_MESSAGE_NEW`.
 - Mobile chat API cũ vẫn dùng chung thread, nên customer/provider sẽ thấy message admin trong cùng màn chat booking.
 
-### 6.11 Admin audit logs
+### 6.12 Admin audit logs
 
 ```http
 GET /api/admin/audit-logs
@@ -1387,9 +1431,11 @@ ADMIN_NOTIFICATION_BROADCAST
 SERVICE_HIDE
 SERVICE_UNHIDE
 SYSTEM_SETTINGS_UPDATE
+REVIEW_HIDE
+REVIEW_UNHIDE
 ```
 
-### 6.12 Admin reports
+### 6.13 Admin reports
 
 ```http
 GET /api/admin/reports/revenue

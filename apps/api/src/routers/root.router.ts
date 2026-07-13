@@ -24,6 +24,7 @@ import adminNotificationRouter from "./admin-notification.router.ts";
 import adminServiceRouter from "./admin-service.router.ts";
 import adminChatRouter from "./admin-chat.router.ts";
 import adminSystemSettingRouter from "./admin-system-setting.router.ts";
+import adminReviewRouter from "./admin-review.router.ts";
 
 const rootRouter = express.Router();
 
@@ -45,6 +46,7 @@ rootRouter.use("/admin", adminNotificationRouter);
 rootRouter.use("/admin", adminServiceRouter);
 rootRouter.use("/admin", adminChatRouter);
 rootRouter.use("/admin", adminSystemSettingRouter);
+rootRouter.use("/admin", adminReviewRouter);
 rootRouter.use(
   "/mobile",
   providerRouterMobile,

@@ -211,7 +211,7 @@ export const adminReportService = {
             prisma.bookings.count({ where: bookingWhere }),
             prisma.booking_disputes.count({ where: disputeWhere }),
             prisma.reviews.findMany({
-              where: { providerId: provider.id },
+              where: { providerId: provider.id, isHiddenByAdmin: false },
               select: { rating: true },
             }),
           ]);
