@@ -113,6 +113,86 @@ function shouldProcessCommission(status: ResolutionStatus) {
   return status === "RESOLVED_PROVIDER_WIN" || status === "CANCELLED";
 }
 
+function buildCustomerWinBookingUpdate(
+  booking: {
+    paymentMethod: string;
+    paymentStatus: string;
+    totalAmount: number;
+  },
+  dispute: {
+    reason: string;
+    description: string | null;
+  },
+  adminNote: string | null,
+  resolvedAt: Date,
+) {
+  const baseUpdate = getBookingResolutionUpdate(
+    "RESOLVED_CUSTOMER_WIN",
+    resolvedAt,
+  );
+
+  if (
+    booking.paymentMethod !== "ONLINE" ||
+    booking.paymentStatus !== "SUCCESS"
+  ) {
+    return baseUpdate;
+  }
+
+  return {
+    ...baseUpdate,
+    paymentStatus: "REFUND_PENDING",
+    refundReason: adminNote ?? dispute.description ?? dispute.reason,
+    refundRequestedBy: "ADMIN",
+    refundRequestedAt: resolvedAt,
+    refundAmount: booking.totalAmount,
+    refundResolvedAt: null,
+    refundMethod: null,
+    refundReference: null,
+    refundEvidenceUrl: null,
+    refundAdminNote: null,
+  };
+}
+
+function getResolvedBookingUpdate(
+  status: ResolutionStatus,
+  booking: {
+    paymentMethod: string;
+    paymentStatus: string;
+    totalAmount: number;
+  },
+  dispute: {
+    reason: string;
+    description: string | null;
+  },
+  adminNote: string | null,
+  resolvedAt: Date,
+) {
+  if (status === "RESOLVED_CUSTOMER_WIN") {
+    return buildCustomerWinBookingUpdate(
+      booking,
+      dispute,
+      adminNote,
+      resolvedAt,
+    );
+  }
+
+  return getBookingResolutionUpdate(status, resolvedAt);
+}
+
+function shouldCreateRefundPendingNotification(
+  status: ResolutionStatus,
+  booking: {
+    paymentMethod: string;
+    paymentStatus: string;
+  },
+) {
+  return (
+    status === "RESOLVED_CUSTOMER_WIN" &&
+    booking.paymentMethod === "ONLINE" &&
+    booking.paymentStatus === "SUCCESS"
+  );
+}
+
 function mapDispute(dispute: {
   id: string;
   bookingId: string;
@@ -225,7 +305,13 @@ export const adminDisputeService = {
 
       await tx.bookings.update({
         where: { id: dispute.bookingId },
-        data: getBookingResolutionUpdate(status, now),
+        data: getResolvedBookingUpdate(
+          status,
+          dispute.booking,
+          dispute,
+          adminNote,
+          now,
+        ),
       });
 
       return updatedDispute;
@@ -253,6 +339,11 @@ export const adminDisputeService = {
       }),
     ]);
 
+    const shouldRefund = shouldCreateRefundPendingNotification(
+      status,
+      dispute.booking,
+    );
+
     await notificationService.safeCreateMany([
       ...(customer
         ? [
@@ -263,6 +354,22 @@ export const adminDisputeService = {
               message: `Your dispute was resolved as ${status}.`,
               data: { bookingId: dispute.bookingId, disputeId: dispute.id, status },
             },
+            ...(shouldRefund
+              ? [
+                  {
+                    userId: customer.userId,
+                    type: "REFUND_PENDING",
+                    title: "Refund pending",
+                    message:
+                      "Your dispute was resolved in your favor. The refund is waiting for manual processing.",
+                    data: {
+                      bookingId: dispute.bookingId,
+                      disputeId: dispute.id,
+                      refundAmount: dispute.booking.totalAmount,
+                    },
+                  },
+                ]
+              : []),
           ]
         : []),
       ...(provider
@@ -290,6 +397,8 @@ export const adminDisputeService = {
         status,
         bookingStatus:
           status === "RESOLVED_CUSTOMER_WIN" ? "CANCELLED" : "COMPLETED",
+        paymentStatus: shouldRefund ? "REFUND_PENDING" : dispute.booking.paymentStatus,
+        refundAmount: shouldRefund ? dispute.booking.totalAmount : null,
       },
     });
 

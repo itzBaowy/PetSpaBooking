@@ -278,6 +278,16 @@ adminFinanceRouter.get(
  *               refundReference:
  *                 type: string
  *                 example: "MOMO_REFUND_123"
+ *               refundMethod:
+ *                 type: string
+ *                 enum: [MOMO_MANUAL, BANK_TRANSFER, OTHER]
+ *                 example: MOMO_MANUAL
+ *               refundAmount:
+ *                 type: number
+ *                 example: 300000
+ *               refundEvidenceUrl:
+ *                 type: string
+ *                 example: "https://res.cloudinary.com/.../refund-proof.jpg"
  *               adminNote:
  *                 type: string
  *                 example: "Refunded manually from MoMo dashboard"

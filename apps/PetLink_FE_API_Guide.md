@@ -1098,7 +1098,7 @@ Resolve body:
 Resolution rules:
 
 - `RESOLVED_PROVIDER_WIN`: booking -> `COMPLETED`, chạy commission.
-- `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission v1.
+- `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission. Nếu booking `ONLINE` đã paid `SUCCESS`, backend set `paymentStatus = REFUND_PENDING` và tạo refund metadata để admin hoàn tiền thủ công bên ngoài hệ thống.
 - `CANCELLED`: hiểu là hủy khiếu nại, booking -> `COMPLETED`, chạy commission.
 
 ### 6.7 Admin finance
@@ -1144,18 +1144,42 @@ Rule:
 Refund v1 là manual refund:
 
 - API list chỉ trả booking `paymentMethod = ONLINE` và `paymentStatus = REFUND_PENDING`.
+- Khi booking online đã paid `SUCCESS` bị customer/provider cancel hoặc dispute được xử khách hàng thắng, backend tự set refund metadata:
+  - `refundReason`
+  - `refundRequestedBy = CUSTOMER|PROVIDER|ADMIN`
+  - `refundRequestedAt`
+  - `refundAmount`
 - Admin hoàn tiền ngoài hệ thống hoặc trên MoMo dashboard.
 - Sau đó admin gọi `mark-refunded` để set `paymentStatus = REFUNDED`.
 - Nếu từ chối refund, admin gọi `reject`, backend set `paymentStatus = SUCCESS`.
-- Cả hai action đều ghi audit log và gửi notification cho customer.
+- Cả hai action đều ghi audit log, gửi notification cho customer, và emit `refund:updated`.
 
 Mark refunded body optional:
 
 ```json
 {
   "refundReference": "MOMO_REFUND_123",
+  "refundMethod": "MOMO_MANUAL",
+  "refundAmount": 300000,
+  "refundEvidenceUrl": "https://res.cloudinary.com/.../refund-proof.jpg",
   "adminNote": "Refunded manually from MoMo dashboard"
 }
+```
+
+`refundMethod` enum:
+
+```txt
+MOMO_MANUAL
+BANK_TRANSFER
+OTHER
+```
+
+Khi `mark-refunded` thành công, booking được set:
+
+```txt
+paymentStatus = REFUNDED
+refundResolvedAt = now
+refundMethod/refundAmount/refundReference/refundEvidenceUrl/refundAdminNote
 ```
 
 Reject refund body:
@@ -1164,6 +1188,14 @@ Reject refund body:
 {
   "adminNote": "Refund rejected due to policy"
 }
+```
+
+Khi reject thành công, booking được set:
+
+```txt
+paymentStatus = SUCCESS
+refundResolvedAt = now
+refundAdminNote = adminNote
 ```
 
 ### 6.8 Admin withdrawals
@@ -1474,6 +1506,7 @@ Admin resolve:
 ```txt
 DISPUTE + RESOLVED_PROVIDER_WIN -> COMPLETED
 DISPUTE + RESOLVED_CUSTOMER_WIN -> CANCELLED
+DISPUTE + RESOLVED_CUSTOMER_WIN + ONLINE paid SUCCESS -> CANCELLED + REFUND_PENDING
 DISPUTE + CANCELLED -> COMPLETED
 ```
 
