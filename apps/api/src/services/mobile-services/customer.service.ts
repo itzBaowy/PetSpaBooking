@@ -53,9 +53,13 @@ export const mobileCustomerServices = {
 
     const { fullName, phone, location } = req.body;
 
-    const phoneExist = await prisma.users.findUnique({
-      where: { phone: phone },
-    });
+    let phoneExist;
+
+    if (phone) {
+      phoneExist = await prisma.users.findUnique({
+        where: { phone: phone },
+      });
+    }
 
     if (phoneExist && phoneExist.id !== userId) {
       throw new BadRequestException("Phone number already exists");
