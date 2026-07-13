@@ -119,7 +119,8 @@ adminWithdrawalRouter.patch(
  * @swagger
  * /api/admin/withdrawals/{id}/reject:
  *   patch:
- *     summary: Reject a pending withdrawal
+ *     summary: Reject a pending or approved withdrawal
+ *     description: Rejects the request and releases the held amount back to provider wallet when the request was created with wallet hold.
  *     tags: [Admin-Withdrawals]
  *     security:
  *       - bearerAuth: []
@@ -145,7 +146,7 @@ adminWithdrawalRouter.patch(
  *       200:
  *         description: Withdrawal request rejected successfully
  *       400:
- *         description: Only pending withdrawals can be rejected
+ *         description: Only pending or approved withdrawals can be rejected
  */
 adminWithdrawalRouter.patch(
   "/withdrawals/:id/reject",
@@ -159,7 +160,7 @@ adminWithdrawalRouter.patch(
  * /api/admin/withdrawals/{id}/mark-paid:
  *   patch:
  *     summary: Mark approved withdrawal as paid
- *     description: Deducts provider wallet balance and writes a WITHDRAWAL_PAYOUT wallet transaction.
+ *     description: Marks an approved withdrawal as paid. New withdrawal requests are already held when created, so this endpoint does not deduct them again. Legacy no-hold requests are debited once for backward compatibility.
  *     tags: [Admin-Withdrawals]
  *     security:
  *       - bearerAuth: []
@@ -183,7 +184,7 @@ adminWithdrawalRouter.patch(
  *       200:
  *         description: Withdrawal request marked as paid successfully
  *       400:
- *         description: Only approved withdrawals can be paid or provider balance is insufficient
+ *         description: Only approved withdrawals can be paid
  */
 adminWithdrawalRouter.patch(
   "/withdrawals/:id/mark-paid",

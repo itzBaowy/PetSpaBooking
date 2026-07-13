@@ -280,7 +280,9 @@ export const mobileProviderServices = {
         services: {
           where: serviceWhere,
         },
-        reviews: true,
+        reviews: {
+          where: { isHiddenByAdmin: false },
+        },
         workingHours: true,
       },
       orderBy: { createAt: "desc" },
@@ -450,6 +452,7 @@ export const mobileProviderServices = {
     }
 
     where.providerId = _providerId;
+    where.isHiddenByAdmin = false;
 
     const [total, reviews] = await Promise.all([
       prisma.reviews.count({ where: where }),
@@ -511,7 +514,9 @@ export const mobileProviderServices = {
             isHiddenByAdmin: false,
           },
         },
-        reviews: true,
+        reviews: {
+          where: { isHiddenByAdmin: false },
+        },
         workingHours: true,
       },
     });
@@ -572,7 +577,7 @@ export const mobileProviderServices = {
       },
       rating: {
         average: averageRating,
-        totalReviews: provider.reviews.length,
+        totalReviews,
       },
       services: {
         total: provider.services.length,
@@ -718,10 +723,6 @@ export const mobileProviderServices = {
       throw new BadRequestException("Provider must be VERIFIED to withdraw");
     }
 
-    if (provider.walletBalance < amount) {
-      throw new BadRequestException("Insufficient wallet balance");
-    }
-
     if (
       !provider.bankCode ||
       !provider.bankAccountNumber ||
@@ -744,16 +745,55 @@ export const mobileProviderServices = {
       );
     }
 
-    return prisma.withdrawal_requests.create({
-      data: {
-        providerId: provider.id,
-        amount,
-        bankCode: provider.bankCode,
-        bankAccountNumber: provider.bankAccountNumber,
-        bankAccountName: provider.bankAccountName,
-        reason: typeof reason === "string" ? reason.trim() : null,
-        status: "PENDING",
-      },
+    return prisma.$transaction(async (tx) => {
+      const debited = await tx.providers.updateMany({
+        where: {
+          id: provider.id,
+          walletBalance: { gte: amount },
+        },
+        data: {
+          walletBalance: { decrement: amount },
+        },
+      });
+
+      if (debited.count === 0) {
+        throw new BadRequestException("Insufficient wallet balance");
+      }
+
+      const updatedProvider = await tx.providers.findUnique({
+        where: { id: provider.id },
+        select: { walletBalance: true },
+      });
+
+      if (!updatedProvider) {
+        throw new NotFoundException("Provider profile not found");
+      }
+
+      const withdrawal = await tx.withdrawal_requests.create({
+        data: {
+          providerId: provider.id,
+          amount,
+          bankCode: provider.bankCode,
+          bankAccountNumber: provider.bankAccountNumber,
+          bankAccountName: provider.bankAccountName,
+          reason: typeof reason === "string" ? reason.trim() : null,
+          status: "PENDING",
+        },
+      });
+
+      await tx.wallet_transactions.create({
+        data: {
+          providerId: provider.id,
+          idempotencyKey: `withdrawal:${withdrawal.id}:WITHDRAWAL_HOLD:WALLET`,
+          type: "WITHDRAWAL_HOLD",
+          balanceType: "WALLET",
+          amount: -amount,
+          balanceAfter: updatedProvider.walletBalance,
+          note: `Withdrawal hold ${withdrawal.id}`,
+        },
+      });
+
+      return withdrawal;
     });
   },
 

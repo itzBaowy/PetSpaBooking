@@ -1,3 +1,3 @@
-import { ProviderWithdrawalsLive } from "@/components/provider/live/provider-live-screens";
+import { ProviderWithdrawalsPage } from "@/apis/provider/wallet/components/provider-wallet-pages";
 
-export default function ProviderWalletWithdrawalsPage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-7xl"><ProviderWithdrawalsLive /></div></main>; }
+export default function ProviderWalletWithdrawalsPage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-7xl"><ProviderWithdrawalsPage /></div></main>; }

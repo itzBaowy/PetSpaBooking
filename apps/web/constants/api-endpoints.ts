@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/users/${id}`,
     DELETE: (id: string) => `/users/${id}`,
     UPDATE_ROLE: (id: string) => `/users/${id}/role`,
+    CHANGE_PASSWORD: "/users/me/password",
     AVATAR: "/users/avatar-cloud",
   },
   SERVICES: {
@@ -57,6 +58,7 @@ export const API_ENDPOINTS = {
         `/mobile/provider/availability-blocks/${id}`,
       WALLET: "/mobile/provider/wallet",
       WALLET_TRANSACTIONS: "/mobile/provider/wallet/transactions",
+      DEPOSIT_MOMO_CREATE_PAYMENT: "/mobile/provider/deposit/momo/create-payment",
       WITHDRAWALS: "/mobile/provider/withdrawals",
       CHAT_THREADS: "/mobile/chat/threads",
       CHAT_THREAD_FOR_BOOKING: (bookingId: string) =>

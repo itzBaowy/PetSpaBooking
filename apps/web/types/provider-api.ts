@@ -28,8 +28,16 @@ export type WorkingHourApi = {
 export type AvailabilityBlockApi = {
   id: string; startAt: string; endAt: string; reason?: string | null;
 };
+export type AvailabilityBlockPayload = {
+  startAt: string; endAt: string; reason?: string;
+};
 export type ProviderWalletApi = {
   id: string; walletBalance: number; depositBalance: number; depositStatus: string;
+};
+export type ProviderDepositPaymentApi = {
+  providerId: string; orderId: string; requestId: string; amount: number;
+  payUrl?: string | null; deeplink?: string | null; qrCodeUrl?: string | null;
+  status: string;
 };
 export type WalletTransactionApi = {
   id: string; type: string; amount: number; balanceAfter: number;
@@ -43,4 +51,58 @@ export type WithdrawalApi = {
 export type ProviderNotificationApi = {
   id: string; type: string; title: string; message: string; isRead: boolean;
   data?: Record<string, unknown> | null; createAt: string;
+};
+export type ProviderChatThreadApi = {
+  id: string;
+  bookingId?: string | null;
+  unreadCount?: number;
+  lastMessageAt?: string | null;
+  customer?: {
+    id?: string;
+    fullName?: string;
+    name?: string;
+    avatar?: string | null;
+    avatarUrl?: string | null;
+    users?: { fullName?: string | null; name?: string | null; avatar?: string | null; avatarUrl?: string | null };
+    user?: { fullName?: string | null; name?: string | null; avatar?: string | null; avatarUrl?: string | null };
+  };
+  booking?: {
+    id?: string;
+    code?: string;
+    status?: string;
+    appointmentStart?: string;
+    service?: { name?: string };
+    pet?: { name?: string };
+  };
+  lastMessage?: ProviderChatMessageApi | null;
+};
+export type ProviderChatMessageApi = {
+  id: string;
+  threadId?: string;
+  senderId?: string;
+  senderRole?: string;
+  senderName?: string | null;
+  senderFullName?: string | null;
+  senderAvatar?: string | null;
+  senderAvatarUrl?: string | null;
+  sender?: {
+    fullName?: string | null;
+    name?: string | null;
+    avatar?: string | null;
+    avatarUrl?: string | null;
+    role?: string | null;
+  } | null;
+  user?: {
+    fullName?: string | null;
+    name?: string | null;
+    avatar?: string | null;
+    avatarUrl?: string | null;
+    role?: string | null;
+  } | null;
+  content?: string | null;
+  message?: string | null;
+  text?: string | null;
+  createdAt?: string;
+  createAt?: string;
+  readAt?: string | null;
 };

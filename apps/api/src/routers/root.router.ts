@@ -11,6 +11,7 @@ import mobileCustomerRouter from "./mobile-router/customer.router.ts";
 import mobileBookingRouter from "./mobile-router/booking-mobile.router.ts";
 import mobileNotificationRouter from "./mobile-router/notification-mobile.router.ts";
 import mobileChatRouter from "./mobile-router/chat-mobile.router.ts";
+import mobileUserRouter from "./mobile-router/user-mobile.router.ts";
 import adminDisputeRouter from "./admin-dispute.router.ts";
 import adminDashboardRouter from "./admin-dashboard.router.ts";
 import adminProviderRouter from "./admin-provider.router.ts";
@@ -24,6 +25,7 @@ import adminNotificationRouter from "./admin-notification.router.ts";
 import adminServiceRouter from "./admin-service.router.ts";
 import adminChatRouter from "./admin-chat.router.ts";
 import adminSystemSettingRouter from "./admin-system-setting.router.ts";
+import adminReviewRouter from "./admin-review.router.ts";
 
 const rootRouter = express.Router();
 
@@ -45,6 +47,7 @@ rootRouter.use("/admin", adminNotificationRouter);
 rootRouter.use("/admin", adminServiceRouter);
 rootRouter.use("/admin", adminChatRouter);
 rootRouter.use("/admin", adminSystemSettingRouter);
+rootRouter.use("/admin", adminReviewRouter);
 rootRouter.use(
   "/mobile",
   providerRouterMobile,
@@ -54,6 +57,7 @@ rootRouter.use(
   mobileBookingRouter,
   mobileNotificationRouter,
   mobileChatRouter,
+  mobileUserRouter,
 );
 
 export default rootRouter;

@@ -300,6 +300,44 @@ mobileBookingRouter.post(
 
 /**
  * @swagger
+ * /api/mobile/provider/deposit/momo/create-payment:
+ *   post:
+ *     summary: Create provider deposit MoMo payment
+ *     description: Provider creates a MoMo payment to top up deposit. Provider profile must be VERIFIED by admin before deposit top-up.
+ *     tags: [Mobile-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - amount
+ *             properties:
+ *               amount:
+ *                 type: number
+ *                 example: 300000
+ *     responses:
+ *       201:
+ *         description: Provider deposit MoMo payment created successfully
+ *       400:
+ *         description: Invalid amount or MoMo config is missing
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required or provider is not VERIFIED
+ */
+mobileBookingRouter.post(
+  "/provider/deposit/momo/create-payment",
+  protect,
+  checkRole("PROVIDER"),
+  mobileBookingController.createProviderDepositMomoPayment,
+);
+
+/**
+ * @swagger
  * /api/mobile/payments/momo/ipn:
  *   post:
  *     summary: MoMo IPN callback
@@ -338,6 +376,38 @@ mobileBookingRouter.post(
 mobileBookingRouter.get(
   "/payments/momo/return",
   mobileBookingController.handleMomoReturn,
+);
+
+/**
+ * @swagger
+ * /api/mobile/payments/momo/provider-deposit/ipn:
+ *   post:
+ *     summary: MoMo provider deposit IPN callback
+ *     description: Public server-to-server callback from MoMo for provider deposit top-up.
+ *     tags: [Mobile-Bookings]
+ *     responses:
+ *       200:
+ *         description: Provider deposit MoMo IPN processed successfully
+ */
+mobileBookingRouter.post(
+  "/payments/momo/provider-deposit/ipn",
+  mobileBookingController.handleProviderDepositMomoIpn,
+);
+
+/**
+ * @swagger
+ * /api/mobile/payments/momo/provider-deposit/return:
+ *   get:
+ *     summary: MoMo provider deposit return callback
+ *     description: Public browser return URL from MoMo for provider deposit top-up.
+ *     tags: [Mobile-Bookings]
+ *     responses:
+ *       200:
+ *         description: Provider deposit MoMo return processed successfully
+ */
+mobileBookingRouter.get(
+  "/payments/momo/provider-deposit/return",
+  mobileBookingController.handleProviderDepositMomoReturn,
 );
 
 /**

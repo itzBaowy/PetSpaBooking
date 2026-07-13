@@ -62,6 +62,7 @@ const VALUE_LABELS: Record<string, string> = {
   CASH_COMMISSION_DEDUCTION: "Trừ hoa hồng tiền mặt",
   DEPOSIT_COMMISSION_DEDUCTION: "Trừ hoa hồng từ ký quỹ",
   MANUAL_ADJUSTMENT: "Điều chỉnh thủ công", WITHDRAWAL_PAYOUT: "Chi trả rút tiền",
+  WITHDRAWAL_HOLD: "Giữ tiền rút", WITHDRAWAL_RELEASE: "Hoàn tiền rút",
 };
 
 function fieldLabel(key: string) { return FIELD_LABELS[key] ?? key; }

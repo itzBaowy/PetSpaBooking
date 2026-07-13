@@ -38,6 +38,8 @@ export function AdminLedgerPage() {
     { value: "DEPOSIT_COMMISSION_DEDUCTION", label: "Trừ hoa hồng từ ký quỹ" },
     { value: "MANUAL_ADJUSTMENT", label: "Điều chỉnh thủ công" },
     { value: "WITHDRAWAL_PAYOUT", label: "Chi trả rút tiền" },
+    { value: "WITHDRAWAL_HOLD", label: "Giữ tiền rút" },
+    { value: "WITHDRAWAL_RELEASE", label: "Hoàn tiền rút" },
   ];
 
   const balanceTypeOptions = [
