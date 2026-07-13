@@ -49,3 +49,19 @@ export function useUploadProfileAvatar() {
     },
   });
 }
+
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (payload: {
+      currentPassword: string;
+      newPassword: string;
+      confirmPassword?: string;
+    }) => {
+      const response = await api.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.USERS.CHANGE_PASSWORD,
+        payload,
+      );
+      return response.data.data;
+    },
+  });
+}

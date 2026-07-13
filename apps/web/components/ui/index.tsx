@@ -3,6 +3,7 @@ export * from "./avatar";
 export * from "./button";
 export * from "./custom-select";
 export * from "./data-table";
+export * from "./dialog";
 export * from "./feedback-provider";
 export * from "./pagination";
 export * from "./page-header";

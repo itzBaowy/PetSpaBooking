@@ -144,7 +144,16 @@ model bookings {
   paymentMethod    String    @default("CASH")
   paymentStatus    String    @default("UNPAID")
   paymentReference String?
-  paidAt           DateTime?
+  paidAt        DateTime?
+  refundReason       String?
+  refundRequestedBy  String?
+  refundRequestedAt  DateTime?
+  refundResolvedAt   DateTime?
+  refundMethod       String?
+  refundAmount       Float?
+  refundReference    String?
+  refundEvidenceUrl  String?
+  refundAdminNote    String?
 
   totalAmount Float
   currency    String  @default("VND")
@@ -319,6 +328,8 @@ model reviews {
   rating     Int
   comment    String?
   images     String[] @default([])
+  isHiddenByAdmin Boolean @default(false)
+  adminNote  String?
   createAt   DateTime @default(now())
   updateAt   DateTime @updatedAt
 
@@ -328,6 +339,7 @@ model reviews {
 
   @@index([providerId])
   @@index([customerId])
+  @@index([isHiddenByAdmin])
 }
 
 model wallet_transactions {

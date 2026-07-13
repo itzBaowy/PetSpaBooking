@@ -26,6 +26,7 @@ export const API_ENDPOINTS = {
     UPDATE: (id: string) => `/users/${id}`,
     DELETE: (id: string) => `/users/${id}`,
     UPDATE_ROLE: (id: string) => `/users/${id}/role`,
+    CHANGE_PASSWORD: "/users/me/password",
     AVATAR: "/users/avatar-cloud",
   },
   SERVICES: {

@@ -28,9 +28,7 @@ export type ProviderNavigationItemId =
   | "revenue"
   | "withdrawals"
   | "chat"
-  | "notifications"
-  | "reviews"
-  | "settings";
+  | "reviews";
 
 export interface ProviderNavigationDefinition {
   id: ProviderNavigationItemId;
@@ -46,10 +44,7 @@ export interface ProviderRouteAccess {
   fallbackHref: string;
 }
 
-export const PROVIDER_NAVIGATION_GROUP_LABELS: Record<
-  ProviderNavigationGroup,
-  string
-> = {
+export const PROVIDER_NAVIGATION_GROUP_LABELS: Record<ProviderNavigationGroup, string> = {
   overview: "Tổng quan",
   account: "Tài khoản & hồ sơ",
   operations: "Vận hành",
@@ -58,118 +53,20 @@ export const PROVIDER_NAVIGATION_GROUP_LABELS: Record<
 };
 
 export const PROVIDER_NAVIGATION: readonly ProviderNavigationDefinition[] = [
-  {
-    id: "dashboard",
-    label: "Dashboard",
-    href: "/provider",
-    group: "overview",
-    limitedAccess: true,
-  },
-  {
-    id: "business-profile",
-    label: "Business Profile",
-    href: "/provider/business-profile",
-    group: "account",
-    limitedAccess: true,
-  },
-  {
-    id: "verification",
-    label: "Verification",
-    href: "/provider/verification",
-    group: "account",
-    limitedAccess: true,
-  },
-  {
-    id: "availability",
-    label: "Availability",
-    href: "/provider/availability",
-    group: "account",
-    limitedAccess: false,
-  },
-  {
-    id: "settings",
-    label: "Settings",
-    href: "/provider/profile",
-    group: "account",
-    limitedAccess: true,
-  },
-  {
-    id: "services",
-    label: "Services",
-    href: "/provider/services",
-    group: "operations",
-    limitedAccess: false,
-  },
-  {
-    id: "pricing",
-    label: "Pricing",
-    href: "/provider/pricing",
-    group: "operations",
-    limitedAccess: false,
-  },
-  {
-    id: "bookings",
-    label: "Bookings",
-    href: "/provider/bookings",
-    group: "operations",
-    limitedAccess: false,
-  },
-  {
-    id: "customers",
-    label: "Customers",
-    href: "/provider/customers",
-    group: "operations",
-    limitedAccess: false,
-  },
-  {
-    id: "disputes",
-    label: "Disputes",
-    href: "/provider/disputes",
-    group: "operations",
-    limitedAccess: false,
-  },
-  {
-    id: "wallet",
-    label: "Wallet",
-    href: "/provider/wallet",
-    group: "finance",
-    limitedAccess: false,
-  },
-  {
-    id: "revenue",
-    label: "Revenue",
-    href: "/provider/revenue",
-    group: "finance",
-    limitedAccess: false,
-  },
-  {
-    id: "withdrawals",
-    label: "Withdrawals",
-    href: "/provider/withdrawals",
-    group: "finance",
-    limitedAccess: false,
-  },
-  {
-    id: "chat",
-    label: "Chat",
-    href: "/provider/communication/chat",
-    group: "communication",
-    limitedAccess: false,
-  },
-  {
-    id: "notifications",
-    label: "Notifications",
-    href: "/provider/communication/notifications",
-    group: "communication",
-    limitedAccess: true,
-  },
-  {
-    id: "reviews",
-    label: "Reviews",
-    href: "/provider/communication/reviews",
-    group: "communication",
-    limitedAccess: false,
-  },
+  { id: "dashboard", label: "Tổng quan", href: "/provider", group: "overview", limitedAccess: true },
+  { id: "business-profile", label: "Hồ sơ kinh doanh", href: "/provider/business-profile", group: "account", limitedAccess: true },
+  { id: "verification", label: "Xác minh", href: "/provider/verification", group: "account", limitedAccess: true },
+  { id: "availability", label: "Lịch làm việc", href: "/provider/availability", group: "account", limitedAccess: false },
+  { id: "services", label: "Dịch vụ", href: "/provider/services", group: "operations", limitedAccess: false },
+  { id: "pricing", label: "Giá & khuyến mãi", href: "/provider/pricing", group: "operations", limitedAccess: false },
+  { id: "bookings", label: "Đặt lịch", href: "/provider/bookings", group: "operations", limitedAccess: false },
+  { id: "customers", label: "Khách hàng", href: "/provider/customers", group: "operations", limitedAccess: false },
+  { id: "disputes", label: "Tranh chấp", href: "/provider/disputes", group: "operations", limitedAccess: false },
+  { id: "wallet", label: "Ví", href: "/provider/wallet", group: "finance", limitedAccess: false },
+  { id: "revenue", label: "Doanh thu", href: "/provider/revenue", group: "finance", limitedAccess: false },
+  { id: "withdrawals", label: "Rút tiền", href: "/provider/withdrawals", group: "finance", limitedAccess: false },
+  { id: "chat", label: "Tin nhắn", href: "/provider/communication/chat", group: "communication", limitedAccess: false },
+  { id: "reviews", label: "Đánh giá", href: "/provider/communication/reviews", group: "communication", limitedAccess: false },
 ] as const;
 
 function getStatusAccessLevel(status: ProviderAccessStatus) {
@@ -182,18 +79,13 @@ function getStatusAccessLevel(status: ProviderAccessStatus) {
   ) {
     return "limited";
   }
-
   return "unknown";
 }
 
-export function getProviderNavigation(
-  status: ProviderAccessStatus,
-): readonly ProviderNavigationDefinition[] {
+export function getProviderNavigation(status: ProviderAccessStatus): readonly ProviderNavigationDefinition[] {
   const accessLevel = getStatusAccessLevel(status);
   if (accessLevel === "approved") return PROVIDER_NAVIGATION;
-  if (accessLevel === "limited") {
-    return PROVIDER_NAVIGATION.filter((item) => item.limitedAccess);
-  }
+  if (accessLevel === "limited") return PROVIDER_NAVIGATION.filter((item) => item.limitedAccess);
   return [];
 }
 
@@ -202,10 +94,21 @@ function routeMatches(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export function getProviderRouteAccess(
-  pathname: string,
-  status: ProviderAccessStatus,
-): ProviderRouteAccess {
+export function getProviderRouteAccess(pathname: string, status: ProviderAccessStatus): ProviderRouteAccess {
+  const accessLevel = getStatusAccessLevel(status);
+
+  if (routeMatches(pathname, "/provider/profile")) {
+    if (accessLevel === "unknown") {
+      return {
+        allowed: false,
+        reason: "Không xác định được trạng thái hồ sơ nhà cung cấp từ phiên đăng nhập.",
+        fallbackHref: "/provider",
+      };
+    }
+
+    return { allowed: true, fallbackHref: "/provider" };
+  }
+
   const route = [...PROVIDER_NAVIGATION]
     .sort((a, b) => b.href.length - a.href.length)
     .find((item) => routeMatches(pathname, item.href));
@@ -218,32 +121,24 @@ export function getProviderRouteAccess(
     };
   }
 
-  const accessLevel = getStatusAccessLevel(status);
-  if (accessLevel === "approved") {
-    return { allowed: true, fallbackHref: "/provider" };
-  }
-
+  if (accessLevel === "approved") return { allowed: true, fallbackHref: "/provider" };
   if (accessLevel === "limited" && route.limitedAccess) {
     return { allowed: true, fallbackHref: "/provider" };
   }
-
   if (accessLevel === "unknown") {
     return {
       allowed: false,
-      reason:
-        "Không xác định được trạng thái hồ sơ nhà cung cấp từ phiên đăng nhập.",
+      reason: "Không xác định được trạng thái hồ sơ nhà cung cấp từ phiên đăng nhập.",
       fallbackHref: "/provider",
     };
   }
 
-  const statusReason =
-    status === "SUSPENDED"
-      ? "Tài khoản nhà cung cấp đang bị tạm ngưng và chỉ có quyền xem các trang tài khoản được cho phép."
-      : "Hồ sơ nhà cung cấp chưa được phê duyệt và chưa thể sử dụng chức năng vận hành.";
-
   return {
     allowed: false,
-    reason: statusReason,
+    reason:
+      status === "SUSPENDED"
+        ? "Tài khoản nhà cung cấp đang bị tạm ngưng và chỉ có quyền xem các trang tài khoản được cho phép."
+        : "Hồ sơ nhà cung cấp chưa được phê duyệt và chưa thể sử dụng chức năng vận hành.",
     fallbackHref: "/provider",
   };
 }

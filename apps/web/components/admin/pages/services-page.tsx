@@ -185,7 +185,7 @@ export function AdminServicesPage() {
               setPage(1);
             }}
           />
-          <span className="ml-auto self-center text-sm font-medium text-muted">
+          <span className="w-full self-center text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching
               ? "Đang tải..."
               : `${query.data?.pagination.totalItems ?? 0} dịch vụ`}

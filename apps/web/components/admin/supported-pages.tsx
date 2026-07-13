@@ -195,6 +195,7 @@ export { AdminProviderWalletPage } from "./pages/provider-wallet-page";
 export { AdminWithdrawalsPage } from "./pages/withdrawals-page";
 export { AdminWithdrawalDetailPage } from "./pages/withdrawal-detail-page";
 export { AdminAuditLogsPage } from "./pages/audit-logs-page";
+export { AdminReportsPage } from "./pages/reports-page";
 export { AdminServicesPage } from "./pages/services-page";
 export { AdminServiceDetailPage } from "./pages/service-detail-page";
 export { AdminRefundsPage } from "./pages/refunds-page";

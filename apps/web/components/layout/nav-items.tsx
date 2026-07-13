@@ -1,4 +1,4 @@
-import type { SVGProps } from "react";
+import type { ReactNode, SVGProps } from "react";
 import {
   getProviderNavigation,
   PROVIDER_NAVIGATION_GROUP_LABELS,
@@ -6,8 +6,6 @@ import {
   type ProviderNavigationGroup,
   type ProviderNavigationItemId,
 } from "@/lib/provider-access";
-
-// ─── Icon components ────────────────────────────────────────────────────────
 
 function IconGrid(props: SVGProps<SVGSVGElement>) {
   return (
@@ -221,7 +219,7 @@ function IconGroup(props: SVGProps<SVGSVGElement>) {
 export interface NavItem {
   label: string;
   href: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   badge?: number;
 }
 
@@ -230,67 +228,176 @@ export interface NavGroup {
   items: NavItem[];
 }
 
-export const adminNavGroups: NavGroup[] = [
+type NavigationDefinition<Group extends string, ItemId extends string> = {
+  id: ItemId;
+  label: string;
+  href: string;
+  group: Group;
+};
+
+function buildNavGroups<Group extends string, ItemId extends string>({
+  definitions,
+  groupOrder,
+  groupLabels,
+  iconMap,
+}: {
+  definitions: readonly NavigationDefinition<Group, ItemId>[];
+  groupOrder: readonly Group[];
+  groupLabels: Record<Group, string>;
+  iconMap: Record<ItemId, ReactNode>;
+}): NavGroup[] {
+  return groupOrder.flatMap((group) => {
+    const items = definitions
+      .filter((item) => item.group === group)
+      .map((item) => ({
+        label: item.label,
+        href: item.href,
+        icon: iconMap[item.id],
+      }));
+
+    return items.length > 0 ? [{ groupLabel: groupLabels[group], items }] : [];
+  });
+}
+
+type AdminNavigationGroup =
+  | "overview"
+  | "users"
+  | "operations"
+  | "finance"
+  | "system";
+
+type AdminNavigationItemId =
+  | "dashboard"
+  | "users"
+  | "providers"
+  | "bookings"
+  | "disputes"
+  | "services"
+  | "ledger"
+  | "commission"
+  | "withdrawals"
+  | "refunds"
+  | "deposit-config"
+  | "reports"
+  | "audit-logs";
+
+const ADMIN_NAVIGATION_GROUP_LABELS: Record<AdminNavigationGroup, string> = {
+  overview: "Tổng quan",
+  users: "Quản lý người dùng",
+  operations: "Vận hành",
+  finance: "Tài chính",
+  system: "Hệ thống",
+};
+
+const ADMIN_NAVIGATION: readonly NavigationDefinition<
+  AdminNavigationGroup,
+  AdminNavigationItemId
+>[] = [
   {
-    groupLabel: "Tổng quan",
-    items: [{ label: "Tổng quan", href: "/admin", icon: <IconGrid /> }],
+    id: "dashboard",
+    label: "Tổng quan",
+    href: "/admin",
+    group: "overview",
   },
   {
-    groupLabel: "Quản lý người dùng",
-    items: [
-      { label: "Người dùng", href: "/admin/users", icon: <IconUsers /> },
-      {
-        label: "Nhà cung cấp",
-        href: "/admin/providers",
-        icon: <IconBuilding />,
-      },
-    ],
+    id: "users",
+    label: "Người dùng",
+    href: "/admin/users",
+    group: "users",
   },
   {
-    groupLabel: "Vận hành",
-    items: [
-      { label: "Đặt lịch", href: "/admin/bookings", icon: <IconClipboard /> },
-      { label: "Tranh chấp", href: "/admin/bookings/disputes", icon: <IconWarning /> },
-      { label: "Dịch vụ", href: "/admin/services", icon: <IconClipboard /> },
-    ],
+    id: "providers",
+    label: "Nhà cung cấp",
+    href: "/admin/providers",
+    group: "users",
   },
   {
-    groupLabel: "Tài chính",
-    items: [
-      { label: "Tài chính", href: "/admin/finance/ledger", icon: <IconCoin /> },
-      {
-        label: "Hoa hồng",
-        href: "/admin/finance/commission",
-        icon: <IconReceipt />,
-      },
-      {
-        label: "Rút tiền",
-        href: "/admin/finance/withdrawals",
-        icon: <IconReceipt />,
-      },
-      {
-        label: "Hoàn tiền",
-        href: "/admin/finance/refunds",
-        icon: <IconReceipt />,
-      },
-      {
-        label: "Cấu hình ký quỹ",
-        href: "/admin/finance/deposit-config",
-        icon: <IconCoin />,
-      },
-    ],
+    id: "bookings",
+    label: "Đặt lịch",
+    href: "/admin/bookings",
+    group: "operations",
   },
   {
-    groupLabel: "Hệ thống",
-    items: [
-      { label: "Nhật ký", href: "/admin/audit-logs", icon: <IconLog /> },
-    ],
+    id: "disputes",
+    label: "Tranh chấp",
+    href: "/admin/bookings/disputes",
+    group: "operations",
+  },
+  {
+    id: "services",
+    label: "Dịch vụ",
+    href: "/admin/services",
+    group: "operations",
+  },
+  {
+    id: "ledger",
+    label: "Sổ giao dịch",
+    href: "/admin/finance/ledger",
+    group: "finance",
+  },
+  {
+    id: "commission",
+    label: "Hoa hồng",
+    href: "/admin/finance/commission",
+    group: "finance",
+  },
+  {
+    id: "withdrawals",
+    label: "Rút tiền",
+    href: "/admin/finance/withdrawals",
+    group: "finance",
+  },
+  {
+    id: "refunds",
+    label: "Hoàn tiền",
+    href: "/admin/finance/refunds",
+    group: "finance",
+  },
+  {
+    id: "deposit-config",
+    label: "Cấu hình ký quỹ",
+    href: "/admin/finance/deposit-config",
+    group: "finance",
+  },
+  {
+    id: "reports",
+    label: "Báo cáo",
+    href: "/admin/reports",
+    group: "system",
+  },
+  {
+    id: "audit-logs",
+    label: "Nhật ký",
+    href: "/admin/audit-logs",
+    group: "system",
   },
 ];
 
-// ─── Provider nav groups ──────────────────────────────────────────────────────
+const adminGroupOrder: readonly AdminNavigationGroup[] = [
+  "overview",
+  "users",
+  "operations",
+  "finance",
+  "system",
+];
 
-const providerGroupOrder: ProviderNavigationGroup[] = [
+const adminIconMap: Record<AdminNavigationItemId, ReactNode> = {
+  dashboard: <IconGrid />,
+  users: <IconUsers />,
+  providers: <IconBuilding />,
+  bookings: <IconClipboard />,
+  disputes: <IconWarning />,
+  services: <IconClipboard />,
+  ledger: <IconCoin />,
+  commission: <IconReceipt />,
+  withdrawals: <IconReceipt />,
+  refunds: <IconReceipt />,
+  "deposit-config": <IconCoin />,
+  reports: <IconReceipt />,
+  "audit-logs": <IconLog />,
+};
+
+const providerGroupOrder: readonly ProviderNavigationGroup[] = [
   "overview",
   "account",
   "operations",
@@ -298,7 +405,7 @@ const providerGroupOrder: ProviderNavigationGroup[] = [
   "communication",
 ];
 
-const providerIconMap: Record<ProviderNavigationItemId, React.ReactNode> = {
+const providerIconMap: Record<ProviderNavigationItemId, ReactNode> = {
   dashboard: <IconHome />,
   "business-profile": <IconBuilding />,
   verification: <IconWarning />,
@@ -312,32 +419,29 @@ const providerIconMap: Record<ProviderNavigationItemId, React.ReactNode> = {
   revenue: <IconReceipt />,
   withdrawals: <IconReceipt />,
   chat: <IconUsers />,
-  notifications: <IconWarning />,
   reviews: <IconClipboard />,
-  settings: <IconBuilding />,
 };
 
-export function getProviderNavGroups(status: ProviderAccessStatus): NavGroup[] {
-  const allowedItems = getProviderNavigation(status);
-
-  return providerGroupOrder.flatMap((group) => {
-    const items = allowedItems
-      .filter((item) => item.group === group)
-      .map((item) => ({
-        label: item.label,
-        href: item.href,
-        icon: providerIconMap[item.id],
-      }));
-
-    return items.length > 0
-      ? [{ groupLabel: PROVIDER_NAVIGATION_GROUP_LABELS[group], items }]
-      : [];
+export function getAdminNavGroups(): NavGroup[] {
+  return buildNavGroups({
+    definitions: ADMIN_NAVIGATION,
+    groupOrder: adminGroupOrder,
+    groupLabels: ADMIN_NAVIGATION_GROUP_LABELS,
+    iconMap: adminIconMap,
   });
 }
 
+export function getProviderNavGroups(status: ProviderAccessStatus): NavGroup[] {
+  return buildNavGroups({
+    definitions: getProviderNavigation(status),
+    groupOrder: providerGroupOrder,
+    groupLabels: PROVIDER_NAVIGATION_GROUP_LABELS,
+    iconMap: providerIconMap,
+  });
+}
+
+export const adminNavGroups = getAdminNavGroups();
 export const providerNavGroups = getProviderNavGroups("VERIFIED");
 
-// ─── Legacy flat exports (kept for backward-compat if any consumer still uses them) ─
-
-export const adminNavItems = adminNavGroups.flatMap((g) => g.items);
-export const providerNavItems = providerNavGroups.flatMap((g) => g.items);
+export const adminNavItems = adminNavGroups.flatMap((group) => group.items);
+export const providerNavItems = providerNavGroups.flatMap((group) => group.items);

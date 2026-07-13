@@ -18,6 +18,7 @@ export function AdminBookingsPage() {
   const [status, setStatus] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("");
   const [paymentStatus, setPaymentStatus] = useState("");
+  const [bookingId, setBookingId] = useState("");
   const [providerId, setProviderId] = useState("");
   const [customerId, setCustomerId] = useState("");
   const [from, setFrom] = useState("");
@@ -29,6 +30,7 @@ export function AdminBookingsPage() {
     status,
     paymentMethod,
     paymentStatus,
+    bookingId,
     providerId,
     customerId,
     from,
@@ -98,14 +100,29 @@ export function AdminBookingsPage() {
             }}
           />
           <input
+            value={bookingId}
+            onChange={(e) => {
+              setBookingId(e.target.value);
+              setPage(1);
+            }}
+            placeholder="Mã booking"
+            className={inputClass}
+          />
+          <input
             value={providerId}
-            onChange={(e) => setProviderId(e.target.value)}
+            onChange={(e) => {
+              setProviderId(e.target.value);
+              setPage(1);
+            }}
             placeholder="Mã nhà cung cấp"
             className={inputClass}
           />
           <input
             value={customerId}
-            onChange={(e) => setCustomerId(e.target.value)}
+            onChange={(e) => {
+              setCustomerId(e.target.value);
+              setPage(1);
+            }}
             placeholder="Mã khách hàng"
             className={inputClass}
           />
@@ -113,17 +130,23 @@ export function AdminBookingsPage() {
             title="Từ ngày"
             type="datetime-local"
             value={from}
-            onChange={(e) => setFrom(e.target.value)}
+            onChange={(e) => {
+              setFrom(e.target.value);
+              setPage(1);
+            }}
             className={inputClass}
           />
           <input
             title="Đến ngày"
             type="datetime-local"
             value={to}
-            onChange={(e) => setTo(e.target.value)}
+            onChange={(e) => {
+              setTo(e.target.value);
+              setPage(1);
+            }}
             className={inputClass}
           />
-          <span className="text-sm font-medium text-muted self-center ml-auto">
+          <span className="w-full self-center text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} lịch đặt`}
           </span>
         </div>
@@ -132,6 +155,7 @@ export function AdminBookingsPage() {
         loading={query.isLoading}
         items={query.data?.items}
         columns={[
+          "bookingId",
           "customer.users.fullName",
           "provider.businessName",
           "service.name",
@@ -139,6 +163,35 @@ export function AdminBookingsPage() {
           "totalAmount",
           "appointmentStart",
         ]}
+        renderers={{
+          bookingId: (item) => (
+            <span className="block max-w-[220px] break-all font-mono text-xs leading-5 text-muted">
+              {item.id}
+            </span>
+          ),
+          "customer.users.fullName": (item) => (
+            <span className="block min-w-0 break-words font-semibold text-foreground">
+              {item.customer && typeof item.customer === "object"
+                ? ((item.customer as { users?: { fullName?: string; userName?: string; email?: string } }).users?.fullName
+                  ?? (item.customer as { users?: { fullName?: string; userName?: string; email?: string } }).users?.userName
+                  ?? (item.customer as { users?: { fullName?: string; userName?: string; email?: string } }).users?.email
+                  ?? "—")
+                : "—"}
+            </span>
+          ),
+        }}
+        columnOptions={{
+          bookingId: {
+            widthClassName: "w-[220px]",
+            headerClassName: "whitespace-nowrap",
+            cellClassName: "align-top",
+          },
+          "customer.users.fullName": {
+            widthClassName: "w-[220px]",
+            headerClassName: "whitespace-nowrap",
+            cellClassName: "align-top",
+          },
+        }}
         detailBase="/admin/bookings/detail"
       />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />

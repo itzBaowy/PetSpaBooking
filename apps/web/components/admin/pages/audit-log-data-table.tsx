@@ -15,8 +15,18 @@ const METADATA_LABELS: Record<string, string> = {
   bookingId: "Booking",
   customerId: "Khách hàng",
   providerId: "Nhà cung cấp",
+  serviceId: "Dịch vụ",
   documentType: "Loại tài liệu",
   transactionId: "Giao dịch",
+  previousPaymentStatus: "Thanh toán trước",
+  paymentStatus: "Thanh toán sau",
+  refundReference: "Mã tham chiếu hoàn tiền",
+  notificationId: "Thông báo",
+  type: "Loại",
+  userRole: "Vai trò người nhận",
+  userStatus: "Trạng thái người nhận",
+  role: "Vai trò",
+  count: "Số lượng",
 };
 
 function metadataEntries(log: AdminEntity) {

@@ -10,8 +10,6 @@ const LIMITED_ITEM_IDS = [
   "dashboard",
   "business-profile",
   "verification",
-  "settings",
-  "notifications",
 ];
 
 test("verified and approved providers receive the full navigation", () => {
@@ -41,11 +39,20 @@ test("limited providers can access safe nested routes", () => {
     ).allowed,
     true,
   );
+});
+
+test("removed provider nav pages are denied", () => {
   assert.equal(
-    getProviderRouteAccess("/provider/communication/notifications", "REJECTED")
+    getProviderRouteAccess("/provider/communication/notifications", "VERIFIED")
       .allowed,
-    true,
+    false,
   );
+});
+
+test("provider profile route is available from the topbar", () => {
+  assert.equal(getProviderRouteAccess("/provider/profile", "VERIFIED").allowed, true);
+  assert.equal(getProviderRouteAccess("/provider/profile", "PENDING_VERIFICATION").allowed, true);
+  assert.equal(getProviderRouteAccess("/provider/profile", "SUSPENDED").allowed, true);
 });
 
 test("limited and suspended providers cannot access operational routes", () => {

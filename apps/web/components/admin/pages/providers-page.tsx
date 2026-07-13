@@ -59,7 +59,7 @@ export function AdminProvidersPage() {
               setPage(1);
             }}
           />
-          <span className="text-sm font-medium text-muted xl:ml-auto">
+          <span className="w-full text-sm font-medium text-muted xl:ml-auto xl:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} nhà cung cấp`}
           </span>
         </div>

@@ -14,11 +14,16 @@ export interface ReportDateRange {
   to?: string;
 }
 
+export interface ProviderPerformanceParams extends ReportDateRange {
+  page?: number;
+  pageSize?: number;
+}
+
 export const reportKeys = {
   all: ["admin", "reports"] as const,
   revenue: (range: ReportDateRange) => [...reportKeys.all, "revenue", range] as const,
   dailyRevenue: (range: ReportDateRange) => [...reportKeys.all, "daily-revenue", range] as const,
-  providers: (range: ReportDateRange) => [...reportKeys.all, "providers", range] as const,
+  providers: (params: ProviderPerformanceParams) => [...reportKeys.all, "providers", params] as const,
   disputes: (range: ReportDateRange) => [...reportKeys.all, "disputes", range] as const,
 };
 
@@ -42,15 +47,16 @@ export function useDailyRevenue(range: ReportDateRange = {}) {
   });
 }
 
-export function useProviderPerformance(range: ReportDateRange = {}) {
+export function useProviderPerformance(params: ProviderPerformanceParams = {}) {
   return useQuery({
-    queryKey: reportKeys.providers(range),
+    queryKey: reportKeys.providers(params),
     queryFn: async () => {
       const response = await api.get<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.REPORTS.PROVIDERS, {
-        params: { ...range, page: 1, pageSize: 5 },
+        params: { page: 1, pageSize: 5, ...params },
       });
       return providerPerformanceListSchema.parse(response.data.data);
     },
+    keepPreviousData: true,
   });
 }
 
