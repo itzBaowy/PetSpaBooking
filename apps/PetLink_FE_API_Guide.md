@@ -374,13 +374,22 @@ MOMO_REQUEST_TYPE=payWithMethod
 MOMO_PARTNER_CODE=...
 MOMO_ACCESS_KEY=...
 MOMO_SECRET_KEY=...
-MOMO_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/return
+MOMO_REDIRECT_URL=http://localhost:3000/payment/momo/return
 MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
-MOMO_PROVIDER_DEPOSIT_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/provider-deposit/return
+MOMO_PROVIDER_DEPOSIT_REDIRECT_URL=http://localhost:3000/provider/wallet/deposit/return
 MOMO_PROVIDER_DEPOSIT_IPN_URL=http://localhost:5500/api/mobile/payments/momo/provider-deposit/ipn
 ```
 
 `MOMO_REQUEST_TYPE=payWithMethod` dùng MoMo Collection Link để payment page có thể hiển thị nhiều phương thức như ví MoMo, ATM hoặc thẻ nếu sandbox merchant được MoMo bật các phương thức đó. Nếu đổi về `captureWallet`, page thường chỉ tập trung vào ví MoMo/QR/deeplink.
+
+Redirect URL nên trỏ về frontend để user thấy màn hình kết quả:
+
+```txt
+/payment/momo/return
+/provider/wallet/deposit/return
+```
+
+IPN URL vẫn trỏ về backend vì đây là callback server-to-server dùng để verify signature và cập nhật trạng thái thanh toán thật.
 
 Với ATM/card, amount nên từ `10000` VND trở lên. Backend hiện validate theo request type: `payWithMethod` tối thiểu `10000` VND, `captureWallet` tối thiểu `1000` VND.
 
