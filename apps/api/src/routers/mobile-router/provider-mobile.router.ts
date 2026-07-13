@@ -347,7 +347,7 @@ providerRouterMobile.get(
  * /api/mobile/provider/availability-blocks:
  *   post:
  *     summary: Create provider availability block
- *     description: Provider blocks a custom time range from receiving bookings.
+ *     description: Provider blocks a custom time range from receiving bookings. Blocks cannot overlap active bookings; provider must resolve/cancel the booking first.
  *     tags: [Mobile-Provider]
  *     security:
  *       - bearerAuth: []
@@ -377,7 +377,7 @@ providerRouterMobile.get(
  *       201:
  *         description: Provider availability block created successfully
  *       400:
- *         description: Invalid block or overlapping block
+ *         description: Invalid block, overlapping block, or active booking exists in the selected time range
  */
 providerRouterMobile.post(
   "/provider/availability-blocks",
