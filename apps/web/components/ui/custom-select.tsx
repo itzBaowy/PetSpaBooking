@@ -39,7 +39,6 @@ export function CustomSelect({
     width: number;
     maxHeight: number;
   } | null>(null);
-  const [mounted, setMounted] = useState(false);
   const [selectedValue, setSelectedValue] = useState(
     defaultValue ?? normalizedOptions[0]?.value ?? "",
   );
@@ -57,20 +56,17 @@ export function CustomSelect({
     const shouldOpenUp = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
     const availableSpace = shouldOpenUp ? spaceAbove : spaceBelow;
     const maxHeight = Math.max(120, Math.min(288, availableSpace));
+    const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
 
     setMenuPosition({
-      left: rect.left,
+      left: Math.min(Math.max(viewportPadding, rect.left), window.innerWidth - width - viewportPadding),
       top: shouldOpenUp
         ? Math.max(viewportPadding, rect.top - Math.min(estimatedMenuHeight, maxHeight) - 8)
         : Math.min(window.innerHeight - viewportPadding, rect.bottom + 8),
-      width: rect.width,
+      width,
       maxHeight,
     });
-  }, [normalizedOptions.length]);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  }, [normalizedOptions.length, setMenuPosition]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -112,9 +108,9 @@ export function CustomSelect({
           updateMenuPosition();
           setIsOpen((current) => !current);
         }}
-        className="flex h-11 w-full items-center justify-between rounded-xl border border-border-subtle bg-surface px-4 text-left text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border-muted focus:outline-none focus:ring-4 focus:ring-brand-soft"
+        className="flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface px-4 text-left text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border-muted focus:outline-none focus:ring-4 focus:ring-brand-soft"
       >
-        <span className={currentValue ? "text-foreground" : "text-subtle"}>{selectedLabel}</span>
+        <span className={cn("min-w-0 flex-1 truncate", currentValue ? "text-foreground" : "text-subtle")}>{selectedLabel}</span>
         <svg
           className={cn(
             "h-4 w-4 text-subtle transition-transform",
@@ -133,7 +129,7 @@ export function CustomSelect({
         </svg>
       </button>
 
-      {isOpen && mounted && menuPosition && createPortal(
+      {isOpen && typeof document !== "undefined" && menuPosition && createPortal(
         <div
           ref={menuRef}
           id={listboxId}

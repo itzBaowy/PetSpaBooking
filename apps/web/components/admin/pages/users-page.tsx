@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
@@ -171,7 +171,7 @@ export function AdminUsersPage() {
               setPage(1);
             }}
           />
-          <span className="text-sm font-medium text-muted xl:ml-auto">
+          <span className="w-full text-sm font-medium text-muted xl:ml-auto xl:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} tài khoản`}
           </span>
         </div>
@@ -190,6 +190,7 @@ export function AdminUsersPage() {
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />
 
       <UserCrudDialog
+        key={`${isFormOpen ? "open" : "closed"}-${editingUser?.id ?? "create"}`}
         open={isFormOpen}
         user={editingUser}
         isSubmitting={createMutation.isLoading || updateMutation.isLoading}
@@ -295,13 +296,6 @@ function UserCrudDialog({
   const [form, setForm] = useState<UserForm>(() => buildForm(user));
   const [formError, setFormError] = useState("");
   const isEdit = Boolean(user);
-
-  useEffect(() => {
-    if (open) {
-      setForm(buildForm(user));
-      setFormError("");
-    }
-  }, [open, user]);
 
   if (!open) return null;
 

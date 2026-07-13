@@ -2,16 +2,16 @@
 
 import Link from "next/link";
 import { useQuery } from "@tanstack/react-query";
-import { API_ENDPOINTS } from "@/constants/api-endpoints";
-import { api } from "@/lib/axios";
-import type { ApiResponse } from "@/types/api";
 import { nested, textValue } from "@/apis/admin/supported-api";
-import { PageTitle, LoadState } from "../shared";
-import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
-import { formatCurrency } from "@/lib/currency";
 import { useDailyRevenue, useDisputeReport, useProviderPerformance, useRevenueSummary } from "@/apis/admin/reports/queries";
 import { PlatformRevenueChart } from "@/apis/admin/analytics/components/platform-revenue-chart";
 import { TopProvidersTable } from "@/apis/admin/analytics/components/top-providers-table";
+import { StatisticCard, StatisticCardGrid } from "@/components/ui/statistic-card";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { formatCurrency } from "@/lib/currency";
+import { api } from "@/lib/axios";
+import type { ApiResponse } from "@/types/api";
+import { PageTitle, LoadState } from "../shared";
 
 export function AdminDashboardPage() {
   const query = useQuery<Record<string, unknown>>({
@@ -36,10 +36,7 @@ export function AdminDashboardPage() {
   }
 
   const data = query.data ?? {};
-  const cards = [
-    { label: "Người dùng", value: nested(data, "users", "total") },
-    { label: "Nhà cung cấp", value: nested(data, "providers", "total") },
-    { label: "Lịch đặt hoàn tất", value: nested(data, "bookings", "completed") },
+  const actionCards = [
     {
       label: "Tranh chấp chờ xử lý",
       value: nested(data, "disputes", "pending"),
@@ -51,25 +48,35 @@ export function AdminDashboardPage() {
       value: nested(data, "withdrawals", "pending"),
       href: "/admin/finance/withdrawals?status=PENDING",
     },
+    {
+      label: "Nhà cung cấp chờ duyệt",
+      value: nested(data, "providers", "pending"),
+      href: "/admin/providers?status=PENDING_VERIFICATION",
+      tone: "blue" as const,
+    },
+  ];
+  const quickMetrics = [
+    { label: "Người dùng", value: nested(data, "users", "total") },
+    { label: "Nhà cung cấp", value: nested(data, "providers", "total") },
+    { label: "Lịch đặt hoàn tất", value: nested(data, "bookings", "completed") },
     { label: "Dịch vụ hoạt động", value: nested(data, "services", "active") },
   ];
 
   return (
     <div className="space-y-6">
-      <PageTitle title="Tổng quan quản trị" description="Số liệu trực tiếp từ GET /admin/dashboard/summary." />
+      <PageTitle title="Tổng quan quản trị" description="Gọn gàng, tập trung vào hành động nhanh và trạng thái hiện tại." />
+
       <StatisticCardGrid columns={3}>
-        {cards.map((card) => {
+        {actionCards.map((card) => {
           const content = (
             <StatisticCard
               title={card.label}
               value={textValue(card.value, "0")}
               tone={card.tone}
-              footer={card.href ? "Bấm để xem danh sách xử lý" : undefined}
-              className={card.href ? "h-full hover:border-brand-soft hover:bg-surface-muted/40" : undefined}
+              footer="Bấm để xem danh sách xử lý"
+              className="h-full hover:border-brand-soft hover:bg-surface-muted/40"
             />
           );
-
-          if (!card.href) return <div key={card.label}>{content}</div>;
 
           return (
             <Link key={card.label} href={card.href} className="block h-full">
@@ -78,6 +85,13 @@ export function AdminDashboardPage() {
           );
         })}
       </StatisticCardGrid>
+
+      <StatisticCardGrid columns={4}>
+        {quickMetrics.map((card) => (
+          <StatisticCard key={card.label} title={card.label} value={textValue(card.value, "0")} />
+        ))}
+      </StatisticCardGrid>
+
       {revenueQuery.data && (
         <StatisticCardGrid columns={3}>
           <StatisticCard title="Tổng giá trị booking" value={formatCurrency(revenueQuery.data.totalBookingAmount, "VND")} tone="blue" />
@@ -85,10 +99,16 @@ export function AdminDashboardPage() {
           <StatisticCard title="Thu nhập nhà cung cấp" value={formatCurrency(revenueQuery.data.totalProviderEarning, "VND")} tone="purple" />
         </StatisticCardGrid>
       )}
-      <div className="grid gap-6 xl:grid-cols-2">
-        {dailyRevenueQuery.data && <PlatformRevenueChart data={dailyRevenueQuery.data} />}
-        {providersQuery.data && <TopProvidersTable providers={providersQuery.data.items} />}
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <div className="lg:col-span-7">
+          {dailyRevenueQuery.data && <PlatformRevenueChart data={dailyRevenueQuery.data} />}
+        </div>
+        <div className="lg:col-span-5">
+          {providersQuery.data && <TopProvidersTable providers={providersQuery.data.items} />}
+        </div>
       </div>
+
       {disputeReportQuery.data && (
         <StatisticCardGrid columns={4}>
           <StatisticCard title="Tranh chấp chờ xử lý" value={disputeReportQuery.data.pending} tone="amber" />

@@ -81,7 +81,7 @@ export function AdminLedgerPage() {
               setPage(1);
             }}
           />
-          <span className="text-sm font-medium text-muted self-center ml-auto">
+          <span className="w-full self-center text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} giao dịch`}
           </span>
         </div>

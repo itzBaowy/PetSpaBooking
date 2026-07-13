@@ -30,7 +30,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (data.length === 0 && emptyState) {
     return (
-      <div className="overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
+      <div className="w-full overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
         {emptyState}
       </div>
     );
@@ -40,7 +40,7 @@ export function DataTable<T>({
   const contentColumns = columns.filter((column) => !column.isAction);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
+    <div className="w-full overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
       <div className="divide-y divide-border-subtle md:hidden">
         {data.map((row) => (
           <div key={getRowKey(row)} className="space-y-3 p-4">
@@ -48,12 +48,12 @@ export function DataTable<T>({
               {contentColumns.map((column) => (
                 <div
                   key={column.key}
-                  className="flex min-w-0 items-start justify-between gap-4"
+                  className="grid min-w-0 grid-cols-[minmax(0,0.42fr)_minmax(0,0.58fr)] items-start gap-3"
                 >
-                  <p className="shrink-0 text-[11px] font-semibold uppercase tracking-wider text-subtle">
+                  <p className="min-w-0 break-words text-[11px] font-semibold uppercase tracking-wider text-subtle">
                     {column.header}
                   </p>
-                  <div className="min-w-0 text-right text-sm text-foreground">
+                  <div className="min-w-0 break-words text-right text-sm text-foreground">
                     {column.render(row)}
                   </div>
                 </div>
@@ -70,7 +70,7 @@ export function DataTable<T>({
         ))}
       </div>
 
-      <div className="hidden overflow-x-auto md:block">
+      <div className="hidden w-full overflow-x-auto md:block">
         <table className={cn("w-full table-fixed text-left", minWidthClassName)}>
           <thead>
             <tr className="border-b border-border-subtle bg-surface-muted">

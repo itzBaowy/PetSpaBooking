@@ -15,16 +15,20 @@ import { AuditLogDataTable } from "./audit-log-data-table";
 export function AdminAuditLogsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [adminId, setAdminId] = useState("");
   const [action, setAction] = useState("");
   const [targetType, setTargetType] = useState("");
+  const [targetId, setTargetId] = useState("");
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
 
   const query = useAdminList("audit", API_ENDPOINTS.ADMIN.AUDIT_LOGS, {
     page,
     pageSize,
+    adminId,
     action,
     targetType,
+    targetId,
     from,
     to,
   });
@@ -34,6 +38,10 @@ export function AdminAuditLogsPage() {
   const actionOptions = [
     { value: "", label: "Mọi hành động" },
     { value: "DISPUTE_RESOLVE", label: "Giải quyết tranh chấp" },
+    { value: "REFUND_MARK_REFUNDED", label: "Đánh dấu đã hoàn tiền" },
+    { value: "REFUND_REJECT", label: "Từ chối hoàn tiền" },
+    { value: "ADMIN_NOTIFICATION_SEND", label: "Gửi thông báo" },
+    { value: "ADMIN_NOTIFICATION_BROADCAST", label: "Phát thông báo theo vai trò" },
     { value: "PROVIDER_REJECT", label: "Từ chối nhà cung cấp" },
     { value: "PROVIDER_SUSPEND", label: "Tạm ngưng nhà cung cấp" },
     { value: "PROVIDER_VERIFY", label: "Xác minh nhà cung cấp" },
@@ -41,6 +49,8 @@ export function AdminAuditLogsPage() {
     { value: "PROVIDER_DOCUMENT_REJECT", label: "Từ chối tài liệu nhà cung cấp" },
     { value: "PROVIDER_WALLET_ADJUST", label: "Điều chỉnh số dư ví" },
     { value: "USER_STATUS_UPDATE", label: "Cập nhật trạng thái người dùng" },
+    { value: "SERVICE_HIDE", label: "Ẩn dịch vụ" },
+    { value: "SERVICE_UNHIDE", label: "Hiện lại dịch vụ" },
     { value: "WITHDRAWAL_APPROVE", label: "Duyệt yêu cầu rút tiền" },
     { value: "WITHDRAWAL_MARK_PAID", label: "Đánh dấu đã chi trả" },
     { value: "WITHDRAWAL_REJECT", label: "Từ chối yêu cầu rút tiền" },
@@ -48,15 +58,14 @@ export function AdminAuditLogsPage() {
 
   const targetTypeOptions = [
     { value: "", label: "Mọi loại đối tượng" },
-    { value: "BookingDispute", label: "Tranh chấp lịch hẹn" },
-    { value: "Provider", label: "Nhà cung cấp" },
-    { value: "ProviderWallet", label: "Ví nhà cung cấp" },
-    { value: "User", label: "Người dùng" },
-    { value: "WithdrawalRequest", label: "Yêu cầu rút tiền" },
-    { value: "DISPUTE", label: "Tranh chấp (dữ liệu mới)" },
-    { value: "PROVIDER", label: "Nhà cung cấp (dữ liệu mới)" },
+    { value: "DISPUTE", label: "Tranh chấp" },
+    { value: "BOOKING", label: "Lịch đặt" },
+    { value: "PROVIDER", label: "Nhà cung cấp" },
     { value: "PROVIDER_DOCUMENT", label: "Tài liệu nhà cung cấp" },
-    { value: "WITHDRAWAL", label: "Yêu cầu rút tiền (dữ liệu mới)" },
+    { value: "ROLE", label: "Vai trò người dùng" },
+    { value: "SERVICE", label: "Dịch vụ" },
+    { value: "USER", label: "Người dùng" },
+    { value: "WITHDRAWAL", label: "Yêu cầu rút tiền" },
   ];
 
   return (
@@ -82,6 +91,24 @@ export function AdminAuditLogsPage() {
               setPage(1);
             }}
           />
+          <input
+            className={inputClass}
+            placeholder="Mã admin"
+            value={adminId}
+            onChange={(event) => {
+              setAdminId(event.target.value);
+              setPage(1);
+            }}
+          />
+          <input
+            className={inputClass}
+            placeholder="Mã đối tượng"
+            value={targetId}
+            onChange={(event) => {
+              setTargetId(event.target.value);
+              setPage(1);
+            }}
+          />
           <div className="flex items-center gap-1">
             <span className="text-xs font-semibold text-muted shrink-0">Từ:</span>
             <input title="Từ ngày" type="datetime-local" className={inputClass} value={from} onChange={e => { setFrom(e.target.value); setPage(1); }} />
@@ -90,7 +117,7 @@ export function AdminAuditLogsPage() {
             <span className="text-xs font-semibold text-muted shrink-0">Đến:</span>
             <input title="Đến ngày" type="datetime-local" className={inputClass} value={to} onChange={e => { setTo(e.target.value); setPage(1); }} />
           </div>
-          <span className="text-sm font-medium text-muted ml-auto">
+          <span className="w-full text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} bản ghi`}
           </span>
         </div>

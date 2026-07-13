@@ -20,22 +20,17 @@ export function ActionMenu({ items, align = "right" }: ActionMenuProps) {
   const buttonRef = useRef<HTMLButtonElement | null>(null);
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [isOpen, setIsOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
   const [position, setPosition] = useState({
     top: 0,
     left: 0,
     width: 208,
   });
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
   function updatePosition() {
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
 
-    const menuWidth = 208;
+    const menuWidth = Math.min(208, window.innerWidth - 16);
     const estimatedHeight = Math.min(items.length * 40 + 12, 320);
     const spaceBelow = window.innerHeight - rect.bottom;
     const openUp = spaceBelow < estimatedHeight && rect.top > spaceBelow;
@@ -97,7 +92,7 @@ export function ActionMenu({ items, align = "right" }: ActionMenuProps) {
         </svg>
       </button>
 
-      {isOpen && mounted && createPortal(
+      {isOpen && typeof document !== "undefined" && createPortal(
         <div
           ref={menuRef}
           id={menuId}

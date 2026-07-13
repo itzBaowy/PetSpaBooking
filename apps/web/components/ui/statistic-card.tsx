@@ -79,13 +79,13 @@ export function StatisticCard({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-surface p-5 shadow-sm transition-colors",
+        "min-w-0 rounded-xl border bg-surface p-4 shadow-sm transition-colors sm:p-5",
         styles.border,
         className,
       )}
     >
       <div className="flex min-w-0 items-start justify-between gap-3">
-        <p className="min-w-0 text-sm font-medium text-muted">{title}</p>
+        <p className="min-w-0 break-words text-sm font-medium text-muted">{title}</p>
         {icon && (
           <div
             className={cn(
@@ -101,7 +101,7 @@ export function StatisticCard({
       <div className="mt-4 flex min-w-0 flex-wrap items-end justify-between gap-3">
         <p
           className={cn(
-            "min-w-0 break-words text-3xl font-bold tracking-tight",
+            "min-w-0 break-words text-2xl font-bold tracking-tight sm:text-3xl",
             styles.value,
             valueClassName,
           )}
@@ -141,8 +141,8 @@ export function StatisticCardGrid({
   const columnsClassName = {
     1: "grid-cols-1",
     2: "grid-cols-1 sm:grid-cols-2",
-    3: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-3",
-    4: "grid-cols-1 sm:grid-cols-2 xl:grid-cols-4",
+    3: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-3",
+    4: "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
   }[columns];
 
   return (
