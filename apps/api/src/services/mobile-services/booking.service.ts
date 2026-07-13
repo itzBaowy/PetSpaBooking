@@ -81,11 +81,19 @@ const BOOKING_INCLUDE = {
       },
     },
   },
+  review: {
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      images: true,
+      createAt: true,
+    },
+  },
 } as const;
 
 function getRequesterId(req: Request): string {
-  const userId = (req as Request & { user?: { userId?: string } }).user
-    ?.userId;
+  const userId = (req as Request & { user?: { userId?: string } }).user?.userId;
   if (!userId) throw new UnauthorizedException("Unauthorized");
   return userId;
 }
@@ -135,7 +143,9 @@ function getQrToken(req: Request): string {
   return qrToken;
 }
 
-function signBookingQrToken(payload: Omit<BookingQrPayload, keyof jwt.JwtPayload>) {
+function signBookingQrToken(
+  payload: Omit<BookingQrPayload, keyof jwt.JwtPayload>,
+) {
   return jwt.sign(payload, process.env.JWT_SECRET as string, {
     expiresIn: QR_TOKEN_EXPIRES_IN_SECONDS,
   });
@@ -165,9 +175,7 @@ export async function getBookingAutoCompleteHours(): Promise<number> {
 
 async function getBookingDisputeDeadline(checkedOutAt: Date): Promise<Date> {
   const autoCompleteHours = await getBookingAutoCompleteHours();
-  return new Date(
-    checkedOutAt.getTime() + autoCompleteHours * 60 * 60 * 1000,
-  );
+  return new Date(checkedOutAt.getTime() + autoCompleteHours * 60 * 60 * 1000);
 }
 
 function isUniqueConstraintError(error: unknown) {
@@ -346,7 +354,8 @@ export const mobileBookingServices = {
     }
 
     const provider = service.provider;
-    const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
+    const minProviderDeposit =
+      await getSystemSettingValue("minProviderDeposit");
     if (provider.providerStatus !== "VERIFIED") {
       throw new BadRequestException("Provider is not available for booking");
     }
@@ -558,7 +567,8 @@ export const mobileBookingServices = {
         userId,
         type: "REFUND_PENDING",
         title: "Refund pending",
-        message: "Your online booking was cancelled and is waiting for refund processing.",
+        message:
+          "Your online booking was cancelled and is waiting for refund processing.",
         data: { bookingId: updatedBooking.id },
       });
     }
@@ -878,7 +888,9 @@ export const mobileBookingServices = {
     }
 
     if (booking.status !== "CONFIRMED") {
-      throw new BadRequestException("Only CONFIRMED bookings can be cancelled by provider");
+      throw new BadRequestException(
+        "Only CONFIRMED bookings can be cancelled by provider",
+      );
     }
 
     const updatedBooking = await prisma.bookings.update({
@@ -914,7 +926,8 @@ export const mobileBookingServices = {
         userId: updatedBooking.customer.users.id,
         type: "REFUND_PENDING",
         title: "Refund pending",
-        message: "Your online booking was cancelled and is waiting for refund processing.",
+        message:
+          "Your online booking was cancelled and is waiting for refund processing.",
         data: { bookingId: updatedBooking.id },
       });
     }
@@ -934,7 +947,9 @@ export const mobileBookingServices = {
     }
 
     if (booking.status !== "CONFIRMED") {
-      throw new BadRequestException("Only CONFIRMED bookings can be marked as no-arrival");
+      throw new BadRequestException(
+        "Only CONFIRMED bookings can be marked as no-arrival",
+      );
     }
 
     const noArrivalGraceMinutes = await getSystemSettingValue(
@@ -997,7 +1012,9 @@ export const mobileBookingServices = {
     }
 
     if (booking.status !== "CONFIRMED") {
-      throw new BadRequestException("Only CONFIRMED bookings can be checked in");
+      throw new BadRequestException(
+        "Only CONFIRMED bookings can be checked in",
+      );
     }
 
     if (
