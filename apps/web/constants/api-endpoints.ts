@@ -44,6 +44,16 @@ export const API_ENDPOINTS = {
     CANCEL: (id: string) => `/bookings/${id}/cancel`,
   },
   MOBILE: {
+    PUBLIC: {
+      PROVIDERS: "/mobile/providers",
+      SEARCH: "/mobile/search",
+      PROVIDER_DETAIL: (providerId: string) =>
+        `/mobile/providers/provider-detail/${providerId}`,
+      PROVIDER_REVIEWS: (providerId: string) =>
+        `/mobile/providers/reviews/${providerId}`,
+      AVAILABLE_SLOTS: (providerId: string) =>
+        `/mobile/providers/${providerId}/available-slots`,
+    },
     PROVIDER: {
       BOOKINGS: "/mobile/provider/bookings",
       CONFIRM_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/confirm`,
@@ -110,6 +120,7 @@ export const API_ENDPOINTS = {
       LIST: "/admin/bookings",
       DETAIL: (id: string) => `/admin/bookings/${id}`,
       FINANCE: (id: string) => `/admin/bookings/${id}/finance`,
+      AUTO_COMPLETE_RUN: "/admin/bookings/auto-complete/run",
     },
     DISPUTES: {
       LIST: "/admin/disputes",
@@ -135,6 +146,20 @@ export const API_ENDPOINTS = {
       MARK_PAID: (id: string) => `/admin/withdrawals/${id}/mark-paid`,
     },
     AUDIT_LOGS: "/admin/audit-logs",
+    SETTINGS: "/admin/settings",
+    REVIEWS: {
+      LIST: "/admin/reviews",
+      DETAIL: (id: string) => `/admin/reviews/${id}`,
+      HIDE: (id: string) => `/admin/reviews/${id}/hide`,
+      UNHIDE: (id: string) => `/admin/reviews/${id}/unhide`,
+    },
+    CHAT: {
+      THREADS: "/admin/chat/threads",
+      BOOKING_THREAD: (bookingId: string) =>
+        `/admin/bookings/${bookingId}/chat/thread`,
+      MESSAGES: (threadId: string) => `/admin/chat/threads/${threadId}/messages`,
+      MARK_READ: (threadId: string) => `/admin/chat/threads/${threadId}/read`,
+    },
     NOTIFICATIONS: {
       LIST: "/admin/notifications",
       SEND: "/admin/notifications/send",

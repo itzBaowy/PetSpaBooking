@@ -1,37 +1,97 @@
 "use client";
 
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button, Input, PageHeader } from "@/components/ui";
 import { useToast } from "@/components/ui/feedback-provider";
-import { depositConfigSchema } from "../schema";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
+import { api } from "@/lib/axios";
+import type { ApiResponse } from "@/types/api";
 
-const DEV_ONLY_DEPOSIT_CONFIG = {
-  minimumDeposit: 2_000_000,
-  warningThreshold: 1_500_000,
-  restrictionThreshold: 500_000,
-  commissionRate: 15,
+type AdminSettings = {
+  minProviderDeposit?: SettingValue;
+  platformCommissionRate?: SettingValue;
+  bookingNoArrivalGraceMinutes?: SettingValue;
+};
+
+type SettingValue = {
+  value: number;
+};
+
+type DepositConfigForm = {
+  minProviderDeposit: number;
+  platformCommissionRate: number;
+  bookingNoArrivalGraceMinutes: number;
+};
+
+const DEFAULT_VALUES: DepositConfigForm = {
+  minProviderDeposit: 300000,
+  platformCommissionRate: 0.15,
+  bookingNoArrivalGraceMinutes: 15,
 };
 
 export function DepositConfigPage() {
-  const [values, setValues] = useState(DEV_ONLY_DEPOSIT_CONFIG);
+  const queryClient = useQueryClient();
   const { showToast } = useToast();
+  const settings = useQuery({
+    queryKey: ["admin", "settings"],
+    queryFn: async () => {
+      const response = await api.get<ApiResponse<AdminSettings>>(API_ENDPOINTS.ADMIN.SETTINGS);
+      const data = response.data.data;
+      return {
+        minProviderDeposit:
+          data.minProviderDeposit?.value ?? DEFAULT_VALUES.minProviderDeposit,
+        platformCommissionRate:
+          data.platformCommissionRate?.value ?? DEFAULT_VALUES.platformCommissionRate,
+        bookingNoArrivalGraceMinutes:
+          data.bookingNoArrivalGraceMinutes?.value ??
+          DEFAULT_VALUES.bookingNoArrivalGraceMinutes,
+      };
+    },
+  });
 
-  function update(key: keyof typeof values, value: string) {
-    setValues((current) => ({ ...current, [key]: Number(value) }));
-  }
+  const mutation = useMutation({
+    mutationFn: async (payload: DepositConfigForm) =>
+      (
+        await api.patch<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.SETTINGS, payload)
+      ).data.data,
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["admin", "settings"] });
+      showToast("Đã lưu cấu hình hệ thống.", "success");
+    },
+    onError: () => showToast("Không thể lưu cấu hình hệ thống.", "error"),
+  });
+
+  const values = settings.data ?? DEFAULT_VALUES;
+  const update = (key: keyof DepositConfigForm, value: string) => {
+    mutation.reset();
+    queryClient.setQueryData(["admin", "settings"], {
+      ...values,
+      [key]: Number(value),
+    });
+  };
+  const updateCommissionPercent = (value: string) => {
+    mutation.reset();
+    queryClient.setQueryData(["admin", "settings"], {
+      ...values,
+      platformCommissionRate: Number(value) / 100,
+    });
+  };
 
   function save() {
-    const result = depositConfigSchema.safeParse(values);
-    if (!result.success) {
-      showToast(
-        result.error.issues[0]?.message ?? "Cấu hình không hợp lệ.",
-        "error",
-      );
+    if (
+      !Number.isFinite(values.minProviderDeposit) ||
+      values.minProviderDeposit < 0 ||
+      !Number.isFinite(values.platformCommissionRate) ||
+      values.platformCommissionRate < 0 ||
+      values.platformCommissionRate > 1 ||
+      !Number.isFinite(values.bookingNoArrivalGraceMinutes) ||
+      values.bookingNoArrivalGraceMinutes < 0
+    ) {
+      showToast("Cấu hình không hợp lệ.", "error");
       return;
     }
 
-    // TODO(BE): PATCH /api/admin/config/deposit.
-    showToast("BE chưa hỗ trợ API lưu cấu hình ký quỹ.", "info");
+    mutation.mutate(values);
   }
 
   return (
@@ -41,38 +101,39 @@ export function DepositConfigPage() {
         backLabel="Quay lại tài chính"
         eyebrow="Quản trị / Tài chính"
         title="Cấu hình ký quỹ"
-        description="Thiết lập mức ký quỹ tối thiểu và ngưỡng cảnh báo/hạn chế nhận booking."
+        description="Đọc và lưu cấu hình nghiệp vụ từ Admin system settings API."
       />
+
+      {settings.isError ? (
+        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-sm font-semibold text-red-800">
+          Không thể tải cấu hình hệ thống.
+        </div>
+      ) : null}
+
       <div className="max-w-3xl rounded-2xl border border-border-subtle bg-surface p-6 shadow-sm">
         <div className="grid gap-5 sm:grid-cols-2">
           <ConfigField
             label="Ký quỹ tối thiểu (VND)"
-            value={values.minimumDeposit}
-            onChange={(value) => update("minimumDeposit", value)}
-          />
-          <ConfigField
-            label="Ngưỡng cảnh báo (VND)"
-            value={values.warningThreshold}
-            onChange={(value) => update("warningThreshold", value)}
-          />
-          <ConfigField
-            label="Ngưỡng hạn chế booking (VND)"
-            value={values.restrictionThreshold}
-            onChange={(value) => update("restrictionThreshold", value)}
+            value={values.minProviderDeposit}
+            onChange={(value) => update("minProviderDeposit", value)}
           />
           <ConfigField
             label="Hoa hồng mặc định (%)"
-            value={values.commissionRate}
-            onChange={(value) => update("commissionRate", value)}
+            max={100}
+            step="1"
+            value={Number((values.platformCommissionRate * 100).toFixed(2))}
+            onChange={updateCommissionPercent}
+          />
+          <ConfigField
+            label="Thời gian tối thiểu khách hàng không đến (phút)"
+            value={values.bookingNoArrivalGraceMinutes}
+            onChange={(value) => update("bookingNoArrivalGraceMinutes", value)}
           />
         </div>
-        <div className="mt-6 rounded-xl bg-warning-soft p-4 text-sm leading-6 text-muted">
-          Khi ký quỹ thấp hơn ngưỡng hạn chế, nhà cung cấp không được nhận
-          booking mới. Dữ liệu hiện tại chỉ dùng để demo cho đến khi BE cung cấp
-          API cấu hình.
-        </div>
         <div className="mt-6 flex justify-end">
-          <Button onClick={save}>Lưu cấu hình</Button>
+          <Button disabled={settings.isLoading || mutation.isLoading} onClick={save}>
+            {mutation.isLoading ? "Đang lưu..." : "Lưu cấu hình"}
+          </Button>
         </div>
       </div>
     </div>
@@ -82,18 +143,24 @@ export function DepositConfigPage() {
 function ConfigField({
   label,
   value,
+  step,
+  max,
   onChange,
 }: {
   label: string;
   value: number;
+  step?: string;
+  max?: number;
   onChange: (value: string) => void;
 }) {
   return (
     <label className="space-y-2 text-sm font-semibold">
       <span>{label}</span>
       <Input
-        type="number"
         min={0}
+        max={max}
+        step={step}
+        type="number"
         value={value}
         onChange={(event) => onChange(event.target.value)}
       />
