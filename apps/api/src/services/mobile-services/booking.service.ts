@@ -75,6 +75,7 @@ const BOOKING_INCLUDE = {
         select: {
           id: true,
           fullName: true,
+          email: true,
           phone: true,
           avatar: true,
         },
@@ -91,6 +92,49 @@ const BOOKING_INCLUDE = {
     },
   },
 } as const;
+
+async function attachPetsToBookings<T extends { petId?: string | null }>(
+  bookings: T[],
+) {
+  const petIds = Array.from(
+    new Set(bookings.map((booking) => booking.petId).filter(Boolean)),
+  ) as string[];
+
+  if (petIds.length === 0) {
+    return bookings.map((booking) => ({ ...booking, pet: null }));
+  }
+
+  const pets = await prisma.pets.findMany({
+    where: { id: { in: petIds } },
+    select: {
+      id: true,
+      name: true,
+      breed: true,
+      gender: true,
+      ageLabel: true,
+      imageUrl: true,
+      status: true,
+      weight: true,
+      height: true,
+      color: true,
+      criticalNote: true,
+      photos: true,
+    },
+  });
+  const petById = new Map(pets.map((pet) => [pet.id, pet]));
+
+  return bookings.map((booking) => ({
+    ...booking,
+    pet: booking.petId ? (petById.get(booking.petId) ?? null) : null,
+  }));
+}
+
+async function attachPetToBooking<T extends { petId?: string | null }>(
+  booking: T,
+) {
+  const [bookingWithPet] = await attachPetsToBookings([booking]);
+  return bookingWithPet;
+}
 
 function getRequesterId(req: Request): string {
   const userId = (req as Request & { user?: { userId?: string } }).user?.userId;
@@ -787,7 +831,7 @@ export const mobileBookingServices = {
     const totalPages = Math.ceil(totalItems / pageSize);
 
     return {
-      items,
+      items: await attachPetsToBookings(items),
       pagination: {
         page,
         pageSize,
@@ -797,6 +841,23 @@ export const mobileBookingServices = {
         hasPrevPage: page > 1,
       },
     };
+  },
+
+  async getProviderBookingById(req: Request) {
+    const userId = getRequesterId(req);
+    const id = getRouteParam(req, "id");
+    const provider = await getOperatingProviderByUserId(userId);
+
+    const booking = await prisma.bookings.findUnique({
+      where: { id },
+      include: BOOKING_INCLUDE,
+    });
+
+    if (!booking || booking.providerId !== provider.id) {
+      throw new NotFoundException("Booking not found");
+    }
+
+    return attachPetToBooking(booking);
   },
 
   async confirm(req: Request) {

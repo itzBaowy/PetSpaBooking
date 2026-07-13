@@ -630,6 +630,13 @@ mobileBookingRouter.get(
   mobileBookingController.getProviderBookings,
 );
 
+mobileBookingRouter.get(
+  "/provider/bookings/:id",
+  protect,
+  checkRole("PROVIDER"),
+  mobileBookingController.getProviderBookingById,
+);
+
 /**
  * @swagger
  * /api/mobile/provider/bookings/{id}/confirm:
