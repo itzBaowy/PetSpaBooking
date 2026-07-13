@@ -419,9 +419,7 @@ const providerIconMap: Record<ProviderNavigationItemId, ReactNode> = {
   revenue: <IconReceipt />,
   withdrawals: <IconReceipt />,
   chat: <IconUsers />,
-  notifications: <IconWarning />,
   reviews: <IconClipboard />,
-  settings: <IconBuilding />,
 };
 
 export function getAdminNavGroups(): NavGroup[] {

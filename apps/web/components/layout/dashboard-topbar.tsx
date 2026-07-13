@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useProfile } from "@/apis/auth/queries";
 import type { AdminEntity } from "@/apis/admin/supported-api";
 import { Avatar, getAvatarInitials } from "@/components/ui/avatar";
-import { useProviderNotificationMockOptional } from "@/components/provider/notifications/notification-context";
 import { useTopbarNotifications } from "@/hooks/use-topbar-notifications";
 import { useAuthStore } from "@/stores/auth-store";
 import { NotificationDetailModal } from "./topbar/notification-detail-modal";
@@ -22,7 +21,6 @@ const roleLabels: Record<string, string> = {
 };
 
 export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
-  const providerNotificationMock = useProviderNotificationMockOptional();
   const router = useRouter();
   const [openMenu, setOpenMenu] = useState<"notifications" | "profile" | null>(null);
   const [selectedNotification, setSelectedNotification] = useState<AdminEntity | null>(null);
@@ -38,10 +36,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
     role,
     userId: profile?.id,
   });
-  const displayUnreadCount =
-    role === "provider" && providerNotificationMock
-      ? providerNotificationMock.unreadCount
-      : unreadCount;
+  const displayUnreadCount = unreadCount;
 
   const displayName = profile?.fullName || profile?.userName || (role === "admin" ? "Admin" : "Provider");
   const displayEmail = profile?.email ?? "Đang tải...";

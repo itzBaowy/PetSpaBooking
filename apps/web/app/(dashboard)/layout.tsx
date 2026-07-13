@@ -3,7 +3,6 @@
 import { usePathname } from "next/navigation";
 import { DashboardSidebar } from "@/components/layout/dashboard-sidebar";
 import { DashboardTopbar } from "@/components/layout/dashboard-topbar";
-import { ProviderNotificationMockProvider } from "@/components/provider/notifications/notification-context";
 
 export default function DashboardLayout({
   children,
@@ -28,7 +27,5 @@ export default function DashboardLayout({
     </div>
   );
 
-  return isProvider ? (
-    <ProviderNotificationMockProvider>{dashboard}</ProviderNotificationMockProvider>
-  ) : dashboard;
+  return dashboard;
 }

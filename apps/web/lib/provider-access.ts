@@ -28,9 +28,7 @@ export type ProviderNavigationItemId =
   | "revenue"
   | "withdrawals"
   | "chat"
-  | "notifications"
-  | "reviews"
-  | "settings";
+  | "reviews";
 
 export interface ProviderNavigationDefinition {
   id: ProviderNavigationItemId;
@@ -85,13 +83,6 @@ export const PROVIDER_NAVIGATION: readonly ProviderNavigationDefinition[] = [
     href: "/provider/availability",
     group: "account",
     limitedAccess: false,
-  },
-  {
-    id: "settings",
-    label: "Cài đặt",
-    href: "/provider/profile",
-    group: "account",
-    limitedAccess: true,
   },
   {
     id: "services",
@@ -155,13 +146,6 @@ export const PROVIDER_NAVIGATION: readonly ProviderNavigationDefinition[] = [
     href: "/provider/communication/chat",
     group: "communication",
     limitedAccess: false,
-  },
-  {
-    id: "notifications",
-    label: "Thông báo",
-    href: "/provider/communication/notifications",
-    group: "communication",
-    limitedAccess: true,
   },
   {
     id: "reviews",

@@ -66,13 +66,7 @@ export function useTopbarNotifications({
     userId,
   });
 
-  const notificationItems = query.data?.items ?? [];
-  const scopedNotificationItems =
-    role === "provider"
-      ? userId
-        ? notificationItems.filter((item) => textValue(item.userId, "") === userId)
-        : []
-      : notificationItems;
+  const scopedNotificationItems = query.data?.items ?? [];
   const groupedNotifications =
     role === "admin"
       ? groupNotifications(scopedNotificationItems)
