@@ -620,6 +620,7 @@ Rule:
 - `openTime` và `closeTime` dùng `HH:mm`.
 - `openTime` phải trước `closeTime` nếu `isClosed = false`.
 - Không được tạo block trùng block đang có.
+- Không được tạo block nếu khoảng thời gian đó đang có booking active (`PENDING`, `CONFIRMED`, `CHECKED_IN`). Provider phải xử lý/cancel/hoàn tất booking đó trước rồi mới khóa lịch.
 - Booking mới sẽ bị chặn nếu trùng block hoặc ngoài working hours.
 
 ### 4.4 Provider wallet
