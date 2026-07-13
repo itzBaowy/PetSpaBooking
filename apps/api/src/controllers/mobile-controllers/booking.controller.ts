@@ -225,4 +225,56 @@ export const mobileBookingController = {
       next(error);
     }
   },
+
+  async createProviderDepositMomoPayment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await momoPaymentService.createProviderDepositPayment(req);
+      const response = responseSuccess(
+        result,
+        "Provider deposit MoMo payment created successfully",
+        201,
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async handleProviderDepositMomoIpn(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await momoPaymentService.handleProviderDepositIpn(req);
+      const response = responseSuccess(
+        result,
+        "Provider deposit MoMo IPN processed successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async handleProviderDepositMomoReturn(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await momoPaymentService.handleProviderDepositReturn(req);
+      const response = responseSuccess(
+        result,
+        "Provider deposit MoMo return processed successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
 };

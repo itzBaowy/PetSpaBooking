@@ -4,6 +4,7 @@ import { api } from "@/lib/axios";
 import type {
   ApiEnvelope,
   ProviderPage,
+  ProviderDepositPaymentApi,
   ProviderWalletApi,
   WalletTransactionApi,
   WithdrawalApi,
@@ -51,6 +52,22 @@ export function useCreateProviderWithdrawal() {
   return useMutation({
     mutationFn: async (payload: { amount: number; reason?: string }) =>
       unwrap<WithdrawalApi>(await api.post(API_ENDPOINTS.MOBILE.PROVIDER.WITHDRAWALS, payload)),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: walletKeys.all });
+    },
+  });
+}
+
+export function useCreateProviderDepositPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: { amount: number }) =>
+      unwrap<ProviderDepositPaymentApi>(
+        await api.post(
+          API_ENDPOINTS.MOBILE.PROVIDER.DEPOSIT_MOMO_CREATE_PAYMENT,
+          payload,
+        ),
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: walletKeys.all });
     },

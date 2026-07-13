@@ -44,7 +44,7 @@ const adminFinanceRouter = express.Router();
  *         name: type
  *         schema:
  *           type: string
- *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT]
+ *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, DEPOSIT_TOP_UP, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT, WITHDRAWAL_HOLD, WITHDRAWAL_RELEASE]
  *       - in: query
  *         name: balanceType
  *         schema:

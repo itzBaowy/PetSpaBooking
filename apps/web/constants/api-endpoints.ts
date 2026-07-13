@@ -58,6 +58,7 @@ export const API_ENDPOINTS = {
         `/mobile/provider/availability-blocks/${id}`,
       WALLET: "/mobile/provider/wallet",
       WALLET_TRANSACTIONS: "/mobile/provider/wallet/transactions",
+      DEPOSIT_MOMO_CREATE_PAYMENT: "/mobile/provider/deposit/momo/create-payment",
       WITHDRAWALS: "/mobile/provider/withdrawals",
       CHAT_THREADS: "/mobile/chat/threads",
       CHAT_THREAD_FOR_BOOKING: (bookingId: string) =>

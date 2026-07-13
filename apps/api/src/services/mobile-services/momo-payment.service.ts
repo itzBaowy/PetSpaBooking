@@ -10,8 +10,11 @@ import {
 } from "../../common/helpers/exception.helper.ts";
 import { notificationService } from "../notification.service.ts";
 import { socketService } from "../socket.service.ts";
+import { getSystemSettingValue } from "../system-setting.service.ts";
 
 const MOMO_PROVIDER = "MOMO";
+const MOMO_PAYMENT_TYPE_BOOKING = "BOOKING";
+const MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT = "PROVIDER_DEPOSIT";
 const MOMO_DEFAULT_REQUEST_TYPE = "payWithMethod";
 const MOMO_WALLET_MIN_AMOUNT = 1_000;
 const MOMO_PAY_WITH_METHOD_MIN_AMOUNT = 10_000;
@@ -78,6 +81,13 @@ function getMomoMinAmount(requestType: MomoRequestType) {
   return requestType === "payWithMethod"
     ? MOMO_PAY_WITH_METHOD_MIN_AMOUNT
     : MOMO_WALLET_MIN_AMOUNT;
+}
+
+function getDepositStatusAfterTopUp(
+  depositBalance: number,
+  minProviderDeposit: number,
+) {
+  return depositBalance >= minProviderDeposit ? "ACTIVE" : "LOW_BALANCE";
 }
 
 function hmacSha256(rawSignature: string, secretKey: string) {
@@ -189,6 +199,82 @@ async function getCustomerByUser(userId: string) {
   return customer;
 }
 
+async function getProviderByUser(userId: string) {
+  const provider = await prisma.providers.findUnique({ where: { userId } });
+  if (!provider) throw new ForbiddenException("Provider profile not found");
+  return provider;
+}
+
+function getAmount(value: unknown) {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    throw new BadRequestException("amount must be a valid number");
+  }
+
+  return Math.round(value);
+}
+
+async function createMomoRequest(input: {
+  amount: number;
+  orderId: string;
+  orderInfo: string;
+  extraData: string;
+  redirectUrl: string;
+  ipnUrl: string;
+}) {
+  const requestType = getMomoRequestType();
+  const minAmount = getMomoMinAmount(requestType);
+  if (input.amount < minAmount) {
+    throw new BadRequestException(
+      `MoMo ${requestType} amount must be at least ${minAmount} VND`,
+    );
+  }
+
+  const partnerCode = getRequiredEnv("MOMO_PARTNER_CODE");
+  const accessKey = getRequiredEnv("MOMO_ACCESS_KEY");
+  const secretKey = getRequiredEnv("MOMO_SECRET_KEY");
+  const partnerName = process.env.MOMO_PARTNER_NAME || "PetLink";
+  const storeId = process.env.MOMO_STORE_ID || "PetLink";
+  const requestId = crypto.randomUUID();
+
+  const rawSignature = buildCreateSignature({
+    accessKey,
+    amount: input.amount,
+    extraData: input.extraData,
+    ipnUrl: input.ipnUrl,
+    orderId: input.orderId,
+    orderInfo: input.orderInfo,
+    partnerCode,
+    redirectUrl: input.redirectUrl,
+    requestId,
+    requestType,
+  });
+
+  const signature = hmacSha256(rawSignature, secretKey);
+  const requestBody = {
+    partnerCode,
+    partnerName,
+    storeId,
+    requestId,
+    amount: input.amount,
+    orderId: input.orderId,
+    orderInfo: input.orderInfo,
+    redirectUrl: input.redirectUrl,
+    ipnUrl: input.ipnUrl,
+    lang: "vi",
+    requestType,
+    extraData: input.extraData,
+    signature,
+  };
+
+  const momoResponse = await fetchMomoCreatePayment(requestBody);
+
+  return {
+    requestId,
+    requestType,
+    momoResponse,
+  };
+}
+
 async function markPaymentResult(payload: Record<string, unknown>, raw: string) {
   verifyMomoResultSignature(payload);
 
@@ -217,6 +303,7 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
   const now = new Date();
 
   const updatedPayment = await prisma.$transaction(async (tx) => {
+    const previousStatus = payment.status;
     const updated = await tx.payment_transactions.update({
       where: { id: payment.id },
       data: {
@@ -229,7 +316,7 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
       },
     });
 
-    if (isSuccess) {
+    if (isSuccess && payment.type === MOMO_PAYMENT_TYPE_BOOKING && payment.bookingId) {
       await tx.bookings.updateMany({
         where: {
           id: payment.bookingId,
@@ -244,10 +331,54 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
       });
     }
 
+    if (
+      isSuccess &&
+      previousStatus !== "SUCCESS" &&
+      payment.type === MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT
+    ) {
+      const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
+      const provider = await tx.providers.findUnique({
+        where: { id: payment.providerId },
+        select: { depositBalance: true },
+      });
+
+      if (!provider) {
+        throw new NotFoundException("Provider not found");
+      }
+
+      const balanceAfter = provider.depositBalance + payment.amount;
+      const updatedProvider = await tx.providers.update({
+        where: { id: payment.providerId },
+        data: {
+          depositBalance: { increment: payment.amount },
+          depositStatus: getDepositStatusAfterTopUp(
+            balanceAfter,
+            minProviderDeposit,
+          ),
+        },
+        select: {
+          depositBalance: true,
+          depositStatus: true,
+        },
+      });
+
+      await tx.wallet_transactions.create({
+        data: {
+          providerId: payment.providerId,
+          idempotencyKey: `deposit-top-up:${payment.id}`,
+          type: "DEPOSIT_TOP_UP",
+          balanceType: "DEPOSIT",
+          amount: payment.amount,
+          balanceAfter: updatedProvider.depositBalance,
+          note: `MoMo provider deposit top-up ${orderId}`,
+        },
+      });
+    }
+
     return updated;
   });
 
-  if (isSuccess) {
+  if (isSuccess && payment.type === MOMO_PAYMENT_TYPE_BOOKING && payment.bookingId) {
     const booking = await prisma.bookings.findUnique({
       where: { id: payment.bookingId },
       include: {
@@ -306,6 +437,47 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
     }
   }
 
+  if (isSuccess && payment.type === MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT) {
+    const provider = await prisma.providers.findUnique({
+      where: { id: payment.providerId },
+      select: {
+        id: true,
+        userId: true,
+        businessName: true,
+        depositBalance: true,
+        depositStatus: true,
+      },
+    });
+
+    if (provider) {
+      const socketPayload = {
+        providerId: provider.id,
+        paymentStatus: updatedPayment.status,
+        depositBalance: provider.depositBalance,
+        depositStatus: provider.depositStatus,
+        orderId,
+        transId,
+      };
+      socketService.emitToUser(provider.userId, "payment:updated", socketPayload);
+      socketService.emitToProvider(provider.id, "payment:updated", socketPayload);
+      socketService.emitToProvider(provider.id, "provider:deposit:updated", socketPayload);
+
+      await notificationService.safeCreate({
+        userId: provider.userId,
+        type: "PROVIDER_DEPOSIT_TOP_UP",
+        title: "Deposit top-up successful",
+        message: "Your provider deposit top-up was completed successfully.",
+        data: {
+          providerId: provider.id,
+          orderId,
+          transId,
+          depositBalance: provider.depositBalance,
+          depositStatus: provider.depositStatus,
+        },
+      });
+    }
+  }
+
   return updatedPayment;
 }
 
@@ -341,27 +513,15 @@ export const momoPaymentService = {
       );
     }
 
-    const requestType = getMomoRequestType();
     const amount = Math.round(booking.totalAmount);
-    const minAmount = getMomoMinAmount(requestType);
-    if (amount < minAmount) {
-      throw new BadRequestException(
-        `MoMo ${requestType} amount must be at least ${minAmount} VND`,
-      );
-    }
-
-    const partnerCode = getRequiredEnv("MOMO_PARTNER_CODE");
-    const accessKey = getRequiredEnv("MOMO_ACCESS_KEY");
-    const secretKey = getRequiredEnv("MOMO_SECRET_KEY");
     const redirectUrl = getRequiredEnv("MOMO_REDIRECT_URL");
     const ipnUrl = getRequiredEnv("MOMO_IPN_URL");
-    const partnerName = process.env.MOMO_PARTNER_NAME || "PetLink";
-    const storeId = process.env.MOMO_STORE_ID || "PetLink";
 
     const existingPayment = await prisma.payment_transactions.findFirst({
       where: {
         bookingId: booking.id,
         provider: MOMO_PROVIDER,
+        type: MOMO_PAYMENT_TYPE_BOOKING,
         status: "PENDING",
         payUrl: { not: null },
       },
@@ -381,49 +541,27 @@ export const momoPaymentService = {
       };
     }
 
-    const requestId = crypto.randomUUID();
     const orderId = `booking-${booking.id}-${Date.now()}`;
     const orderInfo = `PetLink booking ${booking.id}`;
     const extraData = encodeExtraData({
+      type: MOMO_PAYMENT_TYPE_BOOKING,
       bookingId: booking.id,
       customerId: booking.customerId,
       providerId: booking.providerId,
     });
 
-    const rawSignature = buildCreateSignature({
-      accessKey,
+    const { requestId, momoResponse } = await createMomoRequest({
       amount,
-      extraData,
-      ipnUrl,
       orderId,
       orderInfo,
-      partnerCode,
+      extraData,
       redirectUrl,
-      requestId,
-      requestType,
+      ipnUrl,
     });
-
-    const signature = hmacSha256(rawSignature, secretKey);
-    const requestBody = {
-      partnerCode,
-      partnerName,
-      storeId,
-      requestId,
-      amount,
-      orderId,
-      orderInfo,
-      redirectUrl,
-      ipnUrl,
-      lang: "vi",
-      requestType,
-      extraData,
-      signature,
-    };
-
-    const momoResponse = await fetchMomoCreatePayment(requestBody);
 
     const payment = await prisma.payment_transactions.create({
       data: {
+        type: MOMO_PAYMENT_TYPE_BOOKING,
         bookingId: booking.id,
         customerId: booking.customerId,
         providerId: booking.providerId,
@@ -457,12 +595,130 @@ export const momoPaymentService = {
     };
   },
 
+  async createProviderDepositPayment(req: Request) {
+    const userId = getRequesterId(req);
+    const provider = await getProviderByUser(userId);
+    const amount = getAmount(req.body?.amount);
+    const requestType = getMomoRequestType();
+    const minAmount = Math.max(
+      getMomoMinAmount(requestType),
+      await getSystemSettingValue("minProviderDeposit"),
+    );
+
+    if (provider.providerStatus !== "VERIFIED") {
+      throw new ForbiddenException(
+        "Provider must be VERIFIED before topping up deposit",
+      );
+    }
+
+    if (amount < minAmount) {
+      throw new BadRequestException(
+        `Provider deposit top-up amount must be at least ${minAmount} VND`,
+      );
+    }
+
+    const redirectUrl =
+      process.env.MOMO_PROVIDER_DEPOSIT_REDIRECT_URL ||
+      getRequiredEnv("MOMO_REDIRECT_URL");
+    const ipnUrl =
+      process.env.MOMO_PROVIDER_DEPOSIT_IPN_URL ||
+      getRequiredEnv("MOMO_IPN_URL");
+
+    const existingPayment = await prisma.payment_transactions.findFirst({
+      where: {
+        providerId: provider.id,
+        provider: MOMO_PROVIDER,
+        type: MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT,
+        status: "PENDING",
+        payUrl: { not: null },
+      },
+      orderBy: { createAt: "desc" },
+    });
+
+    if (existingPayment?.payUrl) {
+      return {
+        providerId: provider.id,
+        orderId: existingPayment.orderId,
+        requestId: existingPayment.requestId,
+        amount: existingPayment.amount,
+        payUrl: existingPayment.payUrl,
+        deeplink: existingPayment.deeplink,
+        qrCodeUrl: existingPayment.qrCodeUrl,
+        status: existingPayment.status,
+      };
+    }
+
+    const orderId = `provider-deposit-${provider.id}-${Date.now()}`;
+    const orderInfo = `PetLink provider deposit ${provider.id}`;
+    const extraData = encodeExtraData({
+      type: MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT,
+      providerId: provider.id,
+      userId,
+    });
+
+    const { requestId, momoResponse } = await createMomoRequest({
+      amount,
+      orderId,
+      orderInfo,
+      extraData,
+      redirectUrl,
+      ipnUrl,
+    });
+
+    const payment = await prisma.payment_transactions.create({
+      data: {
+        type: MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT,
+        bookingId: null,
+        customerId: null,
+        providerId: provider.id,
+        provider: MOMO_PROVIDER,
+        orderId,
+        requestId,
+        amount,
+        status: momoResponse.resultCode === 0 ? "PENDING" : "FAILED",
+        payUrl: momoResponse.payUrl ?? null,
+        deeplink: momoResponse.deeplink ?? null,
+        qrCodeUrl: momoResponse.qrCodeUrl ?? null,
+        resultCode: momoResponse.resultCode ?? null,
+        message: momoResponse.message ?? null,
+        rawResponse: JSON.stringify(momoResponse),
+      },
+    });
+
+    if (!payment.payUrl && payment.status === "FAILED") {
+      throw new BadRequestException(
+        payment.message || "MoMo deposit payment creation failed",
+      );
+    }
+
+    return {
+      providerId: provider.id,
+      orderId: payment.orderId,
+      requestId: payment.requestId,
+      amount: payment.amount,
+      payUrl: payment.payUrl,
+      deeplink: payment.deeplink,
+      qrCodeUrl: payment.qrCodeUrl,
+      status: payment.status,
+    };
+  },
+
   async handleIpn(req: Request) {
     const payload = req.body as Record<string, unknown>;
     return markPaymentResult(payload, JSON.stringify(payload));
   },
 
   async handleReturn(req: Request) {
+    const payload = req.query as Record<string, unknown>;
+    return markPaymentResult(payload, JSON.stringify(payload));
+  },
+
+  async handleProviderDepositIpn(req: Request) {
+    const payload = req.body as Record<string, unknown>;
+    return markPaymentResult(payload, JSON.stringify(payload));
+  },
+
+  async handleProviderDepositReturn(req: Request) {
     const payload = req.query as Record<string, unknown>;
     return markPaymentResult(payload, JSON.stringify(payload));
   },

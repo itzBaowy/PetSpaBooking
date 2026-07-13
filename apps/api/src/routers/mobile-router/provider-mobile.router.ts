@@ -465,7 +465,7 @@ providerRouterMobile.get(
  *         name: type
  *         schema:
  *           type: string
- *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT]
+ *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, DEPOSIT_TOP_UP, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT, WITHDRAWAL_HOLD, WITHDRAWAL_RELEASE]
  *     responses:
  *       200:
  *         description: Provider wallet transactions retrieved successfully
@@ -488,7 +488,7 @@ providerRouterMobile.get(
  * /api/mobile/provider/withdrawals:
  *   post:
  *     summary: Create a provider withdrawal request
- *     description: Provider requests a withdrawal from wallet balance. Balance is deducted only when admin marks the request as PAID.
+ *     description: Provider requests a withdrawal from wallet balance. The requested amount is held immediately to prevent duplicate/spam withdrawals. If admin rejects the request, the held amount is released back to the provider wallet.
  *     tags: [Mobile-Provider]
  *     security:
  *       - bearerAuth: []
