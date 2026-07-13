@@ -57,7 +57,7 @@ export const mobileCustomerServices = {
       where: { phone: phone },
     });
 
-    if (phoneExist) {
+    if (phoneExist && phoneExist.id !== userId) {
       throw new BadRequestException("Phone number already exists");
     }
 
