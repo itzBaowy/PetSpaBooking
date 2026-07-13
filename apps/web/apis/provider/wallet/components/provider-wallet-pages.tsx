@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +18,7 @@ import {
   useProviderWallet,
   useProviderWalletTransactions,
   useProviderWithdrawals,
+  useSyncProviderDepositPayment,
 } from "../queries";
 import { ProviderDepositDialog } from "./provider-deposit-dialog";
 import { ProviderWithdrawalDialog } from "./provider-withdrawal-dialog";
@@ -29,6 +30,22 @@ export function ProviderWalletPage() {
     () => searchParams.get("deposit") === "1",
   );
   const query = useProviderWallet();
+  const syncDeposit = useSyncProviderDepositPayment();
+
+  const refreshWallet = () => {
+    syncDeposit.mutate(undefined, {
+      onSettled: () => {
+        void query.refetch();
+      },
+    });
+  };
+
+  useEffect(() => {
+    refreshWallet();
+    // Run once when the wallet page opens to recover paid MoMo deposits
+    // when the user closed MoMo before redirecting back to PetLink.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (query.isLoading) return <ProviderLoading />;
   if (query.isError) {
@@ -75,8 +92,14 @@ export function ProviderWalletPage() {
           href="/provider/wallet/withdrawals"
           text="Xem yêu cầu rút tiền"
         />
-        <Button variant="outline" onClick={() => void query.refetch()}>
-          Tải lại số dư
+        <Button
+          disabled={syncDeposit.isPending || query.isFetching}
+          variant="outline"
+          onClick={refreshWallet}
+        >
+          {syncDeposit.isPending || query.isFetching
+            ? "Đang tải lại..."
+            : "Tải lại số dư"}
         </Button>
       </div>
 

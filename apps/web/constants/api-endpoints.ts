@@ -59,6 +59,7 @@ export const API_ENDPOINTS = {
       WALLET: "/mobile/provider/wallet",
       WALLET_TRANSACTIONS: "/mobile/provider/wallet/transactions",
       DEPOSIT_MOMO_CREATE_PAYMENT: "/mobile/provider/deposit/momo/create-payment",
+      DEPOSIT_MOMO_SYNC: "/mobile/provider/deposit/momo/sync",
       WITHDRAWALS: "/mobile/provider/withdrawals",
       CHAT_THREADS: "/mobile/chat/threads",
       CHAT_THREAD_FOR_BOOKING: (bookingId: string) =>
@@ -72,6 +73,10 @@ export const API_ENDPOINTS = {
       LIST: "/mobile/notifications",
       MARK_READ: (id: string) => `/mobile/notifications/${id}/read`,
       MARK_ALL_READ: "/mobile/notifications/read-all",
+    },
+    MOMO: {
+      RETURN: "/mobile/payments/momo/return",
+      PROVIDER_DEPOSIT_RETURN: "/mobile/payments/momo/provider-deposit/return",
     },
   },
   VERIFICATION: {

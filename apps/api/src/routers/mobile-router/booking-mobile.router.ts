@@ -338,6 +338,45 @@ mobileBookingRouter.post(
 
 /**
  * @swagger
+ * /api/mobile/provider/deposit/momo/sync:
+ *   post:
+ *     summary: Sync provider deposit MoMo payment status
+ *     description: Provider queries MoMo for a pending deposit payment. If orderId is omitted, backend syncs the latest pending provider deposit payment. Useful when user closes MoMo before browser redirect or local IPN cannot reach localhost.
+ *     tags: [Mobile-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 nullable: true
+ *                 example: "provider-deposit-..."
+ *     responses:
+ *       200:
+ *         description: Provider deposit MoMo payment synced successfully
+ *       400:
+ *         description: Invalid orderId or payment type
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ *       404:
+ *         description: Provider deposit payment not found
+ */
+mobileBookingRouter.post(
+  "/provider/deposit/momo/sync",
+  protect,
+  checkRole("PROVIDER"),
+  mobileBookingController.syncProviderDepositMomoPayment,
+);
+
+/**
+ * @swagger
  * /api/mobile/payments/momo/ipn:
  *   post:
  *     summary: MoMo IPN callback

@@ -57,7 +57,7 @@ const providerStatusLabels: Record<string, string> = {
   UNKNOWN: "Chưa xác định",
 };
 
-export function providerStatusText(value?: string | null) {
+export function providerStatusText(value?: string | null): string {
   if (!value) return providerStatusLabels.UNKNOWN;
 
   const prefixMatch = value.match(/^([^:]+):\s*(.+)$/);
