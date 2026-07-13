@@ -84,6 +84,11 @@ export const authService = {
         id: true,
         userName: true,
         email: true,
+        customers: {
+          select: {
+            location: true,
+          },
+        },
         phone: true,
         fullName: true,
         avatar: true,
