@@ -38,15 +38,27 @@ export function ProfileMenu({
         </div>
       </div>
       <div className="space-y-0.5 p-1.5">
-        <Link href={`/${role}/profile`} className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-brand-soft hover:text-brand">
+        <Link
+          href={`/${role}/profile`}
+          className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold text-foreground transition hover:bg-brand-soft hover:text-brand"
+        >
           <TopbarIcon type="user" /> Hồ sơ
         </Link>
-        <button type="button" onMouseDown={(event) => event.preventDefault()} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-foreground transition hover:bg-brand-soft hover:text-brand">
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-foreground transition hover:bg-brand-soft hover:text-brand"
+        >
           <TopbarIcon type="activity" /> Nhật ký hoạt động
         </button>
         <ThemeMenuItem />
         <div className="my-1 border-t border-border-subtle" />
-        <button type="button" onMouseDown={(event) => event.preventDefault()} onClick={onLogout} className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-danger transition hover:bg-danger-soft">
+        <button
+          type="button"
+          onMouseDown={(event) => event.preventDefault()}
+          onClick={onLogout}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-danger transition hover:bg-danger-soft"
+        >
           <TopbarIcon type="logout" /> Đăng xuất
         </button>
       </div>

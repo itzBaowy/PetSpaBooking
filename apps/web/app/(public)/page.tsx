@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import {
   AdminSection,
+  AuthRedirect,
   ContactSection,
   FeatureSection,
   HeroSection,
@@ -40,6 +41,7 @@ export const metadata: Metadata = {
 export default function Home() {
   return (
     <main className="public-landing min-h-screen overflow-x-hidden bg-white text-[#10251a]">
+      <AuthRedirect />
       <LandingNavbar />
       <HeroSection />
       <ProviderSection />
