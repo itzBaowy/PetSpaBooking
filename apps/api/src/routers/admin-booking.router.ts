@@ -48,6 +48,10 @@ const adminBookingRouter = express.Router();
  *           type: string
  *           enum: [UNPAID, PENDING, SUCCESS, FAILED, REFUNDED]
  *       - in: query
+ *         name: bookingId
+ *         schema:
+ *           type: string
+ *       - in: query
  *         name: providerId
  *         schema:
  *           type: string

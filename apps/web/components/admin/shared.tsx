@@ -121,18 +121,27 @@ export const VALUE_LABELS: Record<string, string> = {
   MANUAL_ADJUSTMENT: "Điều chỉnh thủ công",
   WITHDRAWAL_PAYOUT: "Chi trả rút tiền",
   DISPUTE_RESOLVE: "Giải quyết tranh chấp",
+  REFUND_MARK_REFUNDED: "Đánh dấu đã hoàn tiền",
+  REFUND_REJECT: "Từ chối hoàn tiền",
+  ADMIN_NOTIFICATION_SEND: "Gửi thông báo",
+  ADMIN_NOTIFICATION_BROADCAST: "Phát thông báo theo vai trò",
   PROVIDER_REJECT: "Từ chối nhà cung cấp",
   PROVIDER_SUSPEND: "Tạm ngưng nhà cung cấp",
   PROVIDER_VERIFY: "Xác minh nhà cung cấp",
   PROVIDER_DOCUMENT_APPROVE: "Duyệt tài liệu nhà cung cấp",
   PROVIDER_DOCUMENT_REJECT: "Từ chối tài liệu nhà cung cấp",
   PROVIDER_WALLET_ADJUST: "Điều chỉnh số dư ví",
-  USER_STATUS_UPDATE: "Cập nhật trạng thái",
+  USER_STATUS_UPDATE: "Cập nhật trạng thái người dùng",
+  SERVICE_HIDE: "Ẩn dịch vụ",
+  SERVICE_UNHIDE: "Hiện lại dịch vụ",
   WITHDRAWAL_APPROVE: "Duyệt yêu cầu rút tiền",
   WITHDRAWAL_MARK_PAID: "Đánh dấu đã chi trả",
   WITHDRAWAL_REJECT: "Từ chối yêu cầu rút tiền",
   BookingDispute: "Tranh chấp lịch hẹn",
   BOOKING_DISPUTE: "Tranh chấp lịch hẹn",
+  BOOKING: "Lịch đặt",
+  ROLE: "Vai trò",
+  SERVICE: "Dịch vụ",
   Provider: "Nhà cung cấp",
   PROVIDER_DOCUMENT: "Tài liệu nhà cung cấp",
   ProviderWallet: "Ví nhà cung cấp",
@@ -168,7 +177,14 @@ export function displayValue(value: unknown, key?: string) {
 }
 
 export function cleanParams(params: Params) {
-  return Object.fromEntries(Object.entries(params).filter(([, value]) => value !== "" && value !== undefined));
+  return Object.fromEntries(
+    Object.entries(params)
+      .map(([key, value]) => [
+        key,
+        typeof value === "string" ? value.trim() : value,
+      ])
+      .filter(([, value]) => value !== "" && value !== undefined),
+  );
 }
 
 export function errorMessage(error: unknown) {
@@ -253,7 +269,7 @@ export function useAdminDetail(key: string, url: string | null) {
 }
 
 export const selectClass = "rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm";
-export const inputClass = "min-w-0 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm";
+export const inputClass = "h-11 min-w-0 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm sm:w-auto";
 
 export function FilterSelect({ value, options, onChange, className }: { value: string; options: CustomSelectOption[]; onChange: (value: string) => void; className?: string }) {
   return <CustomSelect className={className} value={value} options={options} onValueChange={onChange} />;
@@ -280,6 +296,10 @@ export function DetailItem({ label, value, icon }: { label: string; value: unkno
 }
 
 type EntityColumnRenderers = Record<string, (item: AdminEntity) => React.ReactNode>;
+type EntityColumnOptions = Record<
+  string,
+  Pick<DataTableColumn<AdminEntity>, "widthClassName" | "cellClassName" | "headerClassName" | "align">
+>;
 
 export function EntityTable({
   loading,
@@ -287,6 +307,7 @@ export function EntityTable({
   columns,
   detailBase,
   renderers,
+  columnOptions,
   actions,
 }: {
   loading: boolean;
@@ -294,6 +315,7 @@ export function EntityTable({
   columns: string[];
   detailBase?: string;
   renderers?: EntityColumnRenderers;
+  columnOptions?: EntityColumnOptions;
   actions?: (item: AdminEntity) => ActionMenuItem[];
 }) {
   const router = useRouter();
@@ -303,6 +325,7 @@ export function EntityTable({
   const tableColumns: Array<DataTableColumn<AdminEntity>> = columns.map((key) => ({
     key,
     header: fieldLabel(key),
+    ...columnOptions?.[key],
     render: (item) => {
       const customRender = renderers?.[key];
       if (customRender) return customRender(item);

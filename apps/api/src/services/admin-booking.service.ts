@@ -134,11 +134,37 @@ function getEnumQuery<T extends readonly string[]>(
 
 function getObjectIdQuery(value: unknown, name: string) {
   if (value === undefined) return undefined;
-  if (typeof value !== "string" || !ObjectId.isValid(value)) {
+  if (typeof value !== "string") {
     throw new BadRequestException(`${name} must be a valid ObjectId`);
   }
 
-  return value;
+  const normalizedValue = value.trim();
+  if (!normalizedValue) return undefined;
+  if (!ObjectId.isValid(normalizedValue)) {
+    throw new BadRequestException(`${name} must be a valid ObjectId`);
+  }
+
+  return normalizedValue;
+}
+
+function getObjectIdPrefixQuery(value: unknown, name: string) {
+  if (value === undefined) return undefined;
+  if (typeof value !== "string") {
+    throw new BadRequestException(`${name} must contain only ObjectId characters`);
+  }
+
+  const normalizedValue = value.trim();
+  if (!normalizedValue) return undefined;
+  if (!/^[0-9a-fA-F]{1,24}$/.test(normalizedValue)) {
+    throw new BadRequestException(`${name} must contain only ObjectId characters`);
+  }
+
+  const lower = normalizedValue.toLowerCase().padEnd(24, "0");
+  const upper = normalizedValue.toLowerCase().padEnd(24, "f");
+
+  return normalizedValue.length === 24
+    ? normalizedValue
+    : { gte: lower, lte: upper };
 }
 
 function getDateQuery(value: unknown, name: string) {
@@ -181,11 +207,13 @@ export const adminBookingService = {
       PAYMENT_STATUSES,
       "paymentStatus",
     ) as PaymentStatus | undefined;
+    const bookingId = getObjectIdPrefixQuery(req.query.bookingId, "bookingId");
     const providerId = getObjectIdQuery(req.query.providerId, "providerId");
     const customerId = getObjectIdQuery(req.query.customerId, "customerId");
     const from = getDateQuery(req.query.from, "from");
     const to = getDateQuery(req.query.to, "to");
 
+    if (bookingId) where.id = bookingId;
     if (status) where.status = status as BookingStatus;
     if (paymentMethod) where.paymentMethod = paymentMethod;
     if (paymentStatus) where.paymentStatus = paymentStatus;
