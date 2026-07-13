@@ -48,6 +48,10 @@ const adminBookingRouter = express.Router();
  *           type: string
  *           enum: [UNPAID, PENDING, SUCCESS, FAILED, REFUNDED]
  *       - in: query
+ *         name: bookingId
+ *         schema:
+ *           type: string
+ *       - in: query
  *         name: providerId
  *         schema:
  *           type: string
@@ -80,6 +84,53 @@ adminBookingRouter.get(
   protect,
   checkRole("ADMIN"),
   adminBookingController.getAll,
+);
+
+/**
+ * @swagger
+ * /api/admin/bookings/auto-complete/run:
+ *   post:
+ *     summary: Manually run booking auto-complete scan
+ *     description: Admin manually scans CHECKED_OUT bookings past the hold period and completes eligible bookings immediately instead of waiting for the cron job.
+ *     tags: [Admin-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Booking auto-complete scan completed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: success
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: Booking auto-complete scan completed successfully
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     completedCount:
+ *                       type: integer
+ *                       example: 3
+ *                     holdHours:
+ *                       type: number
+ *                       example: 10
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Admin role required
+ */
+adminBookingRouter.post(
+  "/bookings/auto-complete/run",
+  protect,
+  checkRole("ADMIN"),
+  adminBookingController.runAutoCompleteScan,
 );
 
 /**

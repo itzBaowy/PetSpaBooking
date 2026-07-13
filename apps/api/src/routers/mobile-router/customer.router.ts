@@ -2,6 +2,7 @@ import { Router } from "express";
 import { mobileCustomerController } from "../../controllers/mobile-controllers/customer.controller.ts";
 import { protect } from "../../middlewares/protect.middleware.ts";
 import { checkRole } from "../../middlewares/authorization.middleware.ts";
+import { uploadMemory } from "../../common/multer/memory.multer.ts";
 
 const mobileCustomerRouter = Router();
 
@@ -23,7 +24,7 @@ const mobileCustomerRouter = Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             properties:
@@ -36,6 +37,10 @@ const mobileCustomerRouter = Router();
  *               location:
  *                 type: string
  *                 example: "123 Main St, Anytown, USA"
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *                 description: Avatar image file to upload
  *     responses:
  *       200:
  *         description: Profile updated successfully
@@ -61,6 +66,7 @@ mobileCustomerRouter.patch(
   "/customer/edit-profile",
   protect,
   checkRole("CUSTOMER"),
+  uploadMemory.single("avatar"),
   mobileCustomerController.editMyProfile,
 );
 

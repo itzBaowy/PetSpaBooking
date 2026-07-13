@@ -48,7 +48,7 @@ export function AdminLedgerPage() {
 
   return (
     <div className="space-y-5">
-      <PageTitle title="Sổ cái ví và ký quỹ" description="Các giao dịch tài chính thực tế từ máy chủ." />
+      <PageTitle title="Sổ tài chính" description="Các giao dịch tài chính thực tế từ máy chủ." />
       <div className="rounded-2xl border border-border-subtle bg-surface p-3 shadow-sm">
         <div className="flex flex-wrap gap-2">
           <input
@@ -81,7 +81,7 @@ export function AdminLedgerPage() {
               setPage(1);
             }}
           />
-          <span className="text-sm font-medium text-muted self-center ml-auto">
+          <span className="w-full self-center text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} giao dịch`}
           </span>
         </div>
@@ -89,7 +89,17 @@ export function AdminLedgerPage() {
       <EntityTable
         loading={query.isLoading}
         items={query.data?.items}
-        columns={["providerId", "bookingId", "type", "balanceType", "amount", "balanceAfter", "createAt"]}
+        columns={[
+          "provider.businessName",
+          "booking.id",
+          "booking.customer.users.fullName",
+          "booking.service.name",
+          "type",
+          "balanceType",
+          "amount",
+          "balanceAfter",
+          "createAt",
+        ]}
       />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />
     </div>

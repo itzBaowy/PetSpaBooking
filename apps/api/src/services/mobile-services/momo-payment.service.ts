@@ -9,12 +9,17 @@ import {
   UnauthorizedException,
 } from "../../common/helpers/exception.helper.ts";
 import { notificationService } from "../notification.service.ts";
+import { socketService } from "../socket.service.ts";
 
 const MOMO_PROVIDER = "MOMO";
-const MOMO_REQUEST_TYPE = "captureWallet";
-const MOMO_MIN_AMOUNT = 1_000;
+const MOMO_DEFAULT_REQUEST_TYPE = "payWithMethod";
+const MOMO_WALLET_MIN_AMOUNT = 1_000;
+const MOMO_PAY_WITH_METHOD_MIN_AMOUNT = 10_000;
 const MOMO_DEFAULT_ENDPOINT = "https://test-payment.momo.vn/v2/gateway/api/create";
 const MOMO_FETCH_TIMEOUT_MS = 30_000;
+const MOMO_REQUEST_TYPES = ["captureWallet", "payWithMethod"] as const;
+
+type MomoRequestType = (typeof MOMO_REQUEST_TYPES)[number];
 
 type MomoCreateResponse = {
   partnerCode?: string;
@@ -56,6 +61,23 @@ function getRequiredEnv(name: string) {
 
 function getMomoEndpoint() {
   return process.env.MOMO_ENDPOINT || MOMO_DEFAULT_ENDPOINT;
+}
+
+function getMomoRequestType(): MomoRequestType {
+  const requestType = process.env.MOMO_REQUEST_TYPE || MOMO_DEFAULT_REQUEST_TYPE;
+  if (!MOMO_REQUEST_TYPES.includes(requestType as MomoRequestType)) {
+    throw new BadRequestException(
+      `MOMO_REQUEST_TYPE must be one of: ${MOMO_REQUEST_TYPES.join(", ")}`,
+    );
+  }
+
+  return requestType as MomoRequestType;
+}
+
+function getMomoMinAmount(requestType: MomoRequestType) {
+  return requestType === "payWithMethod"
+    ? MOMO_PAY_WITH_METHOD_MIN_AMOUNT
+    : MOMO_WALLET_MIN_AMOUNT;
 }
 
 function hmacSha256(rawSignature: string, secretKey: string) {
@@ -239,6 +261,24 @@ async function markPaymentResult(payload: Record<string, unknown>, raw: string) 
     });
 
     if (booking) {
+      const socketPayload = {
+        bookingId: booking.id,
+        paymentStatus: booking.paymentStatus,
+        paymentReference: transId ?? orderId,
+        orderId,
+        transId,
+      };
+      socketService.emitToUser(booking.customer.users.id, "payment:updated", socketPayload);
+      socketService.emitToProvider(booking.provider.id, "payment:updated", socketPayload);
+      socketService.emitToBooking(booking.id, "payment:updated", socketPayload);
+      socketService.emitToUser(booking.customer.users.id, "booking:updated", {
+        booking,
+      });
+      socketService.emitToProvider(booking.provider.id, "booking:updated", {
+        booking,
+      });
+      socketService.emitToBooking(booking.id, "booking:updated", { booking });
+
       await notificationService.safeCreateMany([
         {
           userId: booking.customer.users.id,
@@ -301,9 +341,13 @@ export const momoPaymentService = {
       );
     }
 
+    const requestType = getMomoRequestType();
     const amount = Math.round(booking.totalAmount);
-    if (amount < MOMO_MIN_AMOUNT) {
-      throw new BadRequestException(`MoMo amount must be at least ${MOMO_MIN_AMOUNT} VND`);
+    const minAmount = getMomoMinAmount(requestType);
+    if (amount < minAmount) {
+      throw new BadRequestException(
+        `MoMo ${requestType} amount must be at least ${minAmount} VND`,
+      );
     }
 
     const partnerCode = getRequiredEnv("MOMO_PARTNER_CODE");
@@ -356,7 +400,7 @@ export const momoPaymentService = {
       partnerCode,
       redirectUrl,
       requestId,
-      requestType: MOMO_REQUEST_TYPE,
+      requestType,
     });
 
     const signature = hmacSha256(rawSignature, secretKey);
@@ -371,7 +415,7 @@ export const momoPaymentService = {
       redirectUrl,
       ipnUrl,
       lang: "vi",
-      requestType: MOMO_REQUEST_TYPE,
+      requestType,
       extraData,
       signature,
     };

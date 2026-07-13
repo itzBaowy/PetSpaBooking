@@ -105,7 +105,7 @@ export function LedgerTransactionTable({
       header: "Thông tin kèm theo",
       widthClassName: "w-[22%]",
       render: (transaction) => (
-        <p className="wrap-break-word text-xs text-muted">
+        <p className="break-words text-xs text-muted">
           {transaction.metadata.reason ??
             transaction.metadata.note ??
             transaction.metadata.bookingId ??

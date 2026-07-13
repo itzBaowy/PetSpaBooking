@@ -125,6 +125,79 @@ Rule:
 - `newPassword` phải khác `currentPassword`.
 - Sau khi đổi password, FE nên yêu cầu user login lại hoặc refresh local auth state.
 
+### 1.2 Realtime Socket.IO
+
+Socket endpoint dùng chung host API:
+
+```txt
+http://localhost:5500
+```
+
+FE connect bằng access token:
+
+```ts
+import { io } from "socket.io-client";
+
+const socket = io("http://localhost:5500", {
+  auth: {
+    token: accessToken,
+  },
+});
+
+socket.on("socket:connected", (payload) => {
+  console.log("socket connected", payload);
+});
+```
+
+Khi connect thành công, backend tự join:
+
+```txt
+user:{userId}
+role:{role}
+provider:{providerId} // nếu user là provider
+```
+
+FE có thể join room booking khi đang mở booking detail:
+
+```ts
+socket.emit("booking:join", { bookingId });
+socket.emit("booking:leave", { bookingId });
+```
+
+FE có thể join room chat thread khi đang mở màn chat:
+
+```ts
+socket.emit("chat:join", { threadId });
+socket.emit("chat:typing", { threadId, isTyping: true });
+socket.emit("chat:leave", { threadId });
+```
+
+Realtime events v1:
+
+```txt
+notification:new
+booking:new
+booking:updated
+payment:updated
+refund:updated
+chat:message:new
+chat:typing
+chat:read
+```
+
+Ý nghĩa:
+
+- `notification:new`: có notification mới, payload có `notification`.
+- `booking:new`: provider nhận booking mới.
+- `booking:updated`: booking đổi trạng thái hoặc dữ liệu thanh toán/refund liên quan.
+- `payment:updated`: MoMo payment thành công/thất bại được cập nhật.
+- `refund:updated`: admin mark refunded/reject refund.
+- `chat:message:new`: có tin nhắn chat mới.
+- `chat:typing`: user còn lại đang nhập trong thread.
+- `chat:read`: tin nhắn trong thread đã được đọc.
+
+REST API và DB vẫn là nguồn sự thật. Nếu socket disconnect, FE gọi lại REST list/detail để sync lại state.
+
 ## 2. Public Mobile Provider APIs
 
 Không cần token.
@@ -297,12 +370,17 @@ Backend cần cấu hình MoMo sandbox trước khi API tạo payment gọi đư
 
 ```env
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
+MOMO_REQUEST_TYPE=payWithMethod
 MOMO_PARTNER_CODE=...
 MOMO_ACCESS_KEY=...
 MOMO_SECRET_KEY=...
 MOMO_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/return
 MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
 ```
+
+`MOMO_REQUEST_TYPE=payWithMethod` dùng MoMo Collection Link để payment page có thể hiển thị nhiều phương thức như ví MoMo, ATM hoặc thẻ nếu sandbox merchant được MoMo bật các phương thức đó. Nếu đổi về `captureWallet`, page thường chỉ tập trung vào ví MoMo/QR/deeplink.
+
+Với ATM/card, amount nên từ `10000` VND trở lên. Backend hiện validate theo request type: `payWithMethod` tối thiểu `10000` VND, `captureWallet` tối thiểu `1000` VND.
 
 ### 3.2 Xem booking của customer
 
@@ -624,6 +702,68 @@ Các event hiện có thể tạo notification:
 - `SERVICE_UNHIDDEN_BY_ADMIN`
 - `ACCOUNT_STATUS_CHANGED`
 - `ADMIN_ANNOUNCEMENT`
+- `CHAT_MESSAGE_NEW`
+
+### 5.1 Mobile Chat
+
+Token required, dùng cho customer/provider trong booking mà họ sở hữu.
+
+```http
+GET /api/mobile/bookings/{bookingId}/chat/thread
+GET /api/mobile/chat/threads
+GET /api/mobile/chat/threads/{threadId}/messages
+POST /api/mobile/chat/threads/{threadId}/messages
+PATCH /api/mobile/chat/threads/{threadId}/read
+```
+
+Luồng FE gợi ý:
+
+1. Mở booking detail.
+2. Gọi `GET /api/mobile/bookings/{bookingId}/chat/thread` để lấy hoặc tạo thread.
+3. Gọi `GET /api/mobile/chat/threads/{threadId}/messages` để load lịch sử.
+4. Socket join room:
+
+```ts
+socket.emit("chat:join", { threadId });
+```
+
+5. Gửi tin nhắn bằng REST:
+
+```http
+POST /api/mobile/chat/threads/{threadId}/messages
+```
+
+Body:
+
+```json
+{
+  "content": "Hello, I have a question about the booking."
+}
+```
+
+6. FE nghe socket event:
+
+```ts
+socket.on("chat:message:new", ({ threadId, bookingId, message }) => {
+  // append message vào UI nếu đang ở đúng thread
+});
+
+socket.on("chat:typing", ({ threadId, userId, isTyping }) => {
+  // show typing indicator
+});
+
+socket.on("chat:read", ({ threadId, readerId, readAt, count }) => {
+  // update read state
+});
+```
+
+Rule:
+
+- Chỉ customer owner hoặc provider owner của booking được chat.
+- Booking `REJECTED` không tạo thread chat mới.
+- Message v1 chỉ hỗ trợ `TEXT`.
+- `content` không được rỗng và tối đa 2000 ký tự.
+- REST/DB là nguồn sự thật; socket chỉ dùng realtime.
 
 ## 6. Admin APIs
 
@@ -646,6 +786,58 @@ disputes
 services
 withdrawals
 ```
+
+### 6.1.1 Admin system settings
+
+Admin token required. Dùng để cấu hình các rule nghiệp vụ chính mà trước đây nằm trong ENV/code.
+
+```http
+GET /api/admin/settings
+PATCH /api/admin/settings
+```
+
+Response `data` trả từng setting theo format:
+
+```json
+{
+  "minProviderDeposit": {
+    "key": "MIN_PROVIDER_DEPOSIT",
+    "value": 300000,
+    "defaultValue": 300000,
+    "description": "Minimum active provider deposit balance in VND.",
+    "source": "DB",
+    "updatedBy": "<adminUserId>",
+    "updatedAt": "2026-07-13T10:00:00.000Z"
+  }
+}
+```
+
+Update body có thể gửi một hoặc nhiều field:
+
+```json
+{
+  "minProviderDeposit": 300000,
+  "platformCommissionRate": 0.15,
+  "bookingAutoCompleteHours": 10,
+  "bookingNoArrivalGraceMinutes": 15,
+  "minWithdrawalAmount": 100000
+}
+```
+
+Ý nghĩa:
+
+- `minProviderDeposit`: deposit tối thiểu để provider được nhận booking/quản lý service.
+- `platformCommissionRate`: tỷ lệ commission khi booking `COMPLETED`, ví dụ `0.15` là 15%.
+- `bookingAutoCompleteHours`: số giờ hold sau checkout trước khi auto-complete nếu không có dispute.
+- `bookingNoArrivalGraceMinutes`: số phút sau `appointmentStart` provider mới được mark `NO_ARRIVAL`.
+- `minWithdrawalAmount`: số tiền rút tối thiểu của provider.
+
+Rule:
+
+- `platformCommissionRate` phải từ `0` đến `1`.
+- Các setting còn lại không được âm; `bookingAutoCompleteHours` phải lớn hơn hoặc bằng `1`.
+- Nếu DB chưa có setting, backend dùng ENV tương ứng nếu hợp lệ, sau đó fallback default.
+- Khi admin update, backend ghi audit log `SYSTEM_SETTINGS_UPDATE`.
 
 ### 6.2 Admin users
 
@@ -831,6 +1023,7 @@ Rule:
 ```http
 GET /api/admin/bookings
 GET /api/admin/bookings/{id}
+POST /api/admin/bookings/auto-complete/run
 ```
 
 List filters:
@@ -860,6 +1053,31 @@ review
 walletTransactions
 ```
 
+Manual auto-complete scan:
+
+```http
+POST /api/admin/bookings/auto-complete/run
+```
+
+API này cho admin chạy quét booking thủ công thay vì đợi cron job. Backend sẽ tìm booking:
+
+```txt
+status = CHECKED_OUT
+checkedOutAt đã quá BOOKING_AUTO_COMPLETE_HOURS
+không có dispute active PENDING
+```
+
+Booking hợp lệ sẽ chuyển sang `COMPLETED` và chạy commission giống cron job.
+
+Response `data`:
+
+```json
+{
+  "completedCount": 3,
+  "holdHours": 10
+}
+```
+
 ### 6.6 Admin disputes
 
 ```http
@@ -880,7 +1098,7 @@ Resolve body:
 Resolution rules:
 
 - `RESOLVED_PROVIDER_WIN`: booking -> `COMPLETED`, chạy commission.
-- `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission v1.
+- `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission. Nếu booking `ONLINE` đã paid `SUCCESS`, backend set `paymentStatus = REFUND_PENDING` và tạo refund metadata để admin hoàn tiền thủ công bên ngoài hệ thống.
 - `CANCELLED`: hiểu là hủy khiếu nại, booking -> `COMPLETED`, chạy commission.
 
 ### 6.7 Admin finance
@@ -926,18 +1144,42 @@ Rule:
 Refund v1 là manual refund:
 
 - API list chỉ trả booking `paymentMethod = ONLINE` và `paymentStatus = REFUND_PENDING`.
+- Khi booking online đã paid `SUCCESS` bị customer/provider cancel hoặc dispute được xử khách hàng thắng, backend tự set refund metadata:
+  - `refundReason`
+  - `refundRequestedBy = CUSTOMER|PROVIDER|ADMIN`
+  - `refundRequestedAt`
+  - `refundAmount`
 - Admin hoàn tiền ngoài hệ thống hoặc trên MoMo dashboard.
 - Sau đó admin gọi `mark-refunded` để set `paymentStatus = REFUNDED`.
 - Nếu từ chối refund, admin gọi `reject`, backend set `paymentStatus = SUCCESS`.
-- Cả hai action đều ghi audit log và gửi notification cho customer.
+- Cả hai action đều ghi audit log, gửi notification cho customer, và emit `refund:updated`.
 
 Mark refunded body optional:
 
 ```json
 {
   "refundReference": "MOMO_REFUND_123",
+  "refundMethod": "MOMO_MANUAL",
+  "refundAmount": 300000,
+  "refundEvidenceUrl": "https://res.cloudinary.com/.../refund-proof.jpg",
   "adminNote": "Refunded manually from MoMo dashboard"
 }
+```
+
+`refundMethod` enum:
+
+```txt
+MOMO_MANUAL
+BANK_TRANSFER
+OTHER
+```
+
+Khi `mark-refunded` thành công, booking được set:
+
+```txt
+paymentStatus = REFUNDED
+refundResolvedAt = now
+refundMethod/refundAmount/refundReference/refundEvidenceUrl/refundAdminNote
 ```
 
 Reject refund body:
@@ -946,6 +1188,14 @@ Reject refund body:
 {
   "adminNote": "Refund rejected due to policy"
 }
+```
+
+Khi reject thành công, booking được set:
+
+```txt
+paymentStatus = SUCCESS
+refundResolvedAt = now
+refundAdminNote = adminNote
 ```
 
 ### 6.8 Admin withdrawals
@@ -1045,7 +1295,59 @@ Rule:
 - Mobile user đọc bằng API notification sẵn có: `GET /api/mobile/notifications`.
 - Action này ghi audit log.
 
-### 6.10 Admin audit logs
+### 6.10 Admin support chat
+
+Admin token required. Admin có thể tham gia thread chat của booking để hỗ trợ customer/provider.
+
+```http
+GET /api/admin/chat/threads
+GET /api/admin/bookings/{bookingId}/chat/thread
+GET /api/admin/chat/threads/{threadId}/messages
+POST /api/admin/chat/threads/{threadId}/messages
+PATCH /api/admin/chat/threads/{threadId}/read
+```
+
+List filters:
+
+```txt
+bookingId
+page
+pageSize
+```
+
+Luồng FE admin gợi ý:
+
+1. Admin mở booking detail hoặc dispute detail.
+2. Gọi `GET /api/admin/bookings/{bookingId}/chat/thread` để lấy hoặc tạo thread.
+3. Gọi `GET /api/admin/chat/threads/{threadId}/messages` để load messages.
+4. Socket admin join room:
+
+```ts
+socket.emit("chat:join", { threadId });
+```
+
+5. Admin gửi support message:
+
+```http
+POST /api/admin/chat/threads/{threadId}/messages
+```
+
+Body:
+
+```json
+{
+  "content": "PetLink support is checking this booking."
+}
+```
+
+Rule:
+
+- Admin có thể xem mọi booking chat thread.
+- Message admin có `senderRole = ADMIN`.
+- Customer và provider trong booking đều nhận `chat:message:new` realtime và notification `CHAT_MESSAGE_NEW`.
+- Mobile chat API cũ vẫn dùng chung thread, nên customer/provider sẽ thấy message admin trong cùng màn chat booking.
+
+### 6.11 Admin audit logs
 
 ```http
 GET /api/admin/audit-logs
@@ -1084,9 +1386,10 @@ ADMIN_NOTIFICATION_SEND
 ADMIN_NOTIFICATION_BROADCAST
 SERVICE_HIDE
 SERVICE_UNHIDE
+SYSTEM_SETTINGS_UPDATE
 ```
 
-### 6.11 Admin reports
+### 6.12 Admin reports
 
 ```http
 GET /api/admin/reports/revenue
@@ -1203,6 +1506,7 @@ Admin resolve:
 ```txt
 DISPUTE + RESOLVED_PROVIDER_WIN -> COMPLETED
 DISPUTE + RESOLVED_CUSTOMER_WIN -> CANCELLED
+DISPUTE + RESOLVED_CUSTOMER_WIN + ONLINE paid SUCCESS -> CANCELLED + REFUND_PENDING
 DISPUTE + CANCELLED -> COMPLETED
 ```
 

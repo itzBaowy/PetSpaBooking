@@ -2,6 +2,7 @@ import { Router } from "express";
 import { mobilePetController } from "../../controllers/mobile-controllers/pet.controller.ts";
 import { checkRole } from "../../middlewares/authorization.middleware.ts";
 import { protect } from "../../middlewares/protect.middleware.ts";
+import { uploadMemory } from "../../common/multer/memory.multer.ts";
 
 export const mobilePetRouter = Router();
 
@@ -23,7 +24,7 @@ export const mobilePetRouter = Router();
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/PetCreateRequest'
  *     responses:
@@ -42,6 +43,10 @@ mobilePetRouter.post(
   "/pets",
   protect,
   checkRole("CUSTOMER"),
+  uploadMemory.fields([
+    { name: "imageUrl", maxCount: 1 },
+    { name: "photos", maxCount: 5 },
+  ]),
   mobilePetController.createPet,
 );
 
@@ -136,7 +141,7 @@ mobilePetRouter.get(
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             $ref: '#/components/schemas/PetUpdateRequest'
  *     responses:
@@ -155,6 +160,10 @@ mobilePetRouter.patch(
   "/pets/:petId",
   protect,
   checkRole("CUSTOMER"),
+  uploadMemory.fields([
+    { name: "imageUrl", maxCount: 1 },
+    { name: "photos", maxCount: 5 },
+  ]),
   mobilePetController.updatePet,
 );
 

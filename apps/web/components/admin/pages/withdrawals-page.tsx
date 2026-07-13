@@ -9,7 +9,9 @@ import {
   FilterSelect,
   EntityTable,
   Pager,
+  displayValue,
 } from "../shared";
+import { nested, textValue } from "@/apis/admin/supported-api";
 
 export function AdminWithdrawalsPage() {
   const [page, setPage] = useState(1);
@@ -44,7 +46,7 @@ export function AdminWithdrawalsPage() {
               setPage(1);
             }}
           />
-          <span className="text-sm font-medium text-muted ml-auto">
+          <span className="w-full text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} yêu cầu`}
           </span>
         </div>
@@ -52,8 +54,20 @@ export function AdminWithdrawalsPage() {
       <EntityTable
         loading={query.isLoading}
         items={query.data?.items}
-        columns={["providerId", "amount", "status", "reason", "createAt"]}
+        columns={["provider.businessName", "amount", "status", "reason", "createAt"]}
         detailBase="/admin/finance/withdrawals"
+        renderers={{
+          "provider.businessName": (item) => (
+            <div className="min-w-0">
+              <p className="break-words font-semibold text-foreground">
+                {textValue(nested(item, "provider", "businessName"))}
+              </p>
+              <p className="mt-1 break-all text-xs font-medium text-muted">
+                {displayValue(item.providerId, "providerId")}
+              </p>
+            </div>
+          ),
+        }}
       />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />
     </div>

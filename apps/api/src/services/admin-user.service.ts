@@ -29,6 +29,50 @@ const ADMIN_USER_SELECT = {
   updateAt: true,
 } as const;
 
+type AdminUserListItem = {
+  id: string;
+  userName: string;
+  fullName: string | null;
+  role: string;
+};
+
+async function withAdminUserDisplayNames<T extends AdminUserListItem>(
+  users: T[],
+) {
+  const providerUserIds = users
+    .filter((user) => user.role === "PROVIDER")
+    .map((user) => user.id);
+
+  const providers = providerUserIds.length
+    ? await prisma.providers.findMany({
+        where: { userId: { in: providerUserIds } },
+        select: {
+          id: true,
+          userId: true,
+          businessName: true,
+        },
+      })
+    : [];
+
+  const providerByUserId = new Map(
+    providers.map((provider) => [provider.userId, provider]),
+  );
+
+  return users.map((user) => {
+    const provider = providerByUserId.get(user.id) ?? null;
+    const displayName =
+      user.role === "PROVIDER"
+        ? provider?.businessName ?? user.fullName ?? user.userName
+        : user.fullName ?? user.userName;
+
+    return {
+      ...user,
+      displayName,
+      provider,
+    };
+  });
+}
+
 function getRequesterId(req: Request): string {
   const userId = (req as Request & { user?: { userId?: string } }).user
     ?.userId;
@@ -122,9 +166,10 @@ export const adminUserService = {
     ]);
 
     const totalPages = Math.ceil(totalItems / pageSize);
+    const displayItems = await withAdminUserDisplayNames(items);
 
     return {
-      items,
+      items: displayItems,
       pagination: {
         page,
         pageSize,

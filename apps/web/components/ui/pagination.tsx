@@ -61,7 +61,7 @@ export function Pagination({
       )}
     >
       {shouldShowPageSize && (
-        <div className="flex items-center gap-2 text-sm font-medium text-muted">
+        <div className="flex w-full flex-wrap items-center justify-center gap-2 text-sm font-medium text-muted sm:w-auto sm:justify-start">
           <span>Số dòng mỗi trang</span>
           <CustomSelect
             className="w-24"
@@ -78,7 +78,7 @@ export function Pagination({
       {totalPages >= 1 && (
         <nav
           aria-label="Phân trang"
-          className="flex items-center justify-center gap-2"
+          className="flex max-w-full items-center justify-start gap-2 overflow-x-auto pb-1 sm:justify-center sm:pb-0"
         >
           <button
             type="button"

@@ -1017,7 +1017,8 @@ export const swaggerOptions = {
             ageLabel: { type: "string", example: "Adult" },
             imageUrl: {
               type: "string",
-              example: "https://example.com/buddy.jpg",
+              format: "binary",
+              description: "Image file to upload",
             },
             weight: { type: "string", example: "30kg" },
             height: { type: "string", example: "60cm" },
@@ -1035,8 +1036,8 @@ export const swaggerOptions = {
             },
             photos: {
               type: "array",
-              items: { type: "string" },
-              example: ["https://example.com/buddy1.jpg"],
+              items: { type: "string", format: "binary" },
+              description: "Additional photos",
             },
             healthReminder: {
               $ref: "#/components/schemas/PetHealthReminder",
@@ -1059,7 +1060,8 @@ export const swaggerOptions = {
             ageLabel: { type: "string", example: "Adult" },
             imageUrl: {
               type: "string",
-              example: "https://example.com/buddy.jpg",
+              format: "binary",
+              description: "Image file to upload",
             },
             weight: { type: "string", example: "30kg" },
             height: { type: "string", example: "60cm" },
@@ -1077,8 +1079,8 @@ export const swaggerOptions = {
             },
             photos: {
               type: "array",
-              items: { type: "string" },
-              example: ["https://example.com/buddy1.jpg"],
+              items: { type: "string", format: "binary" },
+              description: "Additional photos",
             },
             healthReminder: {
               $ref: "#/components/schemas/PetHealthReminder",

@@ -1,144 +1,171 @@
 import bcrypt from "bcrypt";
 import { Request } from "express";
 import { tokenService } from "./token.service.ts";
-import { BadRequestException, UnauthorizedException } from "../common/helpers/exception.helper.ts";
+import {
+  BadRequestException,
+  UnauthorizedException,
+} from "../common/helpers/exception.helper.ts";
 import prisma from "./../../connect.prisma.ts";
 
 export const authService = {
-    async register(req: Request) {
-        const { userName, password, email, phone } = req.body as { userName: string; password: string; email: string, phone: string };
-        const userExist = await prisma.users.findUnique({ where: { userName } });
-        if (!userName || !password || !email || !phone) {
-            throw new BadRequestException("Please fill in all the required fields");
-        }
-        if (userExist) {
-            throw new BadRequestException("User already exists");
-        }
-        const emailExist = await prisma.users.findUnique({ where: { email } });
-        if (emailExist) {
-            throw new BadRequestException("Email already exists");
-        }
+  async register(req: Request) {
+    const { userName, password, email, phone } = req.body as {
+      userName: string;
+      password: string;
+      email: string;
+      phone: string;
+    };
+    const userExist = await prisma.users.findUnique({ where: { userName } });
+    if (!userName || !password || !email || !phone) {
+      throw new BadRequestException("Please fill in all the required fields");
+    }
+    if (userExist) {
+      throw new BadRequestException("User already exists");
+    }
+    const emailExist = await prisma.users.findUnique({ where: { email } });
+    if (emailExist) {
+      throw new BadRequestException("Email already exists");
+    }
 
-        const phoneExist = await prisma.users.findUnique({ where: { phone } });
-        if (phoneExist) {
-            throw new BadRequestException("Phone number already exists");
-        }
-        const salt = bcrypt.genSaltSync(10);
-        const hashPassword = bcrypt.hashSync(password, salt);
-        const newUser = await prisma.users.create({
-            data: { userName, password: hashPassword, email, phone },
-        });
-        const newUserId = newUser.id
-        const tokens = tokenService.createTokens(newUserId);
-        return tokens
-    },
+    const phoneExist = await prisma.users.findUnique({ where: { phone } });
+    if (phoneExist) {
+      throw new BadRequestException("Phone number already exists");
+    }
+    const salt = bcrypt.genSaltSync(10);
+    const hashPassword = bcrypt.hashSync(password, salt);
+    const newUser = await prisma.users.create({
+      data: { userName, password: hashPassword, email, phone },
+    });
+    await prisma.customers.create({
+      data: {
+        userId: newUser.id,
+        location: "",
+      },
+    });
+    const newUserId = newUser.id;
+    const tokens = tokenService.createTokens(newUserId);
+    return tokens;
+  },
 
-    async login(req: Request) {
-        const { userName, password } = req.body as { userName: string; password: string };
-        const userExist = await prisma.users.findUnique({ where: { userName } });
-        if (!userName || !password) {
-            throw new BadRequestException("Please fill in all the required fields");
-        }
-        if (!userExist) {
-            throw new UnauthorizedException("Incorrect username or password");
-        }
- 
-        // kiểm tra password
-        const isMatch = bcrypt.compareSync(password, userExist.password);
-        if (!isMatch) {
-            throw new UnauthorizedException("Incorrect username or password");
-        }
+  async login(req: Request) {
+    const { userName, password } = req.body as {
+      userName: string;
+      password: string;
+    };
+    const userExist = await prisma.users.findUnique({ where: { userName } });
+    if (!userName || !password) {
+      throw new BadRequestException("Please fill in all the required fields");
+    }
+    if (!userExist) {
+      throw new UnauthorizedException("Incorrect username or password");
+    }
 
-        const tokens = tokenService.createTokens(userExist.id);
-        return tokens;
-    },
+    // kiểm tra password
+    const isMatch = bcrypt.compareSync(password, userExist.password);
+    if (!isMatch) {
+      throw new UnauthorizedException("Incorrect username or password");
+    }
 
-    async getInfo(req: Request) {
-        // req.user là JWT payload: { userId, iat, exp } — được gán bởi protect middleware
-        const payload = (req as Request & { user?: { userId?: string } }).user;
-        const userId = payload?.userId;
-        if (!userId) {
-            throw new UnauthorizedException("Unauthorized");
-        }
+    const tokens = tokenService.createTokens(userExist.id);
+    return tokens;
+  },
 
-        const user = await prisma.users.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                userName: true,
-                email: true,
-                phone: true,
-                fullName: true,
-                avatar: true,
-                role: true,
-                status: true,
-                createAt: true,
-                updateAt: true
-            },
-        });
+  async getInfo(req: Request) {
+    // req.user là JWT payload: { userId, iat, exp } — được gán bởi protect middleware
+    const payload = (req as Request & { user?: { userId?: string } }).user;
+    const userId = payload?.userId;
+    if (!userId) {
+      throw new UnauthorizedException("Unauthorized");
+    }
 
-        if (!user) {
-            throw new UnauthorizedException("User not found");
-        }
+    const user = await prisma.users.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        userName: true,
+        email: true,
+        customers: {
+          select: {
+            location: true,
+          },
+        },
+        phone: true,
+        fullName: true,
+        avatar: true,
+        role: true,
+        status: true,
+        createAt: true,
+        updateAt: true,
+      },
+    });
 
-        const providerProfile = await prisma.providers.findUnique({
-            where: { userId },
-            select: {
-                id: true,
-                providerStatus: true,
-            },
-        });
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
 
-        return {
-            ...user,
-            providerProfileId: providerProfile?.id ?? null,
-            providerStatus: providerProfile?.providerStatus ?? null,
-            providerVerificationStatus: providerProfile?.providerStatus ?? null,
-        };
-    },
-    
-    async checkAvailability(req: Request) {
-        const { userName, email, phone } = req.query as { userName?: string; email?: string; phone?: string };
-        
-        if (userName) {
-            const exists = await prisma.users.findUnique({ where: { userName } });
-            if (exists) {
-                throw new BadRequestException("Tên đăng nhập đã tồn tại.");
-            }
-        }
-        if (email) {
-            const exists = await prisma.users.findUnique({ where: { email } });
-            if (exists) {
-                throw new BadRequestException("Email đã tồn tại.");
-            }
-        }
-        if (phone) {
-            const exists = await prisma.users.findUnique({ where: { phone } });
-            if (exists) {
-                throw new BadRequestException("Số điện thoại đã tồn tại.");
-            }
-        }
-        return { available: true };
-    },
+    const providerProfile = await prisma.providers.findUnique({
+      where: { userId },
+      select: {
+        id: true,
+        providerStatus: true,
+      },
+    });
 
-    async refreshToken(req: Request) {
-        const { refreshToken } = req.body as { refreshToken: string };
-        const accessToken = req.headers.authorization?.split(" ")[1];
-        if (!refreshToken) {
-            throw new BadRequestException("Refresh token is required");
-        }
-        if (!accessToken) {
-            throw new UnauthorizedException("Access token is required");
-        }
-        const decodeAccessToken = tokenService.verifyAccessToken(accessToken, { ignoreExpiration: true });
-        const decodeRefreshToken = tokenService.verifyRefreshToken(refreshToken);
+    return {
+      ...user,
+      providerProfileId: providerProfile?.id ?? null,
+      providerStatus: providerProfile?.providerStatus ?? null,
+      providerVerificationStatus: providerProfile?.providerStatus ?? null,
+    };
+  },
 
-        if (decodeAccessToken.userId !== decodeRefreshToken.userId) {
-            throw new UnauthorizedException("Invalid refresh token");
-        }
+  async checkAvailability(req: Request) {
+    const { userName, email, phone } = req.query as {
+      userName?: string;
+      email?: string;
+      phone?: string;
+    };
 
-        const tokens = tokenService.createTokens(decodeRefreshToken.userId);
-        return tokens;
-    },
+    if (userName) {
+      const exists = await prisma.users.findUnique({ where: { userName } });
+      if (exists) {
+        throw new BadRequestException("Tên đăng nhập đã tồn tại.");
+      }
+    }
+    if (email) {
+      const exists = await prisma.users.findUnique({ where: { email } });
+      if (exists) {
+        throw new BadRequestException("Email đã tồn tại.");
+      }
+    }
+    if (phone) {
+      const exists = await prisma.users.findUnique({ where: { phone } });
+      if (exists) {
+        throw new BadRequestException("Số điện thoại đã tồn tại.");
+      }
+    }
+    return { available: true };
+  },
 
+  async refreshToken(req: Request) {
+    const { refreshToken } = req.body as { refreshToken: string };
+    const accessToken = req.headers.authorization?.split(" ")[1];
+    if (!refreshToken) {
+      throw new BadRequestException("Refresh token is required");
+    }
+    if (!accessToken) {
+      throw new UnauthorizedException("Access token is required");
+    }
+    const decodeAccessToken = tokenService.verifyAccessToken(accessToken, {
+      ignoreExpiration: true,
+    });
+    const decodeRefreshToken = tokenService.verifyRefreshToken(refreshToken);
+
+    if (decodeAccessToken.userId !== decodeRefreshToken.userId) {
+      throw new UnauthorizedException("Invalid refresh token");
+    }
+
+    const tokens = tokenService.createTokens(decodeRefreshToken.userId);
+    return tokens;
+  },
 };

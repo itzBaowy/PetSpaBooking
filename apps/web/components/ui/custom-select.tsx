@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 export interface CustomSelectOption {
@@ -26,28 +27,90 @@ export function CustomSelect({
   onValueChange,
 }: CustomSelectProps) {
   const listboxId = useId();
+  const buttonRef = useRef<HTMLButtonElement | null>(null);
+  const menuRef = useRef<HTMLDivElement | null>(null);
   const normalizedOptions = options.map((option) =>
     typeof option === "string" ? { label: option, value: option } : option,
   );
   const [isOpen, setIsOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    maxHeight: number;
+  } | null>(null);
   const [selectedValue, setSelectedValue] = useState(
     defaultValue ?? normalizedOptions[0]?.value ?? "",
   );
   const currentValue = value ?? selectedValue;
   const selectedLabel = normalizedOptions.find((option) => option.value === currentValue)?.label ?? placeholder;
 
+  const updateMenuPosition = useCallback(() => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const viewportPadding = 12;
+    const estimatedMenuHeight = Math.min(normalizedOptions.length * 44 + 12, 288);
+    const spaceBelow = window.innerHeight - rect.bottom - viewportPadding;
+    const spaceAbove = rect.top - viewportPadding;
+    const shouldOpenUp = spaceBelow < estimatedMenuHeight && spaceAbove > spaceBelow;
+    const availableSpace = shouldOpenUp ? spaceAbove : spaceBelow;
+    const maxHeight = Math.max(120, Math.min(288, availableSpace));
+    const width = Math.min(rect.width, window.innerWidth - viewportPadding * 2);
+
+    setMenuPosition({
+      left: Math.min(Math.max(viewportPadding, rect.left), window.innerWidth - width - viewportPadding),
+      top: shouldOpenUp
+        ? Math.max(viewportPadding, rect.top - Math.min(estimatedMenuHeight, maxHeight) - 8)
+        : Math.min(window.innerHeight - viewportPadding, rect.bottom + 8),
+      width,
+      maxHeight,
+    });
+  }, [normalizedOptions.length, setMenuPosition]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updateMenuPosition();
+
+    const closeOnOutsideClick = (event: MouseEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (buttonRef.current?.contains(target)) return;
+      if (menuRef.current?.contains(target)) return;
+      setIsOpen(false);
+    };
+
+    window.addEventListener("resize", updateMenuPosition);
+    window.addEventListener("scroll", updateMenuPosition, true);
+    document.addEventListener("click", closeOnOutsideClick);
+    return () => {
+      window.removeEventListener("resize", updateMenuPosition);
+      window.removeEventListener("scroll", updateMenuPosition, true);
+      document.removeEventListener("click", closeOnOutsideClick);
+    };
+  }, [isOpen, updateMenuPosition]);
+
+  const selectOption = (nextValue: string) => {
+    if (value === undefined) setSelectedValue(nextValue);
+    onValueChange?.(nextValue);
+    setIsOpen(false);
+  };
+
   return (
     <div className={cn("relative", className)}>
       <button
+        ref={buttonRef}
         type="button"
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         aria-controls={listboxId}
-        onClick={() => setIsOpen((current) => !current)}
-        onBlur={() => window.setTimeout(() => setIsOpen(false), 120)}
-        className="flex h-11 w-full items-center justify-between rounded-xl border border-border-subtle bg-surface px-4 text-left text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border-muted focus:outline-none focus:ring-4 focus:ring-brand-soft"
+        onClick={() => {
+          updateMenuPosition();
+          setIsOpen((current) => !current);
+        }}
+        className="flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface px-4 text-left text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border-muted focus:outline-none focus:ring-4 focus:ring-brand-soft"
       >
-        <span className={currentValue ? "text-foreground" : "text-subtle"}>{selectedLabel}</span>
+        <span className={cn("min-w-0 flex-1 truncate", currentValue ? "text-foreground" : "text-subtle")}>{selectedLabel}</span>
         <svg
           className={cn(
             "h-4 w-4 text-subtle transition-transform",
@@ -66,11 +129,18 @@ export function CustomSelect({
         </svg>
       </button>
 
-      {isOpen && (
+      {isOpen && typeof document !== "undefined" && menuPosition && createPortal(
         <div
+          ref={menuRef}
           id={listboxId}
           role="listbox"
-          className="absolute z-30 mt-2 max-h-72 w-full overflow-auto rounded-xl border border-border-subtle bg-surface p-1.5 shadow-xl shadow-gray-900/10"
+          style={{
+            left: menuPosition.left,
+            top: menuPosition.top,
+            width: menuPosition.width,
+            maxHeight: menuPosition.maxHeight,
+          }}
+          className="fixed z-[90] overflow-auto rounded-xl border border-border-subtle bg-surface p-1.5 shadow-xl shadow-gray-900/10"
         >
           {normalizedOptions.map((option) => {
             const isSelected = option.value === currentValue;
@@ -81,11 +151,15 @@ export function CustomSelect({
                 type="button"
                 role="option"
                 aria-selected={isSelected}
-                onMouseDown={(event) => event.preventDefault()}
-                onClick={() => {
-                  if (value === undefined) setSelectedValue(option.value);
-                  onValueChange?.(option.value);
-                  setIsOpen(false);
+                onMouseDown={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                }}
+                onPointerDown={(event) => event.stopPropagation()}
+                onClick={(event) => {
+                  event.preventDefault();
+                  event.stopPropagation();
+                  selectOption(option.value);
                 }}
                 className={cn(
                   "block w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors",
@@ -99,7 +173,7 @@ export function CustomSelect({
             );
           })}
         </div>
-      )}
+      , document.body)}
     </div>
   );
 }

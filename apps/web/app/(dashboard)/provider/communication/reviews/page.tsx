@@ -1,10 +1,3 @@
-export default function Reviews() {
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Customer Reviews</h1>
-      <div className="bg-white p-4 rounded-lg shadow">
-        <p>Manage your customer reviews and ratings</p>
-      </div>
-    </div>
-  );
-}
+import { ProviderReviewManagementMock } from "@/components/provider/reviews/review-management";
+
+export default function ProviderReviewsPage() { return <main className="p-4 sm:p-6 lg:p-8"><div className="mx-auto max-w-6xl"><ProviderReviewManagementMock /></div></main>; }

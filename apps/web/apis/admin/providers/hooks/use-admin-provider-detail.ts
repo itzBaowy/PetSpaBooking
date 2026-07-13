@@ -1,5 +1,6 @@
 "use client";
 
+import axios from "axios";
 import { useConfirmDialog, useToast } from "@/components/ui/feedback-provider";
 import {
   useAdminProvider,
@@ -11,6 +12,19 @@ import {
   getApproveConfirmMessage,
   getSuspendPromptMessage,
 } from "../provider-helpers";
+
+function getErrorMessage(error: unknown) {
+  if (axios.isAxiosError(error)) {
+    return (
+      error.response?.data?.message ||
+      (error.response?.status === 403
+        ? "Bạn không có quyền thực hiện thao tác này."
+        : "Yêu cầu API thất bại.")
+    );
+  }
+
+  return error instanceof Error ? error.message : "Không thể xử lý yêu cầu.";
+}
 
 export function useAdminProviderDetail(providerId: string) {
   const confirm = useConfirmDialog();
@@ -33,8 +47,12 @@ export function useAdminProviderDetail(providerId: string) {
     });
     if (!result.confirmed) return;
 
-    await approveMutation.mutateAsync(provider.id);
-    showToast("Đã duyệt nhà cung cấp.", "success");
+    try {
+      await approveMutation.mutateAsync(provider.id);
+      showToast("Đã duyệt nhà cung cấp.", "success");
+    } catch (error) {
+      showToast(getErrorMessage(error), "error");
+    }
   }
 
   async function rejectProvider() {
@@ -55,11 +73,15 @@ export function useAdminProviderDetail(providerId: string) {
     });
     if (!result.confirmed || !result.value) return;
 
-    await rejectMutation.mutateAsync({
-      providerId: provider.id,
-      payload: { reason: result.value },
-    });
-    showToast("Đã từ chối hồ sơ nhà cung cấp.", "success");
+    try {
+      await rejectMutation.mutateAsync({
+        providerId: provider.id,
+        payload: { reason: result.value },
+      });
+      showToast("Đã từ chối hồ sơ nhà cung cấp.", "success");
+    } catch (error) {
+      showToast(getErrorMessage(error), "error");
+    }
   }
 
   async function suspendProvider() {
@@ -78,11 +100,15 @@ export function useAdminProviderDetail(providerId: string) {
     });
     if (!result.confirmed) return;
 
-    await suspendMutation.mutateAsync({
-      providerId: provider.id,
-      payload: { reason: result.value || undefined },
-    });
-    showToast("Đã tạm ngưng nhà cung cấp.", "success");
+    try {
+      await suspendMutation.mutateAsync({
+        providerId: provider.id,
+        payload: { reason: result.value || undefined },
+      });
+      showToast("Đã tạm ngưng nhà cung cấp.", "success");
+    } catch (error) {
+      showToast(getErrorMessage(error), "error");
+    }
   }
 
   return {

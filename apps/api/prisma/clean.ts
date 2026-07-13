@@ -7,6 +7,8 @@ async function cleanDatabase() {
     // Delete all records from each model
     // Order matters if there are relations (delete children before parents)
 
+    const deletedChatMessages = await prisma.chat_messages.deleteMany({});
+    const deletedChatThreads = await prisma.chat_threads.deleteMany({});
     const deletedReviews = await prisma.reviews.deleteMany({});
     const deletedPaymentTransactions =
       await prisma.payment_transactions.deleteMany({});
@@ -19,6 +21,9 @@ async function cleanDatabase() {
     const deletedProviders = await prisma.providers.deleteMany({});
     const deletedCustomers = await prisma.customers.deleteMany({});
     const deletedUsers = await prisma.users.deleteMany({});
+    const deletedSystemSettings = await prisma.system_settings.deleteMany({});
+    console.log(`Deleted ${deletedChatMessages.count} chat message(s)`);
+    console.log(`Deleted ${deletedChatThreads.count} chat thread(s)`);
     console.log(`Deleted ${deletedReviews.count} review(s)`);
     console.log(
       `Deleted ${deletedPaymentTransactions.count} payment transaction(s)`,
@@ -33,6 +38,7 @@ async function cleanDatabase() {
     console.log(`Deleted ${deletedProviders.count} provider(s)`);
     console.log(`Deleted ${deletedCustomers.count} customer(s)`);
     console.log(`Deleted ${deletedUsers.count} user(s)`);
+    console.log(`Deleted ${deletedSystemSettings.count} system setting(s)`);
 
     console.log("\n🎉 Database cleaned successfully!");
   } catch (error) {

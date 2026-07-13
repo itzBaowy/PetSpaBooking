@@ -28,6 +28,7 @@ model users {
   customers customers?
   notifications notifications[]
   adminAuditLogs admin_audit_logs[]
+  chatMessages chat_messages[]
 }
 
 model customers {
@@ -143,6 +144,15 @@ model bookings {
   paymentStatus String @default("UNPAID")
   paymentReference String?
   paidAt        DateTime?
+  refundReason       String?
+  refundRequestedBy  String?
+  refundRequestedAt  DateTime?
+  refundResolvedAt   DateTime?
+  refundMethod       String?
+  refundAmount       Float?
+  refundReference    String?
+  refundEvidenceUrl  String?
+  refundAdminNote    String?
 
   totalAmount Float
   currency    String @default("VND")
@@ -177,6 +187,8 @@ model bookings {
   review   reviews?
   walletTransactions wallet_transactions[]
   paymentTransactions payment_transactions[]
+  chatThread chat_threads?
+  chatMessages chat_messages[]
 
   @@index([customerId])
   @@index([providerId])
@@ -216,6 +228,55 @@ model payment_transactions {
   @@index([providerId])
   @@index([provider])
   @@index([status])
+}
+
+model chat_threads {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  bookingId     String   @unique @db.ObjectId
+  customerId    String   @db.ObjectId
+  providerId    String   @db.ObjectId
+  lastMessage   String?
+  lastMessageAt DateTime?
+  createAt      DateTime @default(now())
+  updateAt      DateTime @updatedAt
+
+  booking  bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  messages chat_messages[]
+
+  @@index([customerId])
+  @@index([providerId])
+  @@index([lastMessageAt])
+}
+
+model chat_messages {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  threadId    String   @db.ObjectId
+  bookingId   String   @db.ObjectId
+  senderId    String   @db.ObjectId
+  senderRole  String
+  messageType String   @default("TEXT")
+  content     String
+  readAt      DateTime?
+  createAt    DateTime @default(now())
+
+  thread  chat_threads @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  booking bookings     @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  sender  users        @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([threadId])
+  @@index([bookingId])
+  @@index([senderId])
+  @@index([createAt])
+}
+
+model system_settings {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  key         String   @unique
+  value       Float
+  description String?
+  updatedBy   String?  @db.ObjectId
+  createAt    DateTime @default(now())
+  updateAt    DateTime @updatedAt
 }
 
 model booking_qr_logs {
