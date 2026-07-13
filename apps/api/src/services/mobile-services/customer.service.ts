@@ -53,6 +53,14 @@ export const mobileCustomerServices = {
 
     const { fullName, phone, location } = req.body;
 
+    const phoneExist = await prisma.users.findUnique({
+      where: { phone: phone },
+    });
+
+    if (phoneExist) {
+      throw new BadRequestException("Phone number already exists");
+    }
+
     let relativeAvatarPath = user.avatar;
 
     if (req.file) {
