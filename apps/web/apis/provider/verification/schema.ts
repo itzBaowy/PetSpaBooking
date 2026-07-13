@@ -92,9 +92,5 @@ export const uploadProviderDocumentSchema = z.object({
 
 export type ProviderInfo = z.infer<typeof providerInfoSchema>;
 export type ProviderDocument = z.infer<typeof providerDocumentSchema>;
-export type ProviderRegistrationData = z.infer<
-  typeof providerRegistrationSchema
->;
-export type UploadProviderDocumentData = z.infer<
-  typeof uploadProviderDocumentSchema
->;
+export type ProviderRegistrationData = z.infer<typeof providerRegistrationSchema>;
+export type UploadProviderDocumentData = z.infer<typeof uploadProviderDocumentSchema>;

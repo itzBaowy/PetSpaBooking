@@ -47,7 +47,12 @@ test("removed provider nav pages are denied", () => {
       .allowed,
     false,
   );
-  assert.equal(getProviderRouteAccess("/provider/profile", "VERIFIED").allowed, false);
+});
+
+test("provider profile route is available from the topbar", () => {
+  assert.equal(getProviderRouteAccess("/provider/profile", "VERIFIED").allowed, true);
+  assert.equal(getProviderRouteAccess("/provider/profile", "PENDING_VERIFICATION").allowed, true);
+  assert.equal(getProviderRouteAccess("/provider/profile", "SUSPENDED").allowed, true);
 });
 
 test("limited and suspended providers cannot access operational routes", () => {
