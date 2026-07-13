@@ -21,6 +21,7 @@ type BookingCommissionInput = {
   serviceId: string;
   totalAmount: number;
   paymentMethod: string;
+  paymentStatus?: string | null;
 };
 
 function getOptionalObjectId(value: unknown, name: string) {
@@ -85,6 +86,46 @@ function rateLabel(rate: number) {
   return `${Math.round(rate * 10000) / 100}%`;
 }
 
+function getFundSnapshot(booking: BookingCommissionInput) {
+  if (booking.paymentMethod !== "ONLINE") {
+    return {
+      heldAmount: 0,
+      fundSource: "CUSTOMER_CASH_TO_PROVIDER",
+      fundStatus: "NOT_HELD",
+    };
+  }
+
+  if (booking.paymentStatus === "SUCCESS") {
+    return {
+      heldAmount: booking.totalAmount,
+      fundSource: "CUSTOMER_ONLINE_PAYMENT",
+      fundStatus: "HELD",
+    };
+  }
+
+  if (booking.paymentStatus === "REFUND_PENDING") {
+    return {
+      heldAmount: booking.totalAmount,
+      fundSource: "CUSTOMER_ONLINE_PAYMENT",
+      fundStatus: "REFUND_PENDING",
+    };
+  }
+
+  if (booking.paymentStatus === "REFUNDED") {
+    return {
+      heldAmount: 0,
+      fundSource: "CUSTOMER_ONLINE_PAYMENT",
+      fundStatus: "REFUNDED",
+    };
+  }
+
+  return {
+    heldAmount: 0,
+    fundSource: "CUSTOMER_ONLINE_PAYMENT",
+    fundStatus: "NOT_HELD",
+  };
+}
+
 function toCommissionDto(record: any) {
   return {
     id: record.id,
@@ -93,9 +134,13 @@ function toCommissionDto(record: any) {
     providerName: record.provider?.businessName ?? "Unknown provider",
     serviceName: record.booking?.service?.name ?? "Unknown service",
     bookingAmount: record.bookingAmount,
+    heldAmount: record.heldAmount ?? 0,
     commissionAmount: record.commissionAmount,
+    providerEarning: record.providerEarning,
     rateLabel: rateLabel(record.commissionRate),
     status: record.status,
+    fundSource: record.fundSource ?? "NONE",
+    fundStatus: record.fundStatus ?? "NOT_HELD",
     paymentMethod: record.paymentMethod === "ONLINE" ? "MOMO" : record.paymentMethod,
     reservedAt: record.reservedAt?.toISOString?.() ?? null,
     chargedAt: record.chargedAt?.toISOString?.() ?? null,
@@ -118,6 +163,7 @@ async function getCommissionData(booking: BookingCommissionInput) {
 export const commissionRecordService = {
   async holdForBooking(booking: BookingCommissionInput) {
     const data = await getCommissionData(booking);
+    const fund = getFundSnapshot(booking);
 
     return prisma.commission_records.upsert({
       where: { bookingId: booking.id },
@@ -127,19 +173,25 @@ export const commissionRecordService = {
         customerId: booking.customerId,
         serviceId: booking.serviceId,
         bookingAmount: booking.totalAmount,
+        heldAmount: fund.heldAmount,
         commissionRate: data.commissionRate,
         commissionAmount: data.commissionAmount,
         providerEarning: data.providerEarning,
         paymentMethod: booking.paymentMethod,
+        fundSource: fund.fundSource,
+        fundStatus: fund.fundStatus,
         status: "PENDING",
         reservedAt: new Date(),
       },
       update: {
         bookingAmount: booking.totalAmount,
+        heldAmount: fund.heldAmount,
         commissionRate: data.commissionRate,
         commissionAmount: data.commissionAmount,
         providerEarning: data.providerEarning,
         paymentMethod: booking.paymentMethod,
+        fundSource: fund.fundSource,
+        fundStatus: fund.fundStatus,
         status: "PENDING",
         failureReason: null,
         releaseReason: null,
@@ -158,6 +210,12 @@ export const commissionRecordService = {
   ) {
     const commissionRate =
       booking.totalAmount > 0 ? input.commissionAmount / booking.totalAmount : 0;
+    const fundSource =
+      booking.paymentMethod === "ONLINE"
+        ? "CUSTOMER_ONLINE_PAYMENT"
+        : "CUSTOMER_CASH_TO_PROVIDER";
+    const fundStatus =
+      booking.paymentMethod === "ONLINE" ? "SETTLED_TO_PROVIDER" : "NOT_HELD";
 
     return prisma.commission_records.upsert({
       where: { bookingId: booking.id },
@@ -167,10 +225,13 @@ export const commissionRecordService = {
         customerId: booking.customerId,
         serviceId: booking.serviceId,
         bookingAmount: booking.totalAmount,
+        heldAmount: 0,
         commissionRate,
         commissionAmount: input.commissionAmount,
         providerEarning: input.providerEarning,
         paymentMethod: booking.paymentMethod,
+        fundSource,
+        fundStatus,
         status: "CHARGED",
         collectedFrom: input.collectedFrom,
         reservedAt: input.chargedAt ?? new Date(),
@@ -178,10 +239,13 @@ export const commissionRecordService = {
       },
       update: {
         bookingAmount: booking.totalAmount,
+        heldAmount: 0,
         commissionRate,
         commissionAmount: input.commissionAmount,
         providerEarning: input.providerEarning,
         paymentMethod: booking.paymentMethod,
+        fundSource,
+        fundStatus,
         status: "CHARGED",
         collectedFrom: input.collectedFrom,
         chargedAt: input.chargedAt ?? new Date(),
@@ -191,15 +255,43 @@ export const commissionRecordService = {
   },
 
   async releaseForBooking(bookingId: string, reason: string) {
+    const record = await prisma.commission_records.findUnique({
+      where: { bookingId },
+      select: { heldAmount: true },
+    });
+    const data: {
+      status: string;
+      fundStatus?: string;
+      releaseReason: string;
+      releasedAt: Date;
+    } = {
+      status: "RELEASED",
+      releaseReason: reason,
+      releasedAt: new Date(),
+    };
+
+    if ((record?.heldAmount ?? 0) > 0) {
+      data.fundStatus = "REFUND_PENDING";
+    }
+
     return prisma.commission_records.updateMany({
       where: {
         bookingId,
         status: { in: ["PENDING", "FAILED"] },
       },
+      data,
+    });
+  },
+
+  async markHeldRefundedForBooking(bookingId: string) {
+    return prisma.commission_records.updateMany({
+      where: {
+        bookingId,
+        heldAmount: { gt: 0 },
+      },
       data: {
-        status: "RELEASED",
-        releaseReason: reason,
-        releasedAt: new Date(),
+        heldAmount: 0,
+        fundStatus: "REFUNDED",
       },
     });
   },
@@ -219,7 +311,19 @@ export const commissionRecordService = {
   },
 
   async getSummary() {
-    const [pending, charged, released, failed, cash, online] = await Promise.all([
+    const [
+      held,
+      pending,
+      charged,
+      released,
+      failed,
+      cash,
+      online,
+    ] = await Promise.all([
+      prisma.commission_records.aggregate({
+        where: { heldAmount: { gt: 0 } },
+        _sum: { heldAmount: true },
+      }),
       prisma.commission_records.aggregate({
         where: { status: "PENDING" },
         _sum: { commissionAmount: true },
@@ -247,10 +351,16 @@ export const commissionRecordService = {
     ]);
 
     return {
-      reservedAmount: pending._sum.commissionAmount ?? 0,
+      heldAmount: held._sum.heldAmount ?? 0,
+      pendingHeldAmount: held._sum.heldAmount ?? 0,
+      pendingCommissionAmount: pending._sum.commissionAmount ?? 0,
+      reservedAmount: held._sum.heldAmount ?? 0,
       chargedAmount: charged._sum.commissionAmount ?? 0,
+      chargedCommissionAmount: charged._sum.commissionAmount ?? 0,
       releasedAmount: released._sum.commissionAmount ?? 0,
+      releasedCommissionAmount: released._sum.commissionAmount ?? 0,
       failedAmount: failed._sum.commissionAmount ?? 0,
+      failedCommissionAmount: failed._sum.commissionAmount ?? 0,
       cashCommissionAmount: cash._sum.commissionAmount ?? 0,
       onlineCommissionAmount: online._sum.commissionAmount ?? 0,
     };

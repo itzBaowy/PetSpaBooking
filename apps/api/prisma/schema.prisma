@@ -208,10 +208,13 @@ model commission_records {
   serviceId       String @db.ObjectId
 
   bookingAmount    Float
+  heldAmount       Float  @default(0)
   commissionRate   Float
   commissionAmount Float
   providerEarning  Float
   paymentMethod    String
+  fundSource       String @default("NONE")
+  fundStatus       String @default("NOT_HELD")
   status           String @default("PENDING")
   collectedFrom    String?
   failureReason    String?
@@ -232,6 +235,7 @@ model commission_records {
   @@index([serviceId])
   @@index([status])
   @@index([paymentMethod])
+  @@index([fundStatus])
   @@index([reservedAt])
   @@index([chargedAt])
 }

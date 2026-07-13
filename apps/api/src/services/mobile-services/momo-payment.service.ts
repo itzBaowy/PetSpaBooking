@@ -10,6 +10,7 @@ import {
 } from "../../common/helpers/exception.helper.ts";
 import { notificationService } from "../notification.service.ts";
 import { socketService } from "../socket.service.ts";
+import { commissionRecordService } from "../commission-record.service.ts";
 import { getSystemSettingValue } from "../system-setting.service.ts";
 
 const MOMO_PROVIDER = "MOMO";
@@ -481,6 +482,8 @@ async function applyPaymentResult(
     });
 
     if (booking) {
+      await commissionRecordService.holdForBooking(booking);
+
       const socketPayload = {
         bookingId: booking.id,
         paymentStatus: booking.paymentStatus,

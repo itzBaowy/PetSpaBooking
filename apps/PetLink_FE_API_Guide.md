@@ -1631,7 +1631,30 @@ DISPUTE + CANCELLED -> COMPLETED
 
 ## 8. Admin Commission Management
 
-Mục đích: màn admin theo dõi hoa hồng toàn sàn theo 4 trạng thái:
+Mục đích: màn admin theo dõi hoa hồng và dòng tiền liên quan đến booking trên toàn sàn.
+Lưu ý nghiệp vụ quan trọng: `heldAmount` là tiền gross sàn đang giữ từ khách hàng, còn
+`commissionAmount` là phần hoa hồng dự kiến/đã thu. Hai số này không được hiểu là một.
+
+Ví dụ booking online 250.000 VND, commission 15%:
+
+```txt
+heldAmount = 250000
+commissionAmount = 37500
+providerEarning = 212500
+fundSource = CUSTOMER_ONLINE_PAYMENT
+fundStatus = HELD
+```
+
+Với booking cash, khách trả trực tiếp cho provider nên sàn không giữ gross:
+
+```txt
+heldAmount = 0
+commissionAmount = hoa hồng phải thu từ wallet/deposit của provider
+fundSource = CUSTOMER_CASH_TO_PROVIDER
+fundStatus = NOT_HELD
+```
+
+Trạng thái hoa hồng:
 
 ```txt
 PENDING  = hoa hồng đang giữ cho booking chưa kết thúc
@@ -1644,8 +1667,11 @@ Lifecycle backend đang ghi `commission_records`:
 
 ```txt
 Booking created/confirmed -> commission PENDING
+Online payment SUCCESS -> heldAmount = booking totalAmount, fundStatus = HELD
 Booking rejected/cancelled/no-arrival -> commission RELEASED
-Booking completed + commission processed -> commission CHARGED
+Online cancelled after paid -> fundStatus = REFUND_PENDING, heldAmount vẫn còn cho tới khi admin mark refunded
+Admin mark refunded -> heldAmount = 0, fundStatus = REFUNDED
+Booking completed + commission processed -> commission CHARGED, heldAmount = 0
 Commission processing failed -> commission FAILED
 ```
 
@@ -1660,10 +1686,16 @@ Response `data`:
 
 ```json
 {
-  "reservedAmount": 150000,
+  "heldAmount": 250000,
+  "pendingHeldAmount": 250000,
+  "pendingCommissionAmount": 37500,
+  "reservedAmount": 250000,
   "chargedAmount": 850000,
+  "chargedCommissionAmount": 850000,
   "releasedAmount": 50000,
+  "releasedCommissionAmount": 50000,
   "failedAmount": 0,
+  "failedCommissionAmount": 0,
   "cashCommissionAmount": 500000,
   "onlineCommissionAmount": 350000
 }
@@ -1672,7 +1704,7 @@ Response `data`:
 ### List
 
 ```http
-GET /api/admin/finance/commissions?page=1&pageSize=20&status=PENDING&paymentMethod=CASH
+GET /api/admin/finance/commissions?page=1&pageSize=20&status=PENDING&paymentMethod=ONLINE
 Authorization: Bearer <admin_accessToken>
 ```
 
@@ -1698,11 +1730,15 @@ Response `data`:
       "providerId": "66f...",
       "providerName": "Happy Paws Spa",
       "serviceName": "Grooming",
-      "bookingAmount": 500000,
-      "commissionAmount": 75000,
+      "bookingAmount": 250000,
+      "heldAmount": 250000,
+      "commissionAmount": 37500,
+      "providerEarning": 212500,
       "rateLabel": "15%",
       "status": "PENDING",
-      "paymentMethod": "CASH",
+      "fundSource": "CUSTOMER_ONLINE_PAYMENT",
+      "fundStatus": "HELD",
+      "paymentMethod": "MOMO",
       "reservedAt": "2026-07-13T10:00:00.000Z",
       "chargedAt": null,
       "releasedAt": null,
