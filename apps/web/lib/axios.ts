@@ -99,10 +99,6 @@ api.interceptors.response.use(
       useAuthStore.getState().clearTokens();
     }
 
-    if (error.response?.status === 403) {
-      useAuthStore.getState().clearTokens();
-    }
-
     return Promise.reject(error);
   },
 );

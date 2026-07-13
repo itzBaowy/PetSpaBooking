@@ -11,10 +11,13 @@ const LIMITED_ITEM_IDS = [
   "business-profile",
   "verification",
 ];
+const VISIBLE_PROVIDER_NAVIGATION = PROVIDER_NAVIGATION.filter(
+  (item) => item.id !== "pricing",
+);
 
 test("verified and approved providers receive the full navigation", () => {
-  assert.deepEqual(getProviderNavigation("VERIFIED"), PROVIDER_NAVIGATION);
-  assert.deepEqual(getProviderNavigation("APPROVED"), PROVIDER_NAVIGATION);
+  assert.deepEqual(getProviderNavigation("VERIFIED"), VISIBLE_PROVIDER_NAVIGATION);
+  assert.deepEqual(getProviderNavigation("APPROVED"), VISIBLE_PROVIDER_NAVIGATION);
 });
 
 for (const status of [

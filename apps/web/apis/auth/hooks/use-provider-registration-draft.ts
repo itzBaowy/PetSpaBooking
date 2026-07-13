@@ -10,6 +10,8 @@ export type ProviderRegistrationFormState = {
   password: string;
   confirmPassword: string;
   address: string;
+  lat: string;
+  lng: string;
   description: string;
   idCardFront: string;
   idCardBack: string;
@@ -33,6 +35,8 @@ export const initialProviderRegistrationForm: ProviderRegistrationFormState = {
   password: "",
   confirmPassword: "",
   address: "",
+  lat: "",
+  lng: "",
   description: "",
   idCardFront: "",
   idCardBack: "",

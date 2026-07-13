@@ -172,7 +172,6 @@ export function AdminReportsPage() {
       <section className="space-y-3">
         <div>
           <h2 className="text-lg font-bold text-foreground">Hiệu suất nhà cung cấp</h2>
-          <p className="text-sm text-muted">Dữ liệu phân trang từ GET /admin/reports/providers.</p>
         </div>
         <div className="w-full overflow-x-auto">
           <DataTable

@@ -503,10 +503,23 @@ export const providerService = {
         }
 
         // Cập nhật provider status (KHÔNG sửa user role)
-        const updatedProvider = await prisma.providers.update({
-            where: { id },
-            data: { providerStatus: "VERIFIED", adminNote: null },
-            select: PROVIDER_SELECT,
+        const updatedProvider = await prisma.$transaction(async (tx) => {
+            await tx.provider_documents.updateMany({
+                where: {
+                    providerId: id,
+                    status: "PENDING",
+                },
+                data: {
+                    status: "APPROVED",
+                    adminNote: null,
+                },
+            });
+
+            return tx.providers.update({
+                where: { id },
+                data: { providerStatus: "VERIFIED", adminNote: null },
+                select: PROVIDER_SELECT,
+            });
         });
 
         await notificationService.safeCreate({

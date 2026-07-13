@@ -4,7 +4,7 @@ import jsQR from "jsqr";
 import { useEffect, useRef, useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Input, Textarea } from "@/components/ui/input";
 import type { ProviderBookingApi } from "@/types/provider-api";
 import { providerDate } from "@/apis/provider/_shared/provider-ui";
 
@@ -183,6 +183,50 @@ export function ProviderQrDialog({
             Hủy
           </Button>
           <Button disabled={invalid || pending} onClick={() => submitDetectedToken(qrToken.trim())}>
+            {pending ? "Đang gửi..." : submitLabel}
+          </Button>
+        </div>
+      </div>
+    </Dialog>
+  );
+}
+
+export function ProviderBookingReasonDialog({
+  title,
+  description,
+  submitLabel,
+  pending,
+  onClose,
+  onSubmit,
+}: {
+  title: string;
+  description: string;
+  submitLabel: string;
+  pending: boolean;
+  onClose: () => void;
+  onSubmit: (reason: string) => void;
+}) {
+  const [reason, setReason] = useState("");
+  const invalid = !reason.trim();
+
+  return (
+    <Dialog title={title} onClose={onClose}>
+      <div className="space-y-5">
+        <p className="text-sm font-semibold leading-6 text-muted">{description}</p>
+        <label className="block text-sm font-bold">
+          Lý do
+          <Textarea
+            className="mt-2 min-h-28"
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Nhập lý do để khách hàng và hệ thống ghi nhận rõ ràng."
+          />
+        </label>
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" onClick={onClose}>
+            Hủy
+          </Button>
+          <Button disabled={invalid || pending} onClick={() => onSubmit(reason.trim())}>
             {pending ? "Đang gửi..." : submitLabel}
           </Button>
         </div>

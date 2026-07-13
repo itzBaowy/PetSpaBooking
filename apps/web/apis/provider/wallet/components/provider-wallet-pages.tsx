@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ProviderBadge,
@@ -11,6 +12,7 @@ import {
   ProviderPageHeader,
   providerDate,
   providerMoney,
+  providerStatusText,
 } from "@/apis/provider/_shared/provider-ui";
 import {
   useProviderWallet,
@@ -21,8 +23,11 @@ import { ProviderDepositDialog } from "./provider-deposit-dialog";
 import { ProviderWithdrawalDialog } from "./provider-withdrawal-dialog";
 
 export function ProviderWalletPage() {
+  const searchParams = useSearchParams();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [depositOpen, setDepositOpen] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(
+    () => searchParams.get("deposit") === "1",
+  );
   const query = useProviderWallet();
 
   if (query.isLoading) return <ProviderLoading />;
@@ -61,7 +66,7 @@ export function ProviderWalletPage() {
           label="Số dư ký quỹ"
           value={providerMoney.format(wallet.depositBalance)}
         />
-        <Metric label="Trạng thái ký quỹ" value={wallet.depositStatus} />
+        <Metric label="Trạng thái ký quỹ" value={providerStatusText(wallet.depositStatus)} />
       </div>
 
       <div className="flex flex-wrap gap-3">

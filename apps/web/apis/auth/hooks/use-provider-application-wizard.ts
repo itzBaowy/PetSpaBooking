@@ -188,6 +188,8 @@ export function useProviderApplicationWizard() {
         phone: form.phone,
         address: form.address,
         description: form.description,
+        lat: parseOptionalNumber(form.lat),
+        lng: parseOptionalNumber(form.lng),
         taxCode: form.taxCode,
         bankCode: form.bankCode,
         bankAccountNumber: form.bankAccountNumber,
@@ -233,4 +235,9 @@ export function useProviderApplicationWizard() {
     handleSubmit,
     updateField,
   };
+}
+
+function parseOptionalNumber(value: string) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
 }

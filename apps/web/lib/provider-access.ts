@@ -84,8 +84,9 @@ function getStatusAccessLevel(status: ProviderAccessStatus) {
 
 export function getProviderNavigation(status: ProviderAccessStatus): readonly ProviderNavigationDefinition[] {
   const accessLevel = getStatusAccessLevel(status);
-  if (accessLevel === "approved") return PROVIDER_NAVIGATION;
-  if (accessLevel === "limited") return PROVIDER_NAVIGATION.filter((item) => item.limitedAccess);
+  const visibleNavigation = PROVIDER_NAVIGATION.filter((item) => item.id !== "pricing");
+  if (accessLevel === "approved") return visibleNavigation;
+  if (accessLevel === "limited") return visibleNavigation.filter((item) => item.limitedAccess);
   return [];
 }
 
