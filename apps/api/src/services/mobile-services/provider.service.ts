@@ -280,7 +280,9 @@ export const mobileProviderServices = {
         services: {
           where: serviceWhere,
         },
-        reviews: true,
+        reviews: {
+          where: { isHiddenByAdmin: false },
+        },
         workingHours: true,
       },
       orderBy: { createAt: "desc" },
@@ -450,6 +452,7 @@ export const mobileProviderServices = {
     }
 
     where.providerId = _providerId;
+    where.isHiddenByAdmin = false;
 
     const [total, reviews] = await Promise.all([
       prisma.reviews.count({ where: where }),
@@ -511,7 +514,9 @@ export const mobileProviderServices = {
             isHiddenByAdmin: false,
           },
         },
-        reviews: true,
+        reviews: {
+          where: { isHiddenByAdmin: false },
+        },
         workingHours: true,
       },
     });
@@ -572,7 +577,7 @@ export const mobileProviderServices = {
       },
       rating: {
         average: averageRating,
-        totalReviews: provider.reviews.length,
+        totalReviews,
       },
       services: {
         total: provider.services.length,

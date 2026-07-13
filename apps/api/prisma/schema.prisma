@@ -327,6 +327,8 @@ model reviews {
   rating     Int
   comment    String?
   images     String[] @default([])
+  isHiddenByAdmin Boolean @default(false)
+  adminNote  String?
   createAt   DateTime @default(now())
   updateAt   DateTime @updatedAt
 
@@ -336,6 +338,7 @@ model reviews {
 
   @@index([providerId])
   @@index([customerId])
+  @@index([isHiddenByAdmin])
 }
 
 model wallet_transactions {
