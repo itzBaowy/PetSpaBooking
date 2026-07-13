@@ -1,7 +1,36 @@
 import { Request } from "express";
 import { ObjectId } from "mongodb";
 import prisma from "../../../connect.prisma.ts";
+import cloudinary from "../../common/cloudinary/init.cloudinary.ts";
 import { buildQueryPrisma } from "../../common/helpers/build-query-prisma.helper.ts";
+
+function getCloudinaryPublicId(url?: string | null) {
+  if (!url) return null;
+
+  let path = url;
+  try {
+    if (url.startsWith("http://") || url.startsWith("https://")) {
+      const pathname = new URL(url).pathname;
+      const uploadIndex = pathname.indexOf("/upload/");
+      path =
+        uploadIndex >= 0
+          ? pathname.slice(uploadIndex + "/upload/".length)
+          : pathname;
+      path = path.replace(/^v\d+\//, "");
+    }
+  } catch {
+    path = url;
+  }
+
+  path = path.replace(/^\/+/, "").replace(/^v\d+\//, "");
+  
+  const extIndex = path.lastIndexOf(".");
+  if (extIndex !== -1) {
+    path = path.slice(0, extIndex);
+  }
+
+  return path;
+}
 import {
   BadRequestException,
   ForbiddenException,
@@ -96,6 +125,14 @@ function getOptionalStringArray(value: unknown) {
     return undefined;
   }
 
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      throw new BadRequestException("photos must be a valid JSON array string");
+    }
+  }
+
   if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
     throw new BadRequestException("photos must be an array of strings");
   }
@@ -106,6 +143,14 @@ function getOptionalStringArray(value: unknown) {
 function getOptionalHealthReminder(value: unknown) {
   if (value === undefined || value === null) {
     return undefined;
+  }
+
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      throw new BadRequestException("healthReminder must be a valid JSON object string");
+    }
   }
 
   if (typeof value !== "object" || Array.isArray(value)) {
@@ -129,6 +174,14 @@ function getOptionalHealthReminder(value: unknown) {
 function getOptionalMedicalRecords(value: unknown) {
   if (value === undefined || value === null) {
     return undefined;
+  }
+
+  if (typeof value === "string") {
+    try {
+      value = JSON.parse(value);
+    } catch {
+      throw new BadRequestException("medicalRecords must be a valid JSON array string");
+    }
   }
 
   if (!Array.isArray(value)) {
@@ -251,6 +304,34 @@ export const mobilePetService = {
   async createPet(req: Request) {
     const userId = getRequesterUserId(req);
     const customerId = await getCurrentCustomerId(userId);
+
+    if (req.file) {
+      const fileBuffer = req.file.buffer;
+      const FOLDER_PETS = "public/pets";
+      const uploadResult = await new Promise<{
+        public_id: string;
+        secure_url: string;
+      }>((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream({ folder: FOLDER_PETS }, (error, result) => {
+            if (error || !result) {
+              return reject(error ?? new Error("Cloudinary upload failed"));
+            }
+            resolve({
+              public_id: result.public_id,
+              secure_url: result.secure_url,
+            });
+          })
+          .end(fileBuffer);
+      });
+
+      req.body.imageUrl = uploadResult.secure_url.includes(FOLDER_PETS)
+        ? uploadResult.secure_url.substring(
+            uploadResult.secure_url.indexOf(FOLDER_PETS),
+          )
+        : uploadResult.secure_url;
+    }
+
     const payload = buildCreatePetPayload(req.body as Record<string, unknown>);
 
     const pet = await prisma.pets.create({
@@ -335,11 +416,10 @@ export const mobilePetService = {
     const userId = getRequesterUserId(req);
     const customerId = await getCurrentCustomerId(userId);
     const petId = getRoutePetId(req);
-    const payload = buildUpdatePetPayload(req.body as Record<string, unknown>);
 
     const existingPet = await prisma.pets.findUnique({
       where: { id: petId },
-      select: { id: true, customerId: true },
+      select: { id: true, customerId: true, imageUrl: true },
     });
 
     if (!existingPet) {
@@ -350,6 +430,46 @@ export const mobilePetService = {
       throw new ForbiddenException("You can only update your own pets");
     }
 
+    if (req.file) {
+      const fileBuffer = req.file.buffer;
+      const FOLDER_PETS = "public/pets";
+      const uploadResult = await new Promise<{
+        public_id: string;
+        secure_url: string;
+      }>((resolve, reject) => {
+        cloudinary.uploader
+          .upload_stream({ folder: FOLDER_PETS }, (error, result) => {
+            if (error || !result) {
+              return reject(error ?? new Error("Cloudinary upload failed"));
+            }
+            resolve({
+              public_id: result.public_id,
+              secure_url: result.secure_url,
+            });
+          })
+          .end(fileBuffer);
+      });
+
+      req.body.imageUrl = uploadResult.secure_url.includes(FOLDER_PETS)
+        ? uploadResult.secure_url.substring(
+            uploadResult.secure_url.indexOf(FOLDER_PETS),
+          )
+        : uploadResult.secure_url;
+
+      if (existingPet.imageUrl) {
+        const oldPublicId = getCloudinaryPublicId(existingPet.imageUrl);
+        if (oldPublicId) {
+          cloudinary.uploader.destroy(oldPublicId).catch((err: unknown) => {
+            console.error(
+              "[updatePet] Failed to destroy old Cloudinary asset:",
+              err,
+            );
+          });
+        }
+      }
+    }
+
+    const payload = buildUpdatePetPayload(req.body as Record<string, unknown>);
     const updatedPet = await prisma.pets.update({
       where: { id: petId },
       data: payload,

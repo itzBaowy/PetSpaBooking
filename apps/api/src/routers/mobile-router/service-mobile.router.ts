@@ -38,7 +38,6 @@ const mobileServiceRouter = express.Router();
 mobileServiceRouter.get(
   "/services/:providerId",
   protect,
-  checkRole("CUSTOMER"),
   mobileServiceController.getAllServiceByProviderId,
 );
 
@@ -69,7 +68,6 @@ mobileServiceRouter.get(
 mobileServiceRouter.get(
   "/services/service-detail/:serviceId",
   protect,
-  checkRole("CUSTOMER"),
   mobileServiceController.getServiceDetailById,
 );
 
