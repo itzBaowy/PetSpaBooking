@@ -305,8 +305,10 @@ export const mobilePetService = {
     const userId = getRequesterUserId(req);
     const customerId = await getCurrentCustomerId(userId);
 
-    if (req.file) {
-      const fileBuffer = req.file.buffer;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+    if (files && files["imageUrl"] && files["imageUrl"].length > 0) {
+      const fileBuffer = files["imageUrl"][0].buffer;
       const FOLDER_PETS = "public/pets";
       const uploadResult = await new Promise<{
         public_id: string;
@@ -330,6 +332,42 @@ export const mobilePetService = {
             uploadResult.secure_url.indexOf(FOLDER_PETS),
           )
         : uploadResult.secure_url;
+    }
+
+    if (files && files["photos"] && files["photos"].length > 0) {
+      const FOLDER_PETS = "public/pets";
+      const uploadPromises = files["photos"].map((file) => {
+        return new Promise<{ public_id: string; secure_url: string }>((resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream({ folder: FOLDER_PETS }, (error, result) => {
+              if (error || !result) {
+                return reject(error ?? new Error("Cloudinary upload failed"));
+              }
+              resolve({
+                public_id: result.public_id,
+                secure_url: result.secure_url,
+              });
+            })
+            .end(file.buffer);
+        });
+      });
+
+      const uploadResults = await Promise.all(uploadPromises);
+      const photoUrls = uploadResults.map(result => 
+        result.secure_url.includes(FOLDER_PETS)
+          ? result.secure_url.substring(result.secure_url.indexOf(FOLDER_PETS))
+          : result.secure_url
+      );
+
+      let existingPhotos: string[] = [];
+      if (req.body.photos) {
+         if (typeof req.body.photos === 'string') {
+             try { existingPhotos = JSON.parse(req.body.photos); } catch (e) {}
+         } else if (Array.isArray(req.body.photos)) {
+             existingPhotos = req.body.photos as string[];
+         }
+      }
+      req.body.photos = [...existingPhotos, ...photoUrls];
     }
 
     const payload = buildCreatePetPayload(req.body as Record<string, unknown>);
@@ -430,8 +468,10 @@ export const mobilePetService = {
       throw new ForbiddenException("You can only update your own pets");
     }
 
-    if (req.file) {
-      const fileBuffer = req.file.buffer;
+    const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+    if (files && files["imageUrl"] && files["imageUrl"].length > 0) {
+      const fileBuffer = files["imageUrl"][0].buffer;
       const FOLDER_PETS = "public/pets";
       const uploadResult = await new Promise<{
         public_id: string;
@@ -467,6 +507,42 @@ export const mobilePetService = {
           });
         }
       }
+    }
+
+    if (files && files["photos"] && files["photos"].length > 0) {
+      const FOLDER_PETS = "public/pets";
+      const uploadPromises = files["photos"].map((file) => {
+        return new Promise<{ public_id: string; secure_url: string }>((resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream({ folder: FOLDER_PETS }, (error, result) => {
+              if (error || !result) {
+                return reject(error ?? new Error("Cloudinary upload failed"));
+              }
+              resolve({
+                public_id: result.public_id,
+                secure_url: result.secure_url,
+              });
+            })
+            .end(file.buffer);
+        });
+      });
+
+      const uploadResults = await Promise.all(uploadPromises);
+      const photoUrls = uploadResults.map(result => 
+        result.secure_url.includes(FOLDER_PETS)
+          ? result.secure_url.substring(result.secure_url.indexOf(FOLDER_PETS))
+          : result.secure_url
+      );
+
+      let existingPhotos: string[] = [];
+      if (req.body.photos) {
+         if (typeof req.body.photos === 'string') {
+             try { existingPhotos = JSON.parse(req.body.photos); } catch (e) {}
+         } else if (Array.isArray(req.body.photos)) {
+             existingPhotos = req.body.photos as string[];
+         }
+      }
+      req.body.photos = [...existingPhotos, ...photoUrls];
     }
 
     const payload = buildUpdatePetPayload(req.body as Record<string, unknown>);

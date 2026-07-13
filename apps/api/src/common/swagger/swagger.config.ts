@@ -1036,8 +1036,8 @@ export const swaggerOptions = {
             },
             photos: {
               type: "array",
-              items: { type: "string" },
-              example: ["https://example.com/buddy1.jpg"],
+              items: { type: "string", format: "binary" },
+              description: "Additional photos",
             },
             healthReminder: {
               $ref: "#/components/schemas/PetHealthReminder",
@@ -1079,8 +1079,8 @@ export const swaggerOptions = {
             },
             photos: {
               type: "array",
-              items: { type: "string" },
-              example: ["https://example.com/buddy1.jpg"],
+              items: { type: "string", format: "binary" },
+              description: "Additional photos",
             },
             healthReminder: {
               $ref: "#/components/schemas/PetHealthReminder",
