@@ -34,6 +34,11 @@ export type AvailabilityBlockPayload = {
 export type ProviderWalletApi = {
   id: string; walletBalance: number; depositBalance: number; depositStatus: string;
 };
+export type ProviderDepositPaymentApi = {
+  providerId: string; orderId: string; requestId: string; amount: number;
+  payUrl?: string | null; deeplink?: string | null; qrCodeUrl?: string | null;
+  status: string;
+};
 export type WalletTransactionApi = {
   id: string; type: string; amount: number; balanceAfter: number;
   note?: string | null; referenceId?: string | null; createAt: string;

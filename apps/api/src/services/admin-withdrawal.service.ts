@@ -185,23 +185,76 @@ export const adminWithdrawalService = {
       throw new BadRequestException("adminNote is required when rejecting");
     }
 
-    const updated = await prisma.withdrawal_requests.updateMany({
-      where: { id, status: "PENDING" },
-      data: {
-        status: "REJECTED",
-        reviewedBy: adminId,
-        reviewedAt: new Date(),
-        adminNote,
-      },
+    const withdrawal = await prisma.$transaction(async (tx) => {
+      const now = new Date();
+      const existing = await tx.withdrawal_requests.findUnique({
+        where: { id },
+        include: WITHDRAWAL_INCLUDE,
+      });
+
+      if (!existing) {
+        throw new NotFoundException("Withdrawal request not found");
+      }
+
+      if (!["PENDING", "APPROVED"].includes(existing.status)) {
+        throw new BadRequestException(
+          "Only PENDING or APPROVED withdrawals can be rejected",
+        );
+      }
+
+      const claimed = await tx.withdrawal_requests.updateMany({
+        where: { id, status: { in: ["PENDING", "APPROVED"] } },
+        data: {
+          status: "REJECTED",
+          reviewedBy: adminId,
+          reviewedAt: now,
+          adminNote,
+        },
+      });
+
+      if (claimed.count === 0) {
+        throw new BadRequestException(
+          "Withdrawal request was already processed",
+        );
+      }
+
+      const holdTransaction = await tx.wallet_transactions.findUnique({
+        where: {
+          idempotencyKey: `withdrawal:${existing.id}:WITHDRAWAL_HOLD:WALLET`,
+        },
+        select: { id: true },
+      });
+
+      if (holdTransaction) {
+        const releasedProvider = await tx.providers.update({
+          where: { id: existing.providerId },
+          data: { walletBalance: { increment: existing.amount } },
+          select: { walletBalance: true },
+        });
+
+        await tx.wallet_transactions.create({
+          data: {
+            providerId: existing.providerId,
+            idempotencyKey: `withdrawal:${existing.id}:WITHDRAWAL_RELEASE:WALLET`,
+            type: "WITHDRAWAL_RELEASE",
+            balanceType: "WALLET",
+            amount: existing.amount,
+            balanceAfter: releasedProvider.walletBalance,
+            note: `Withdrawal release ${existing.id}`,
+          },
+        });
+      }
+
+      return tx.withdrawal_requests.findUnique({
+        where: { id },
+        include: WITHDRAWAL_INCLUDE,
+      });
     });
 
-    if (updated.count === 0) {
-      const exists = await prisma.withdrawal_requests.findUnique({ where: { id } });
-      if (!exists) throw new NotFoundException("Withdrawal request not found");
-      throw new BadRequestException("Only PENDING withdrawals can be rejected");
+    if (!withdrawal) {
+      throw new NotFoundException("Withdrawal request not found");
     }
 
-    const withdrawal = await this.getById(req);
     await notificationService.safeCreate({
       userId: withdrawal.provider.userId,
       type: "WITHDRAWAL_REJECTED",
@@ -270,45 +323,54 @@ export const adminWithdrawalService = {
             );
           }
 
-          const debited = await tx.providers.updateMany({
+          const holdTransaction = await tx.wallet_transactions.findUnique({
             where: {
-              id: withdrawal.providerId,
-              walletBalance: { gte: withdrawal.amount },
+              idempotencyKey: `withdrawal:${withdrawal.id}:WITHDRAWAL_HOLD:WALLET`,
             },
-            data: {
-              walletBalance: { decrement: withdrawal.amount },
-            },
+            select: { id: true },
           });
 
-          if (debited.count === 0) {
-            throw new BadRequestException(
-              "Provider wallet balance is insufficient",
-            );
+          if (!holdTransaction) {
+            const debited = await tx.providers.updateMany({
+              where: {
+                id: withdrawal.providerId,
+                walletBalance: { gte: withdrawal.amount },
+              },
+              data: {
+                walletBalance: { decrement: withdrawal.amount },
+              },
+            });
+
+            if (debited.count === 0) {
+              throw new BadRequestException(
+                "Provider wallet balance is insufficient",
+              );
+            }
+
+            const updatedProvider = await tx.providers.findUnique({
+              where: { id: withdrawal.providerId },
+              select: {
+                id: true,
+                walletBalance: true,
+              },
+            });
+
+            if (!updatedProvider) {
+              throw new NotFoundException("Provider not found");
+            }
+
+            await tx.wallet_transactions.create({
+              data: {
+                providerId: withdrawal.providerId,
+                idempotencyKey: `withdrawal:${withdrawal.id}:WITHDRAWAL_PAYOUT:WALLET`,
+                type: "WITHDRAWAL_PAYOUT",
+                balanceType: "WALLET",
+                amount: -withdrawal.amount,
+                balanceAfter: updatedProvider.walletBalance,
+                note: `Legacy withdrawal payout ${withdrawal.id}`,
+              },
+            });
           }
-
-          const updatedProvider = await tx.providers.findUnique({
-            where: { id: withdrawal.providerId },
-            select: {
-              id: true,
-              walletBalance: true,
-            },
-          });
-
-          if (!updatedProvider) {
-            throw new NotFoundException("Provider not found");
-          }
-
-          await tx.wallet_transactions.create({
-            data: {
-              providerId: withdrawal.providerId,
-              idempotencyKey: `withdrawal:${withdrawal.id}:WITHDRAWAL_PAYOUT:WALLET`,
-              type: "WITHDRAWAL_PAYOUT",
-              balanceType: "WALLET",
-              amount: -withdrawal.amount,
-              balanceAfter: updatedProvider.walletBalance,
-              note: `Withdrawal payout ${withdrawal.id}`,
-            },
-          });
 
           return tx.withdrawal_requests.findUnique({
             where: { id },

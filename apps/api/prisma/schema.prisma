@@ -199,14 +199,15 @@ model bookings {
 }
 
 model payment_transactions {
-  id         String @id @default(auto()) @map("_id") @db.ObjectId
-  bookingId  String @db.ObjectId
-  customerId String @db.ObjectId
-  providerId String @db.ObjectId
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  type        String @default("BOOKING")
+  bookingId   String? @db.ObjectId
+  customerId  String? @db.ObjectId
+  providerId  String @db.ObjectId
 
-  provider    String    @default("MOMO")
-  orderId     String    @unique
-  requestId   String    @unique
+  provider    String @default("MOMO")
+  orderId     String @unique
+  requestId   String @unique
   amount      Float
   status      String    @default("PENDING")
   payUrl      String?
@@ -222,11 +223,12 @@ model payment_transactions {
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
 
-  booking bookings @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  booking bookings? @relation(fields: [bookingId], references: [id], onDelete: Cascade)
 
   @@index([bookingId])
   @@index([customerId])
   @@index([providerId])
+  @@index([type])
   @@index([provider])
   @@index([status])
 }

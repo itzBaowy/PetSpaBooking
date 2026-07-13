@@ -376,6 +376,8 @@ MOMO_ACCESS_KEY=...
 MOMO_SECRET_KEY=...
 MOMO_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/return
 MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
+MOMO_PROVIDER_DEPOSIT_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/provider-deposit/return
+MOMO_PROVIDER_DEPOSIT_IPN_URL=http://localhost:5500/api/mobile/payments/momo/provider-deposit/ipn
 ```
 
 `MOMO_REQUEST_TYPE=payWithMethod` dùng MoMo Collection Link để payment page có thể hiển thị nhiều phương thức như ví MoMo, ATM hoặc thẻ nếu sandbox merchant được MoMo bật các phương thức đó. Nếu đổi về `captureWallet`, page thường chỉ tập trung vào ví MoMo/QR/deeplink.
@@ -615,6 +617,44 @@ Rule:
 ```http
 GET /api/mobile/provider/wallet
 GET /api/mobile/provider/wallet/transactions
+POST /api/mobile/provider/deposit/momo/create-payment
+```
+
+Provider nạp ký quỹ qua MoMo sandbox:
+
+```http
+POST /api/mobile/provider/deposit/momo/create-payment
+```
+
+Body:
+
+```json
+{
+  "amount": 300000
+}
+```
+
+Rule:
+
+- Provider phải login role `PROVIDER`.
+- Provider phải được admin xác thực hồ sơ trước, tức `providerStatus = VERIFIED`.
+- Amount tối thiểu là giá trị lớn hơn giữa `minProviderDeposit` trong system settings và minimum amount theo MoMo request type.
+- FE redirect provider sang `payUrl`.
+- Khi MoMo callback success, backend tăng `depositBalance`, cập nhật `depositStatus`, ghi ledger `DEPOSIT_TOP_UP`.
+
+Response `data`:
+
+```json
+{
+  "providerId": "<providerId>",
+  "orderId": "provider-deposit-...",
+  "requestId": "uuid",
+  "amount": 300000,
+  "payUrl": "https://test-payment.momo.vn/...",
+  "deeplink": "momo://...",
+  "qrCodeUrl": "https://...",
+  "status": "PENDING"
+}
 ```
 
 Transaction type filter:
@@ -623,13 +663,18 @@ Transaction type filter:
 ONLINE_EARNING
 CASH_COMMISSION_DEDUCTION
 DEPOSIT_COMMISSION_DEDUCTION
+DEPOSIT_TOP_UP
 MANUAL_ADJUSTMENT
 WITHDRAWAL_PAYOUT
+WITHDRAWAL_HOLD
+WITHDRAWAL_RELEASE
 ```
 
 ### 4.5 Provider withdrawals
 
-Provider tạo yêu cầu rút tiền, chưa trừ ví ngay. Admin `mark-paid` mới trừ ví.
+Provider tạo yêu cầu rút tiền thì backend giữ tiền ngay bằng cách trừ `provider.walletBalance` và ghi ledger `WITHDRAWAL_HOLD`. Cách này tránh provider spam nhiều yêu cầu rút cùng một số dư.
+
+Nếu admin reject/fail yêu cầu, backend hoàn tiền về ví provider và ghi ledger `WITHDRAWAL_RELEASE`. Khi admin `mark-paid`, backend chỉ đổi trạng thái sang `PAID`, không trừ ví lần hai. Với request cũ trong DB chưa có `WITHDRAWAL_HOLD`, `mark-paid` vẫn trừ ví một lần theo ledger legacy `WITHDRAWAL_PAYOUT`.
 
 ```http
 POST /api/mobile/provider/withdrawals
@@ -649,7 +694,7 @@ Rule:
 
 - Provider phải `VERIFIED`.
 - Minimum amount: `100000 VND`.
-- Wallet phải đủ tiền.
+- Wallet phải đủ tiền; số tiền sẽ bị hold ngay sau khi tạo request thành công.
 - Provider phải có bank account.
 - Nếu provider có dispute `PENDING` thì bị chặn.
 
@@ -694,6 +739,7 @@ Các event hiện có thể tạo notification:
 - `PAYMENT_SUCCESS`
 - `BOOKING_ONLINE_PAID`
 - `PROVIDER_VERIFIED`
+- `PROVIDER_DEPOSIT_TOP_UP`
 - `PROVIDER_REJECTED`
 - `PROVIDER_DOCUMENT_APPROVED`
 - `PROVIDER_DOCUMENT_REJECTED`
@@ -1281,9 +1327,12 @@ Status flow:
 ```txt
 PENDING -> APPROVED -> PAID
 PENDING -> REJECTED
+APPROVED -> REJECTED
 ```
 
-`mark-paid` trừ `provider.walletBalance` và ghi ledger `WITHDRAWAL_PAYOUT`.
+- `POST /api/mobile/provider/withdrawals`: trừ ví ngay và ghi `WITHDRAWAL_HOLD`.
+- `PATCH /api/admin/withdrawals/{id}/reject`: hoàn ví nếu request có hold và ghi `WITHDRAWAL_RELEASE`.
+- `PATCH /api/admin/withdrawals/{id}/mark-paid`: chỉ xác nhận đã chi trả ngoài hệ thống cho request mới đã hold; request cũ chưa hold sẽ bị trừ ví một lần bằng `WITHDRAWAL_PAYOUT`.
 
 ### 6.10 Admin notifications
 

@@ -120,6 +120,8 @@ export const VALUE_LABELS: Record<string, string> = {
   DEPOSIT_COMMISSION_DEDUCTION: "Trừ hoa hồng từ ký quỹ",
   MANUAL_ADJUSTMENT: "Điều chỉnh thủ công",
   WITHDRAWAL_PAYOUT: "Chi trả rút tiền",
+  WITHDRAWAL_HOLD: "Giữ tiền rút",
+  WITHDRAWAL_RELEASE: "Hoàn tiền rút",
   DISPUTE_RESOLVE: "Giải quyết tranh chấp",
   REFUND_MARK_REFUNDED: "Đánh dấu đã hoàn tiền",
   REFUND_REJECT: "Từ chối hoàn tiền",
