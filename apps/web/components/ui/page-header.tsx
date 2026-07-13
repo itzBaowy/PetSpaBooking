@@ -42,7 +42,7 @@ export function PageHeader({
             {eyebrow}
           </nav>
         )}
-        <h1 className="break-words text-3xl font-extrabold leading-tight tracking-tight text-foreground">
+        <h1 className="break-words text-2xl font-extrabold leading-tight tracking-tight text-foreground sm:text-3xl">
           {title}
         </h1>
         {description && (
@@ -52,7 +52,7 @@ export function PageHeader({
         )}
       </div>
       {actions && (
-        <div className="flex shrink-0 flex-wrap items-center gap-2 pt-0.5 lg:pt-0">
+        <div className="flex w-full flex-wrap items-center gap-2 pt-0.5 sm:w-auto lg:pt-0">
           {actions}
         </div>
       )}

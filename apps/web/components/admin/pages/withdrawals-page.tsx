@@ -46,7 +46,7 @@ export function AdminWithdrawalsPage() {
               setPage(1);
             }}
           />
-          <span className="text-sm font-medium text-muted ml-auto">
+          <span className="w-full text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} yêu cầu`}
           </span>
         </div>
