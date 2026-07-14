@@ -14,12 +14,12 @@ export async function uploadFile(
 
   // Validate file size
   if (file.size > maxSize * 1024 * 1024) {
-    throw new Error(`File size exceeds ${maxSize}MB limit`);
+    throw new Error(`Dung lượng tệp vượt quá giới hạn ${maxSize} MB`);
   }
 
   // Validate file type
   if (!allowedTypes.includes(file.type)) {
-    throw new Error("File type not allowed");
+    throw new Error("Định dạng tệp không được hỗ trợ");
   }
 
   // TODO: Upload to server

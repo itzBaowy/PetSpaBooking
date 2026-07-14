@@ -9,7 +9,7 @@ export function HeroSection() {
         <div>
           <AnimatedReveal>
             <span className="inline-flex rounded-full border border-[#bdebd0] bg-[#effbf4] px-3 py-1 text-xs font-bold text-[#159756]">
-              ✦ Nền tảng quản lý cho Provider và Admin
+              ✦ Nền tảng quản lý cho nhà cung cấp và quản trị viên
             </span>
           </AnimatedReveal>
           <AnimatedReveal delay={0.08}>

@@ -14,7 +14,7 @@ export function useUpload() {
       // TODO: Implement actual upload
       return "uploaded-url";
     } catch (err) {
-      const message = err instanceof Error ? err.message : "Upload failed";
+      const message = err instanceof Error ? err.message : "Tải tệp lên thất bại";
       setError(message);
       return null;
     } finally {
