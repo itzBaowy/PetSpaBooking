@@ -44,7 +44,7 @@ const adminFinanceRouter = express.Router();
  *         name: type
  *         schema:
  *           type: string
- *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, DEPOSIT_TOP_UP, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT, WITHDRAWAL_HOLD, WITHDRAWAL_RELEASE]
+ *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, CASH_REFUND_DEDUCTION, DEPOSIT_TOP_UP, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT, WITHDRAWAL_HOLD, WITHDRAWAL_RELEASE]
  *       - in: query
  *         name: balanceType
  *         schema:
@@ -193,7 +193,7 @@ adminFinanceRouter.get(
  * /api/admin/refunds:
  *   get:
  *     summary: List refund requests
- *     description: Admin lists ONLINE bookings with paymentStatus REFUND_PENDING.
+ *     description: Admin lists bookings with paymentStatus REFUND_PENDING, including paid online bookings and cash bookings refunded from provider wallet/deposit after customer-win disputes.
  *     tags: [Admin-Finance]
  *     security:
  *       - bearerAuth: []
@@ -280,7 +280,7 @@ adminFinanceRouter.get(
  *                 example: "MOMO_REFUND_123"
  *               refundMethod:
  *                 type: string
- *                 enum: [MOMO_MANUAL, BANK_TRANSFER, OTHER]
+ *                 enum: [MOMO_MANUAL, BANK_TRANSFER, PROVIDER_BALANCE, OTHER]
  *                 example: MOMO_MANUAL
  *               refundAmount:
  *                 type: number
