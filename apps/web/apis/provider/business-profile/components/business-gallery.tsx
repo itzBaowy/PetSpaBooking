@@ -3,7 +3,7 @@
 export function BusinessGallery() {
   return (
     <div className="bg-white p-6 rounded-lg shadow">
-      <h3 className="font-semibold mb-4">Gallery</h3>
+      <h3 className="font-semibold mb-4">Thư viện ảnh</h3>
       <div className="grid grid-cols-3 gap-4">
         {[1, 2, 3, 4, 5, 6].map((i) => (
           <div

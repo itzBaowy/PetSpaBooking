@@ -73,3 +73,19 @@ export function useCreateProviderDepositPayment() {
     },
   });
 }
+
+export function useSyncProviderDepositPayment() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload?: { orderId?: string }) =>
+      unwrap<unknown>(
+        await api.post(
+          API_ENDPOINTS.MOBILE.PROVIDER.DEPOSIT_MOMO_SYNC,
+          payload ?? {},
+        ),
+      ),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: walletKeys.all });
+    },
+  });
+}

@@ -4,15 +4,15 @@ export function BusinessProfileForm() {
   return (
     <form className="bg-white p-6 rounded-lg shadow space-y-4">
       <div>
-        <label className="block text-sm font-medium mb-1">Business Name</label>
+        <label className="block text-sm font-medium mb-1">Tên doanh nghiệp</label>
         <input type="text" className="w-full border rounded px-3 py-2" />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Description</label>
+        <label className="block text-sm font-medium mb-1">Mô tả</label>
         <textarea className="w-full border rounded px-3 py-2 h-24"></textarea>
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Address</label>
+        <label className="block text-sm font-medium mb-1">Địa chỉ</label>
         <input type="text" className="w-full border rounded px-3 py-2" />
       </div>
       <button

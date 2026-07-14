@@ -7,6 +7,7 @@ import { FormEvent, useState } from "react";
 import { useLogin, useProfile } from "@/apis/auth/queries";
 import { Button, Input, PasswordInput } from "@/components/ui";
 import { useAuthStore } from "@/stores/auth-store";
+import { useToast } from "@/hooks/use-toast";
 import { getProviderRouteAccess } from "@/lib/provider-access";
 import { loginSchema } from "../schema";
 
@@ -20,8 +21,11 @@ export function LoginForm() {
   const loginMutation = useLogin();
   const profileQuery = useProfile();
   const setTokens = useAuthStore((state) => state.setTokens);
+  const clearTokens = useAuthStore((state) => state.clearTokens);
+  const { showToast } = useToast();
   const [formError, setFormError] = useState("");
   const providerRegistered = searchParams.get("providerRegistered") === "1";
+  const accountStatusError = searchParams.get("authError") === "account_status";
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -43,11 +47,23 @@ export function LoginForm() {
     try {
       const tokens = await loginMutation.mutateAsync(parsed.data);
       setTokens(tokens);
+      showToast("Đăng nhập thành công. Chào mừng bạn quay trở lại!", "success");
 
       const profile = await profileQuery.refetch();
       const nextPath = getSafeNextPath(searchParams.get("next"));
       const userRole = profile.data?.role;
       const providerStatus = profile.data?.providerStatus;
+      const userStatus = profile.data?.status;
+
+      if (userStatus === "BANNED" || userStatus === "INACTIVE") {
+        clearTokens();
+        setFormError(
+          userStatus === "BANNED"
+            ? "Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên để được hỗ trợ."
+            : "Tài khoản của bạn đang bị tạm ngưng. Vui lòng liên hệ quản trị viên để được hỗ trợ.",
+        );
+        return;
+      }
 
       if (userRole === "ADMIN") {
         router.push(nextPath?.startsWith("/admin") ? nextPath : "/admin");
@@ -85,6 +101,16 @@ export function LoginForm() {
         <div className="rounded-xl border border-success/20 bg-success-soft px-4 py-3 text-sm font-semibold text-success">
           Đăng ký nhà cung cấp thành công. Vui lòng đăng nhập để xem hồ sơ đang
           chờ duyệt.
+        </div>
+      )}
+
+      {accountStatusError && !formError && (
+        <div
+          role="alert"
+          className="rounded-xl bg-danger-soft px-4 py-3 text-sm font-semibold text-danger"
+        >
+          Tài khoản đang bị khóa hoặc tạm ngưng nên không thể truy cập hệ thống.
+          Vui lòng liên hệ quản trị viên để được hỗ trợ.
         </div>
       )}
 

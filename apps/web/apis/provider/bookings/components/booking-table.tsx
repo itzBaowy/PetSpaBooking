@@ -7,18 +7,18 @@ export function BookingTable() {
         <thead className="bg-gray-100">
           <tr>
             <th className="px-6 py-3 text-left text-sm font-medium">
-              Booking ID
+              Mã lịch đặt
             </th>
             <th className="px-6 py-3 text-left text-sm font-medium">
-              Customer
+              Khách hàng
             </th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Date</th>
-            <th className="px-6 py-3 text-left text-sm font-medium">Status</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">Ngày đặt</th>
+            <th className="px-6 py-3 text-left text-sm font-medium">Trạng thái</th>
           </tr>
         </thead>
         <tbody>
           <tr className="border-t">
-            <td className="px-6 py-4">No bookings yet</td>
+            <td className="px-6 py-4">Chưa có lịch đặt</td>
           </tr>
         </tbody>
       </table>

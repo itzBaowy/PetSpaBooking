@@ -9,6 +9,7 @@ import {
   UnauthorizedException,
 } from "../common/helpers/exception.helper.ts";
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
+import { commissionRecordService } from "./commission-record.service.ts";
 import { notificationService } from "./notification.service.ts";
 import { socketService } from "./socket.service.ts";
 import { getSystemSettingValue } from "./system-setting.service.ts";
@@ -510,6 +511,8 @@ export const adminFinanceService = {
         },
       },
     });
+
+    await commissionRecordService.markHeldRefundedForBooking(updatedBooking.id);
 
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,

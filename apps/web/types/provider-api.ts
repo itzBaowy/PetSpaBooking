@@ -10,8 +10,8 @@ export type ProviderBookingApi = {
   id: string; status: string; paymentMethod: string; paymentStatus: string;
   appointmentStart: string; appointmentEnd: string; totalAmount: number;
   rejectReason?: string | null; cancelReason?: string | null;
-  customer?: { users?: { fullName?: string; email?: string; phone?: string } };
-  pet?: { name?: string; species?: string; breed?: string };
+  customer?: { id?: string; users?: { fullName?: string; email?: string; phone?: string } };
+  pet?: { name?: string; species?: string; breed?: string; ageLabel?: string; imageUrl?: string | null };
   service?: { name?: string; price?: number; duration?: number };
 };
 

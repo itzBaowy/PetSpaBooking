@@ -1,2 +1,5 @@
-import { MarketingManagement } from "@/apis/admin/marketing/components/marketing-management";
-export default function Page() { return <MarketingManagement />; }
+import { UnsupportedFeature } from "@/components/admin/unsupported-feature";
+
+export default function Page() {
+  return <UnsupportedFeature title="Marketing management" />;
+}

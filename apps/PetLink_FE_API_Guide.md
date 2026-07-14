@@ -368,19 +368,70 @@ Provider check-in sẽ bị chặn nếu booking `ONLINE` nhưng `paymentStatus 
 
 Backend cần cấu hình MoMo sandbox trước khi API tạo payment gọi được MoMo thật:
 
+Fallback sync cho customer booking payment:
+
+```http
+POST /api/mobile/bookings/{bookingId}/momo/sync
+Authorization: Bearer <customer_accessToken>
+Content-Type: application/json
+```
+
+Body optional:
+
+```json
+{
+  "orderId": "booking-..."
+}
+```
+
+Nếu customer thanh toán xong nhưng thoát MoMo giữa chừng, không quay lại frontend return page, mobile app gọi endpoint này khi user quay lại app hoặc mở lại màn booking/payment. Nếu không gửi `orderId`, backend sync payment MoMo `PENDING` mới nhất của booking đó. Khi MoMo query trả `resultCode = 0`, backend cập nhật:
+
+```txt
+booking.paymentStatus = SUCCESS
+booking.paymentReference = transId hoặc orderId
+booking.paidAt = now
+payment_transactions.status = SUCCESS
+commission_records.heldAmount = booking.totalAmount
+commission_records.fundStatus = HELD
+```
+
+Response `data` có `booking`, `payment`, `momoResponse`, `synced`.
+
 ```env
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
+MOMO_QUERY_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/query
 MOMO_REQUEST_TYPE=payWithMethod
 MOMO_PARTNER_CODE=...
 MOMO_ACCESS_KEY=...
 MOMO_SECRET_KEY=...
-MOMO_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/return
+MOMO_REDIRECT_URL=http://localhost:3000/payment/momo/return
 MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
-MOMO_PROVIDER_DEPOSIT_REDIRECT_URL=http://localhost:5500/api/mobile/payments/momo/provider-deposit/return
+MOMO_PROVIDER_DEPOSIT_REDIRECT_URL=http://localhost:3000/provider/wallet/deposit/return
 MOMO_PROVIDER_DEPOSIT_IPN_URL=http://localhost:5500/api/mobile/payments/momo/provider-deposit/ipn
+ENABLE_MOMO_PAYMENT_SYNC_JOB=true
+MOMO_PAYMENT_SYNC_CRON_SECONDS=30
+MOMO_PAYMENT_SYNC_BATCH_SIZE=20
 ```
 
 `MOMO_REQUEST_TYPE=payWithMethod` dùng MoMo Collection Link để payment page có thể hiển thị nhiều phương thức như ví MoMo, ATM hoặc thẻ nếu sandbox merchant được MoMo bật các phương thức đó. Nếu đổi về `captureWallet`, page thường chỉ tập trung vào ví MoMo/QR/deeplink.
+
+Backend có cron `momo-payment-sync` để tự query MoMo cho các payment `PENDING` mỗi 30 giây:
+
+```txt
+BOOKING payment -> cập nhật booking paymentStatus, payment transaction, commission heldAmount
+PROVIDER_DEPOSIT payment -> cộng depositBalance, cập nhật depositStatus, ghi wallet transaction
+```
+
+Manual sync endpoint vẫn nên giữ ở FE/mobile khi cần refresh ngay lập tức, nhưng cron giúp xử lý trường hợp user đóng MoMo, không về return page và IPN local không tới được.
+
+Redirect URL nên trỏ về frontend để user thấy màn hình kết quả:
+
+```txt
+/payment/momo/return
+/provider/wallet/deposit/return
+```
+
+Frontend return page sẽ forward toàn bộ query params MoMo nhận được về backend return endpoint tương ứng để backend verify signature và cập nhật trạng thái. IPN URL vẫn trỏ về backend vì đây là callback server-to-server dùng để verify signature và cập nhật trạng thái thanh toán thật; trong local dev, IPN tới `localhost` thường không chạy được nếu MoMo không truy cập được máy dev.
 
 Với ATM/card, amount nên từ `10000` VND trở lên. Backend hiện validate theo request type: `payWithMethod` tối thiểu `10000` VND, `captureWallet` tối thiểu `1000` VND.
 
@@ -610,6 +661,7 @@ Rule:
 - `openTime` và `closeTime` dùng `HH:mm`.
 - `openTime` phải trước `closeTime` nếu `isClosed = false`.
 - Không được tạo block trùng block đang có.
+- Không được tạo block nếu khoảng thời gian đó đang có booking active (`PENDING`, `CONFIRMED`, `CHECKED_IN`). Provider phải xử lý/cancel/hoàn tất booking đó trước rồi mới khóa lịch.
 - Booking mới sẽ bị chặn nếu trùng block hoặc ngoài working hours.
 
 ### 4.4 Provider wallet
@@ -618,6 +670,7 @@ Rule:
 GET /api/mobile/provider/wallet
 GET /api/mobile/provider/wallet/transactions
 POST /api/mobile/provider/deposit/momo/create-payment
+POST /api/mobile/provider/deposit/momo/sync
 ```
 
 Provider nạp ký quỹ qua MoMo sandbox:
@@ -641,6 +694,8 @@ Rule:
 - Amount tối thiểu là giá trị lớn hơn giữa `minProviderDeposit` trong system settings và minimum amount theo MoMo request type.
 - FE redirect provider sang `payUrl`.
 - Khi MoMo callback success, backend tăng `depositBalance`, cập nhật `depositStatus`, ghi ledger `DEPOSIT_TOP_UP`.
+- Mỗi lần gọi create payment nạp ký quỹ sẽ tạo một MoMo order mới theo amount hiện tại. Không reuse payment `PENDING` cũ như luồng booking.
+- Nếu user thanh toán xong nhưng thoát MoMo trước khi redirect về frontend, FE tự gọi `POST /api/mobile/provider/deposit/momo/sync` khi provider mở lại trang ví hoặc bấm tải lại số dư. Backend query MoMo bằng pending order mới nhất; nếu MoMo báo success thì backend vẫn cộng ký quỹ và ghi ledger.
 
 Response `data`:
 
@@ -656,6 +711,16 @@ Response `data`:
   "status": "PENDING"
 }
 ```
+
+Sync body optional:
+
+```json
+{
+  "orderId": "provider-deposit-..."
+}
+```
+
+Nếu không truyền `orderId`, backend sync payment nạp ký quỹ `PENDING` mới nhất của provider đang login.
 
 Transaction type filter:
 
@@ -1605,7 +1670,168 @@ DISPUTE + RESOLVED_CUSTOMER_WIN + ONLINE paid SUCCESS -> CANCELLED + REFUND_PEND
 DISPUTE + CANCELLED -> COMPLETED
 ```
 
-## 8. Error Handling FE Gợi Ý
+## 8. Admin Commission Management
+
+Mục đích: màn admin theo dõi hoa hồng và dòng tiền liên quan đến booking trên toàn sàn.
+Lưu ý nghiệp vụ quan trọng: `heldAmount` là tiền gross sàn đang giữ từ khách hàng, còn
+`commissionAmount` là phần hoa hồng dự kiến/đã thu. Hai số này không được hiểu là một.
+
+Ví dụ booking online 250.000 VND, commission 15%:
+
+```txt
+heldAmount = 250000
+commissionAmount = 37500
+providerEarning = 212500
+fundSource = CUSTOMER_ONLINE_PAYMENT
+fundStatus = HELD
+```
+
+Với booking cash, khách trả trực tiếp cho provider nên sàn không giữ gross:
+
+```txt
+heldAmount = 0
+commissionAmount = hoa hồng phải thu từ wallet/deposit của provider
+fundSource = CUSTOMER_CASH_TO_PROVIDER
+fundStatus = NOT_HELD
+```
+
+Trạng thái hoa hồng:
+
+```txt
+PENDING  = hoa hồng đang giữ cho booking chưa kết thúc
+CHARGED  = hoa hồng đã thu khi booking COMPLETED và finance xử lý xong
+RELEASED = hoa hồng đã hoàn giữ do booking bị reject/cancel/no-arrival
+FAILED   = xử lý hoa hồng lỗi, cần admin kiểm tra
+```
+
+Lifecycle backend đang ghi `commission_records`:
+
+```txt
+Booking created/confirmed -> commission PENDING
+Online payment SUCCESS -> heldAmount = booking totalAmount, fundStatus = HELD
+Booking rejected/cancelled/no-arrival -> commission RELEASED
+Online cancelled after paid -> fundStatus = REFUND_PENDING, heldAmount vẫn còn cho tới khi admin mark refunded
+Admin mark refunded -> heldAmount = 0, fundStatus = REFUNDED
+Booking completed + commission processed -> commission CHARGED, heldAmount = 0
+Commission processing failed -> commission FAILED
+```
+
+### Summary
+
+```http
+GET /api/admin/finance/commissions/summary
+Authorization: Bearer <admin_accessToken>
+```
+
+Response `data`:
+
+```json
+{
+  "heldAmount": 250000,
+  "pendingHeldAmount": 250000,
+  "pendingCommissionAmount": 37500,
+  "reservedAmount": 250000,
+  "chargedAmount": 850000,
+  "chargedCommissionAmount": 850000,
+  "releasedAmount": 50000,
+  "releasedCommissionAmount": 50000,
+  "failedAmount": 0,
+  "failedCommissionAmount": 0,
+  "cashCommissionAmount": 500000,
+  "onlineCommissionAmount": 350000
+}
+```
+
+### List
+
+```http
+GET /api/admin/finance/commissions?page=1&pageSize=20&status=PENDING&paymentMethod=ONLINE
+Authorization: Bearer <admin_accessToken>
+```
+
+Query optional:
+
+```txt
+status: PENDING | CHARGED | RELEASED | FAILED
+paymentMethod: CASH | ONLINE
+providerId: ObjectId
+bookingId: ObjectId
+from: ISO date
+to: ISO date
+```
+
+Response `data`:
+
+```json
+{
+  "items": [
+    {
+      "id": "66f...",
+      "bookingId": "66f...",
+      "providerId": "66f...",
+      "providerName": "Happy Paws Spa",
+      "serviceName": "Grooming",
+      "bookingAmount": 250000,
+      "heldAmount": 250000,
+      "commissionAmount": 37500,
+      "providerEarning": 212500,
+      "rateLabel": "15%",
+      "status": "PENDING",
+      "fundSource": "CUSTOMER_ONLINE_PAYMENT",
+      "fundStatus": "HELD",
+      "paymentMethod": "MOMO",
+      "reservedAt": "2026-07-13T10:00:00.000Z",
+      "chargedAt": null,
+      "releasedAt": null,
+      "failedAt": null,
+      "collectedFrom": null,
+      "failureReason": null,
+      "releaseReason": null
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "pageSize": 20,
+    "totalItems": 1,
+    "totalPages": 1,
+    "hasNextPage": false,
+    "hasPrevPage": false
+  }
+}
+```
+
+### Pending shortcut
+
+```http
+GET /api/admin/finance/commissions/pending?page=1&pageSize=20
+Authorization: Bearer <admin_accessToken>
+```
+
+Tương đương list với `status=PENDING`, dùng cho bảng "Hoa hồng chờ xử lý".
+
+### Detail
+
+```http
+GET /api/admin/finance/commissions/{commissionId}
+Authorization: Bearer <admin_accessToken>
+```
+
+FE page hiện tại:
+
+```txt
+/admin/finance/commission
+```
+
+Frontend đã fetch thật qua:
+
+```ts
+API_ENDPOINTS.ADMIN.COMMISSION.SUMMARY
+API_ENDPOINTS.ADMIN.COMMISSION.RECORDS
+API_ENDPOINTS.ADMIN.COMMISSION.PENDING
+API_ENDPOINTS.ADMIN.COMMISSION.DETAIL(id)
+```
+
+## 9. Error Handling FE Gợi Ý
 
 Status thường gặp:
 
@@ -1630,7 +1856,7 @@ try {
 }
 ```
 
-## 9. Quick Test Order Cho FE
+## 10. Quick Test Order Cho FE
 
 1. Login `admin_test`, `provider_test`, `customer_test`.
 2. Admin verify provider và đảm bảo deposit active trong DB/seed.

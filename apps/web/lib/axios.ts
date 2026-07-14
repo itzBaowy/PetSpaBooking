@@ -65,11 +65,18 @@ function shouldSkipAuthRefresh(url?: string) {
   ].some((endpoint) => url.includes(endpoint));
 }
 
+function isProviderQrActionRequest(url?: string) {
+  if (!url) return false;
+
+  return /^\/?mobile\/provider\/bookings\/[^/]+\/check-(in|out)(?:\?|$)/.test(url);
+}
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     const skipAuthRefresh = shouldSkipAuthRefresh(originalRequest?.url);
+    const skipAuthClear = isProviderQrActionRequest(originalRequest?.url);
 
     if (
       error.response?.status === 401 &&
@@ -90,16 +97,14 @@ api.interceptors.response.use(
         originalRequest.headers.Authorization = `Bearer ${tokens.accessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
-        useAuthStore.getState().clearTokens();
+        if (!skipAuthClear) {
+          useAuthStore.getState().clearTokens();
+        }
         return Promise.reject(refreshError);
       }
     }
 
-    if (error.response?.status === 401) {
-      useAuthStore.getState().clearTokens();
-    }
-
-    if (error.response?.status === 403) {
+    if (error.response?.status === 401 && !skipAuthClear) {
       useAuthStore.getState().clearTokens();
     }
 

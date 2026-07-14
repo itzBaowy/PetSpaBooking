@@ -1,2 +1,5 @@
-import { NoShowReviewTable } from "@/apis/admin/bookings/components/no-show-review-table";
-export default function Page() { return <NoShowReviewTable />; }
+import { UnsupportedFeature } from "@/components/admin/unsupported-feature";
+
+export default function Page() {
+  return <UnsupportedFeature title="No-arrival review workflow" />;
+}

@@ -47,6 +47,10 @@ test("removed provider nav pages are denied", () => {
       .allowed,
     false,
   );
+  assert.equal(
+    getProviderRouteAccess("/provider/pricing", "VERIFIED").allowed,
+    false,
+  );
 });
 
 test("provider profile route is available from the topbar", () => {

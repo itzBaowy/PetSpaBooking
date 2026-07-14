@@ -2,15 +2,21 @@ import type { ChangeEvent } from "react";
 import { Input, PasswordInput, Textarea } from "@/components/ui";
 import type { ProviderRegistrationFormState } from "../../hooks/use-provider-registration-draft";
 import { ProviderRegistrationField } from "./field";
+import { ProviderRegistrationAddressField } from "./provider-address-field";
 
 export function ProviderRegistrationAccountStep({
   form,
   onInputChange,
+  onFieldChange,
 }: {
   form: ProviderRegistrationFormState;
   hasExistingAccount?: boolean;
   onInputChange: (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+  ) => void;
+  onFieldChange: (
+    name: keyof ProviderRegistrationFormState,
+    value: ProviderRegistrationFormState[keyof ProviderRegistrationFormState],
   ) => void;
 }) {
   return (
@@ -70,22 +76,13 @@ export function ProviderRegistrationAccountStep({
           placeholder="Nhập lại mật khẩu"
         />
       </ProviderRegistrationField>
-      <ProviderRegistrationField
-        label="Địa chỉ doanh nghiệp"
-        required
-        className="md:col-span-2"
-      >
-        <Input
-          required
-          name="address"
-          value={form.address}
-          onChange={onInputChange}
-          placeholder="Số nhà, đường, phường/xã, tỉnh/thành"
-        />
-      </ProviderRegistrationField>
+      <ProviderRegistrationAddressField
+        form={form}
+        onFieldChange={onFieldChange}
+      />
       <ProviderRegistrationField
         label="Mô tả doanh nghiệp"
-        className="md:col-span-2"
+        className="order-2 md:col-span-2"
       >
         <Textarea
           name="description"

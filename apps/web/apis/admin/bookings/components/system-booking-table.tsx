@@ -18,7 +18,7 @@ import type { AdminBooking } from "../queries";
 import { ADMIN_BOOKING_STATUS_LABELS } from "../schema";
 import { BookingStatusOverrideDialog } from "./booking-status-override-dialog";
 
-const bookingStatusStyles = {
+const bookingStatusStyles: Record<string, string> = {
   PENDING: "border-warning-soft bg-warning-soft text-warning",
   CONFIRMED: "border-brand-soft bg-brand-soft text-brand",
   CHECKED_IN: "border-purple-100 bg-purple-50 text-purple-700",
@@ -32,14 +32,14 @@ const bookingStatusStyles = {
 
 const ADMIN_BOOKING_STATUS_OPTIONS = Object.entries(ADMIN_BOOKING_STATUS_LABELS).map(([value, label]) => ({ value, label }));
 
-const paymentStatusStyles = {
+const paymentStatusStyles: Record<string, string> = {
   UNPAID: "border-gray-200 bg-gray-50 text-gray-700",
   PAID: "border-green-200 bg-green-50 text-green-700",
   FAILED: "border-red-200 bg-red-50 text-red-700",
   REFUNDED: "border-blue-200 bg-blue-50 text-blue-700",
 };
 
-const paymentStatusLabels = {
+const paymentStatusLabels: Record<string, string> = {
   UNPAID: "Chưa thanh toán",
   PAID: "Đã thanh toán",
   FAILED: "Thất bại",
@@ -119,9 +119,9 @@ export function SystemBookingTable() {
       widthClassName: "w-[12%]",
       render: (booking) => (
         <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${paymentStatusStyles[booking.paymentStatus]}`}
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${paymentStatusStyles[booking.paymentStatus] ?? "border-gray-200 bg-gray-50 text-gray-700"}`}
         >
-          {paymentStatusLabels[booking.paymentStatus]}
+          {paymentStatusLabels[booking.paymentStatus] ?? booking.paymentStatus}
         </span>
       ),
     },
@@ -131,9 +131,9 @@ export function SystemBookingTable() {
       widthClassName: "w-[12%]",
       render: (booking) => (
         <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${bookingStatusStyles[booking.status]}`}
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${bookingStatusStyles[booking.status] ?? "border-gray-200 bg-gray-50 text-gray-700"}`}
         >
-          {ADMIN_BOOKING_STATUS_LABELS[booking.status]}
+          {ADMIN_BOOKING_STATUS_LABELS[booking.status as keyof typeof ADMIN_BOOKING_STATUS_LABELS] ?? booking.status}
         </span>
       ),
     },

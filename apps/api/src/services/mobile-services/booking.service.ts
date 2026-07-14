@@ -13,6 +13,7 @@ import { notificationService } from "../notification.service.ts";
 import { assertProviderSlotAvailable } from "./availability.service.ts";
 import { socketService } from "../socket.service.ts";
 import { getSystemSettingValue } from "../system-setting.service.ts";
+import { commissionRecordService } from "../commission-record.service.ts";
 
 const VALID_PAYMENT_METHODS = ["CASH", "ONLINE"] as const;
 const VALID_BOOKING_STATUSES = [
@@ -74,17 +75,69 @@ const BOOKING_INCLUDE = {
         select: {
           id: true,
           fullName: true,
+          email: true,
           phone: true,
           avatar: true,
         },
       },
     },
   },
+  review: {
+    select: {
+      id: true,
+      rating: true,
+      comment: true,
+      images: true,
+      createAt: true,
+    },
+  },
 } as const;
 
+async function attachPetsToBookings<T extends { petId?: string | null }>(
+  bookings: T[],
+) {
+  const petIds = Array.from(
+    new Set(bookings.map((booking) => booking.petId).filter(Boolean)),
+  ) as string[];
+
+  if (petIds.length === 0) {
+    return bookings.map((booking) => ({ ...booking, pet: null }));
+  }
+
+  const pets = await prisma.pets.findMany({
+    where: { id: { in: petIds } },
+    select: {
+      id: true,
+      name: true,
+      breed: true,
+      gender: true,
+      ageLabel: true,
+      imageUrl: true,
+      status: true,
+      weight: true,
+      height: true,
+      color: true,
+      criticalNote: true,
+      photos: true,
+    },
+  });
+  const petById = new Map(pets.map((pet) => [pet.id, pet]));
+
+  return bookings.map((booking) => ({
+    ...booking,
+    pet: booking.petId ? (petById.get(booking.petId) ?? null) : null,
+  }));
+}
+
+async function attachPetToBooking<T extends { petId?: string | null }>(
+  booking: T,
+) {
+  const [bookingWithPet] = await attachPetsToBookings([booking]);
+  return bookingWithPet;
+}
+
 function getRequesterId(req: Request): string {
-  const userId = (req as Request & { user?: { userId?: string } }).user
-    ?.userId;
+  const userId = (req as Request & { user?: { userId?: string } }).user?.userId;
   if (!userId) throw new UnauthorizedException("Unauthorized");
   return userId;
 }
@@ -134,7 +187,9 @@ function getQrToken(req: Request): string {
   return qrToken;
 }
 
-function signBookingQrToken(payload: Omit<BookingQrPayload, keyof jwt.JwtPayload>) {
+function signBookingQrToken(
+  payload: Omit<BookingQrPayload, keyof jwt.JwtPayload>,
+) {
   return jwt.sign(payload, process.env.JWT_SECRET as string, {
     expiresIn: QR_TOKEN_EXPIRES_IN_SECONDS,
   });
@@ -164,9 +219,7 @@ export async function getBookingAutoCompleteHours(): Promise<number> {
 
 async function getBookingDisputeDeadline(checkedOutAt: Date): Promise<Date> {
   const autoCompleteHours = await getBookingAutoCompleteHours();
-  return new Date(
-    checkedOutAt.getTime() + autoCompleteHours * 60 * 60 * 1000,
-  );
+  return new Date(checkedOutAt.getTime() + autoCompleteHours * 60 * 60 * 1000);
 }
 
 function isUniqueConstraintError(error: unknown) {
@@ -345,7 +398,8 @@ export const mobileBookingServices = {
     }
 
     const provider = service.provider;
-    const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
+    const minProviderDeposit =
+      await getSystemSettingValue("minProviderDeposit");
     if (provider.providerStatus !== "VERIFIED") {
       throw new BadRequestException("Provider is not available for booking");
     }
@@ -386,6 +440,7 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.holdForBooking(createdBooking);
     emitBookingUpdated(createdBooking);
     emitProviderBookingNew(createdBooking);
 
@@ -535,6 +590,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking cancelled by customer",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.provider.userId,
       type: "BOOKING_CANCELLED",
@@ -552,7 +611,8 @@ export const mobileBookingServices = {
         userId,
         type: "REFUND_PENDING",
         title: "Refund pending",
-        message: "Your online booking was cancelled and is waiting for refund processing.",
+        message:
+          "Your online booking was cancelled and is waiting for refund processing.",
         data: { bookingId: updatedBooking.id },
       });
     }
@@ -771,7 +831,7 @@ export const mobileBookingServices = {
     const totalPages = Math.ceil(totalItems / pageSize);
 
     return {
-      items,
+      items: await attachPetsToBookings(items),
       pagination: {
         page,
         pageSize,
@@ -781,6 +841,23 @@ export const mobileBookingServices = {
         hasPrevPage: page > 1,
       },
     };
+  },
+
+  async getProviderBookingById(req: Request) {
+    const userId = getRequesterId(req);
+    const id = getRouteParam(req, "id");
+    const provider = await getOperatingProviderByUserId(userId);
+
+    const booking = await prisma.bookings.findUnique({
+      where: { id },
+      include: BOOKING_INCLUDE,
+    });
+
+    if (!booking || booking.providerId !== provider.id) {
+      throw new NotFoundException("Booking not found");
+    }
+
+    return attachPetToBooking(booking);
   },
 
   async confirm(req: Request) {
@@ -806,6 +883,7 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.holdForBooking(updatedBooking);
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_CONFIRMED",
@@ -843,6 +921,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking rejected by provider",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_REJECTED",
@@ -867,7 +949,9 @@ export const mobileBookingServices = {
     }
 
     if (booking.status !== "CONFIRMED") {
-      throw new BadRequestException("Only CONFIRMED bookings can be cancelled by provider");
+      throw new BadRequestException(
+        "Only CONFIRMED bookings can be cancelled by provider",
+      );
     }
 
     const updatedBooking = await prisma.bookings.update({
@@ -882,6 +966,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking cancelled by provider",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_CANCELLED",
@@ -899,7 +987,8 @@ export const mobileBookingServices = {
         userId: updatedBooking.customer.users.id,
         type: "REFUND_PENDING",
         title: "Refund pending",
-        message: "Your online booking was cancelled and is waiting for refund processing.",
+        message:
+          "Your online booking was cancelled and is waiting for refund processing.",
         data: { bookingId: updatedBooking.id },
       });
     }
@@ -919,7 +1008,9 @@ export const mobileBookingServices = {
     }
 
     if (booking.status !== "CONFIRMED") {
-      throw new BadRequestException("Only CONFIRMED bookings can be marked as no-arrival");
+      throw new BadRequestException(
+        "Only CONFIRMED bookings can be marked as no-arrival",
+      );
     }
 
     const noArrivalGraceMinutes = await getSystemSettingValue(
@@ -943,6 +1034,10 @@ export const mobileBookingServices = {
       include: BOOKING_INCLUDE,
     });
 
+    await commissionRecordService.releaseForBooking(
+      updatedBooking.id,
+      "Booking marked no-arrival",
+    );
     await notificationService.safeCreate({
       userId: updatedBooking.customer.users.id,
       type: "BOOKING_NO_ARRIVAL",
@@ -978,7 +1073,9 @@ export const mobileBookingServices = {
     }
 
     if (booking.status !== "CONFIRMED") {
-      throw new BadRequestException("Only CONFIRMED bookings can be checked in");
+      throw new BadRequestException(
+        "Only CONFIRMED bookings can be checked in",
+      );
     }
 
     if (

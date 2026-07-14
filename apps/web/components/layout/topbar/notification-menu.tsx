@@ -17,7 +17,7 @@ export function NotificationMenu({
   onSelect: (notification: AdminEntity) => void;
 }) {
   return (
-    <div className="absolute right-3 top-12 z-50 w-80 overflow-hidden rounded-xl border border-border-subtle bg-surface text-foreground shadow-xl">
+    <div className="absolute right-3 top-12 z-[90] w-80 overflow-hidden rounded-xl border border-border-subtle bg-surface text-foreground shadow-xl">
       <div className="border-b border-border-subtle px-4 py-3">
         <p className="text-sm font-bold">Thông báo</p>
         <p className="text-xs text-muted">{role === "admin" ? `${totalNotifications} thông báo đã gom nhóm` : `${totalNotifications} thông báo của bạn`}</p>

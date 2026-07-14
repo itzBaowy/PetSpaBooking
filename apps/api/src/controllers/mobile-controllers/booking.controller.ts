@@ -111,6 +111,19 @@ export const mobileBookingController = {
     }
   },
 
+  async getProviderBookingById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileBookingServices.getProviderBookingById(req);
+      const response = responseSuccess(
+        result,
+        "Provider booking retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async confirm(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await mobileBookingServices.confirm(req);
@@ -200,6 +213,19 @@ export const mobileBookingController = {
     }
   },
 
+  async syncMomoPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await momoPaymentService.syncBookingPayment(req);
+      const response = responseSuccess(
+        result,
+        "MoMo booking payment synced successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async handleMomoIpn(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await momoPaymentService.handleIpn(req);
@@ -237,6 +263,23 @@ export const mobileBookingController = {
         result,
         "Provider deposit MoMo payment created successfully",
         201,
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async syncProviderDepositMomoPayment(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) {
+    try {
+      const result = await momoPaymentService.syncProviderDepositPayment(req);
+      const response = responseSuccess(
+        result,
+        "Provider deposit MoMo payment synced successfully",
       );
       res.status(response.statusCode).json(response);
     } catch (error) {

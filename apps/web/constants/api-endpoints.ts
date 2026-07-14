@@ -44,8 +44,19 @@ export const API_ENDPOINTS = {
     CANCEL: (id: string) => `/bookings/${id}/cancel`,
   },
   MOBILE: {
+    PUBLIC: {
+      PROVIDERS: "/mobile/providers",
+      SEARCH: "/mobile/search",
+      PROVIDER_DETAIL: (providerId: string) =>
+        `/mobile/providers/provider-detail/${providerId}`,
+      PROVIDER_REVIEWS: (providerId: string) =>
+        `/mobile/providers/reviews/${providerId}`,
+      AVAILABLE_SLOTS: (providerId: string) =>
+        `/mobile/providers/${providerId}/available-slots`,
+    },
     PROVIDER: {
       BOOKINGS: "/mobile/provider/bookings",
+      BOOKING_DETAIL: (id: string) => `/mobile/provider/bookings/${id}`,
       CONFIRM_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/confirm`,
       REJECT_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/reject`,
       CANCEL_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/cancel`,
@@ -59,6 +70,7 @@ export const API_ENDPOINTS = {
       WALLET: "/mobile/provider/wallet",
       WALLET_TRANSACTIONS: "/mobile/provider/wallet/transactions",
       DEPOSIT_MOMO_CREATE_PAYMENT: "/mobile/provider/deposit/momo/create-payment",
+      DEPOSIT_MOMO_SYNC: "/mobile/provider/deposit/momo/sync",
       WITHDRAWALS: "/mobile/provider/withdrawals",
       CHAT_THREADS: "/mobile/chat/threads",
       CHAT_THREAD_FOR_BOOKING: (bookingId: string) =>
@@ -72,6 +84,10 @@ export const API_ENDPOINTS = {
       LIST: "/mobile/notifications",
       MARK_READ: (id: string) => `/mobile/notifications/${id}/read`,
       MARK_ALL_READ: "/mobile/notifications/read-all",
+    },
+    MOMO: {
+      RETURN: "/mobile/payments/momo/return",
+      PROVIDER_DEPOSIT_RETURN: "/mobile/payments/momo/provider-deposit/return",
     },
   },
   VERIFICATION: {
@@ -105,6 +121,7 @@ export const API_ENDPOINTS = {
       LIST: "/admin/bookings",
       DETAIL: (id: string) => `/admin/bookings/${id}`,
       FINANCE: (id: string) => `/admin/bookings/${id}/finance`,
+      AUTO_COMPLETE_RUN: "/admin/bookings/auto-complete/run",
     },
     DISPUTES: {
       LIST: "/admin/disputes",
@@ -130,6 +147,20 @@ export const API_ENDPOINTS = {
       MARK_PAID: (id: string) => `/admin/withdrawals/${id}/mark-paid`,
     },
     AUDIT_LOGS: "/admin/audit-logs",
+    SETTINGS: "/admin/settings",
+    REVIEWS: {
+      LIST: "/admin/reviews",
+      DETAIL: (id: string) => `/admin/reviews/${id}`,
+      HIDE: (id: string) => `/admin/reviews/${id}/hide`,
+      UNHIDE: (id: string) => `/admin/reviews/${id}/unhide`,
+    },
+    CHAT: {
+      THREADS: "/admin/chat/threads",
+      BOOKING_THREAD: (bookingId: string) =>
+        `/admin/bookings/${bookingId}/chat/thread`,
+      MESSAGES: (threadId: string) => `/admin/chat/threads/${threadId}/messages`,
+      MARK_READ: (threadId: string) => `/admin/chat/threads/${threadId}/read`,
+    },
     NOTIFICATIONS: {
       LIST: "/admin/notifications",
       SEND: "/admin/notifications/send",
@@ -153,6 +184,7 @@ export const API_ENDPOINTS = {
       SUMMARY: "/admin/finance/commissions/summary",
       RECORDS: "/admin/finance/commissions",
       PENDING: "/admin/finance/commissions/pending",
+      DETAIL: (id: string) => `/admin/finance/commissions/${id}`,
       CONFIGS: "/admin/config/commissions",
       UPDATE_CONFIG: (configId: string) =>
         `/admin/config/commissions/${configId}`,

@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
   ProviderBadge,
@@ -11,19 +12,41 @@ import {
   ProviderPageHeader,
   providerDate,
   providerMoney,
+  providerStatusText,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import {
   useProviderWallet,
   useProviderWalletTransactions,
   useProviderWithdrawals,
+  useSyncProviderDepositPayment,
 } from "../queries";
 import { ProviderDepositDialog } from "./provider-deposit-dialog";
 import { ProviderWithdrawalDialog } from "./provider-withdrawal-dialog";
 
 export function ProviderWalletPage() {
+  const searchParams = useSearchParams();
   const [withdrawOpen, setWithdrawOpen] = useState(false);
-  const [depositOpen, setDepositOpen] = useState(false);
+  const [depositOpen, setDepositOpen] = useState(
+    () => searchParams.get("deposit") === "1",
+  );
   const query = useProviderWallet();
+  const syncDeposit = useSyncProviderDepositPayment();
+
+  const refreshWallet = () => {
+    syncDeposit.mutate(undefined, {
+      onSettled: () => {
+        void query.refetch();
+      },
+    });
+  };
+
+  useEffect(() => {
+    refreshWallet();
+    // Run once when the wallet page opens to recover paid MoMo deposits
+    // when the user closed MoMo before redirecting back to PetLink.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   if (query.isLoading) return <ProviderLoading />;
   if (query.isError) {
@@ -61,7 +84,7 @@ export function ProviderWalletPage() {
           label="Số dư ký quỹ"
           value={providerMoney.format(wallet.depositBalance)}
         />
-        <Metric label="Trạng thái ký quỹ" value={wallet.depositStatus} />
+        <Metric label="Trạng thái ký quỹ" value={providerStatusText(wallet.depositStatus)} />
       </div>
 
       <div className="flex flex-wrap gap-3">
@@ -70,8 +93,14 @@ export function ProviderWalletPage() {
           href="/provider/wallet/withdrawals"
           text="Xem yêu cầu rút tiền"
         />
-        <Button variant="outline" onClick={() => void query.refetch()}>
-          Tải lại số dư
+        <Button
+          disabled={syncDeposit.isPending || query.isFetching}
+          variant="outline"
+          onClick={refreshWallet}
+        >
+          {syncDeposit.isPending || query.isFetching
+            ? "Đang tải lại..."
+            : "Tải lại số dư"}
         </Button>
       </div>
 
@@ -119,7 +148,7 @@ export function ProviderTransactionsPage() {
         <ProviderEmpty text="Chưa có giao dịch." />
       ) : (
         <div className="grid gap-3">
-          {result.items.map((item) => (
+          {sortByDateDesc(result.items, (item) => item.createAt).map((item) => (
             <article
               className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-sm"
               key={item.id}
@@ -186,7 +215,7 @@ export function ProviderWithdrawalsPage() {
         <ProviderEmpty text="Chưa có yêu cầu rút tiền." />
       ) : (
         <div className="grid gap-3">
-          {result.items.map((item) => (
+          {sortByDateDesc(result.items, (item) => item.requestedAt).map((item) => (
             <article
               className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-sm"
               key={item.id}

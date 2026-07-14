@@ -159,7 +159,11 @@ export function ProviderDetail({
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 shadow-sm">
         <h2 className="text-lg font-bold text-gray-950">Tài liệu xác thực</h2>
+        <p className="mt-2 text-sm font-semibold text-gray-500">
+          Trạng thái hiển thị theo từng tài liệu. Tài liệu khác không phải hồ sơ bắt buộc để duyệt provider, nên sẽ vẫn Pending cho tới khi admin duyệt riêng tài liệu đó.
+        </p>
         <ProviderDocumentPanel
+          key={provider.documents.map((document) => `${document.id}:${document.status}`).join("|")}
           documents={provider.documents}
           providerStatus={provider.providerStatus}
         />

@@ -119,6 +119,14 @@ function useProviderMutation() {
         return {
           ...old,
           ...provider,
+          documents:
+            provider.providerStatus === "VERIFIED"
+              ? old.documents.map((document) =>
+                  document.status === "PENDING"
+                    ? { ...document, status: "APPROVED", adminNote: null }
+                    : document,
+                )
+              : old.documents,
         };
       },
     );

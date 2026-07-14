@@ -1,7 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
+import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
-import type { PaymentMethod, PaymentStatus } from "@/types/payment";
-import { bookingStatusOverrideSchema, noShowResolutionSchema } from "./schema";
+import type { ApiResponse } from "@/types/api";
+import { listSchema, nested, textValue } from "@/apis/admin/supported-api";
 import type {
   AdminBookingStatus,
   BookingStatusOverrideData,
@@ -9,7 +11,11 @@ import type {
   NoShowResolutionData,
 } from "./schema";
 
-export type DisputeStatus = "OPEN" | "REVIEWING" | "RESOLVED";
+export type DisputeStatus =
+  | "PENDING"
+  | "RESOLVED_PROVIDER_WIN"
+  | "RESOLVED_CUSTOMER_WIN"
+  | "CANCELLED";
 
 export interface AdminBooking {
   id: string;
@@ -18,11 +24,10 @@ export interface AdminBooking {
   service: string;
   scheduledAt: string;
   amount: number;
-  status: AdminBookingStatus;
-  paymentStatus: PaymentStatus;
-  disputeStatus?: DisputeStatus;
-  paymentMethod: PaymentMethod;
-  commissionReserved?: number;
+  status: AdminBookingStatus | string;
+  paymentStatus: string;
+  paymentMethod: string;
+  disputeStatus?: string;
 }
 
 export interface BookingDispute {
@@ -31,8 +36,8 @@ export interface BookingDispute {
   petOwner: string;
   provider: string;
   issue: string;
-  requestedOutcome: "REFUND" | "STATUS_CHANGE" | "QUALITY_REVIEW";
-  status: DisputeStatus;
+  requestedOutcome: string;
+  status: DisputeStatus | string;
   lastAuditLog: string;
 }
 
@@ -46,122 +51,8 @@ export interface NoShowReview {
   providerEvidence: string;
   ownerResponse: string;
   reserveAmount: number;
-  status: "AWAITING_OWNER" | "READY_FOR_ADMIN" | "ESCALATED";
+  status: "READY_FOR_ADMIN";
 }
-
-export const adminBookingMockItems: AdminBooking[] = [
-  {
-    id: "BK-92018",
-    petOwner: "Minh Nguyen",
-    provider: "Happy Paws Spa",
-    service: "Premium Grooming",
-    scheduledAt: "2026-06-14 15:30",
-    amount: 680000,
-    status: "CONFIRMED",
-    paymentStatus: "PAID",
-    disputeStatus: "OPEN",
-    paymentMethod: "CASH",
-    commissionReserved: 102000,
-  },
-  {
-    id: "BK-92002",
-    petOwner: "An Tran",
-    provider: "VetCare 24h",
-    service: "Vaccination",
-    scheduledAt: "2026-06-14 11:00",
-    amount: 420000,
-    status: "CHECKED_IN",
-    paymentStatus: "PAID",
-    paymentMethod: "CASH",
-    commissionReserved: 63000,
-  },
-  {
-    id: "BK-91970",
-    petOwner: "Bao Le",
-    provider: "Pet Hotel Luna",
-    service: "Overnight Stay",
-    scheduledAt: "2026-06-13 19:00",
-    amount: 950000,
-    status: "REJECTED",
-    paymentStatus: "REFUNDED",
-    disputeStatus: "RESOLVED",
-    paymentMethod: "MOMO",
-  },
-  {
-    id: "BK-91942",
-    petOwner: "Linh Vo",
-    provider: "Paws & Claws Spa",
-    service: "Basic Bath",
-    scheduledAt: "2026-06-12 09:00",
-    amount: 300000,
-    status: "NONE_ARRIVAL",
-    paymentStatus: "UNPAID",
-    paymentMethod: "CASH",
-    commissionReserved: 45000,
-  },
-  {
-    id: "BK-91912",
-    petOwner: "Duy Pham",
-    provider: "Animal Wellness Center",
-    service: "Health Check",
-    scheduledAt: "2026-06-11 08:30",
-    amount: 520000,
-    status: "COMPLETED",
-    paymentStatus: "PAID",
-    paymentMethod: "CASH",
-    commissionReserved: 78000,
-  },
-];
-
-export const disputeMockItems: BookingDispute[] = [
-  {
-    id: "DSP-5014",
-    bookingId: "BK-92018",
-    petOwner: "Minh Nguyen",
-    provider: "Happy Paws Spa",
-    issue: "Pet owner reports incomplete grooming package after online payment.",
-    requestedOutcome: "REFUND",
-    status: "OPEN",
-    lastAuditLog: "Created by ADMIN queue at 2026-06-14 10:40",
-  },
-  {
-    id: "DSP-4988",
-    bookingId: "BK-91970",
-    petOwner: "Bao Le",
-    provider: "Pet Hotel Luna",
-    issue: "Provider cancelled due to overbooking; refund completed.",
-    requestedOutcome: "STATUS_CHANGE",
-    status: "RESOLVED",
-    lastAuditLog: "Refund approved by ADMIN at 2026-06-13 21:05",
-  },
-];
-
-export const noShowMockItems: NoShowReview[] = [
-  {
-    id: "NS-3001",
-    bookingId: "BK-91942",
-    petOwner: "Linh Vo",
-    provider: "Paws & Claws Spa",
-    service: "Basic Bath",
-    reportedAt: "2026-06-12 09:20",
-    providerEvidence: "Provider uploaded front desk camera timestamp and OTP log.",
-    ownerResponse: "Owner says they arrived late but did not check in.",
-    reserveAmount: 45000,
-    status: "READY_FOR_ADMIN",
-  },
-  {
-    id: "NS-3002",
-    bookingId: "BK-91880",
-    petOwner: "Gia Han",
-    provider: "Pet Hotel & Daycare",
-    service: "Daycare",
-    reportedAt: "2026-06-10 16:30",
-    providerEvidence: "Provider notes no QR scan before appointment expiry.",
-    ownerResponse: "Waiting for pet owner response.",
-    reserveAmount: 72000,
-    status: "AWAITING_OWNER",
-  },
-];
 
 export const adminBookingKeys = {
   all: ["admin", "bookings"] as const,
@@ -170,44 +61,87 @@ export const adminBookingKeys = {
   noShows: () => [...adminBookingKeys.all, "no-shows"] as const,
 };
 
+function toList<T>(data: unknown) {
+  return listSchema.parse(data).items as T[];
+}
+
+type DefinedQuery<T> = UseQueryResult<T, unknown> & { data: T };
+
+function withDefault<T>(query: UseQueryResult<T, unknown>, fallback: T): DefinedQuery<T> {
+  return { ...query, data: query.data ?? fallback } as DefinedQuery<T>;
+}
+
+function normalizeBooking(booking: Record<string, unknown>): AdminBooking {
+  return {
+    id: textValue(booking.id, ""),
+    petOwner: textValue(booking.customerName ?? nested(booking, "customer", "users", "fullName")),
+    provider: textValue(booking.providerName ?? nested(booking, "provider", "businessName")),
+    service: textValue(booking.serviceName ?? nested(booking, "service", "name")),
+    scheduledAt: textValue(booking.scheduledAt ?? booking.startTime ?? booking.bookingTime),
+    amount: Number(booking.totalAmount ?? booking.amount ?? 0),
+    status: textValue(booking.status, "PENDING"),
+    paymentStatus: textValue(booking.paymentStatus, "UNPAID"),
+    paymentMethod: textValue(booking.paymentMethod, "-"),
+    disputeStatus: booking.disputeStatus ? String(booking.disputeStatus) : undefined,
+  };
+}
+
 export function useAdminBookings() {
-  return useQuery<AdminBooking[]>({
+  const query = useQuery<AdminBooking[]>({
     queryKey: adminBookingKeys.lists(),
     queryFn: async () => {
-      const response = await api.get<AdminBooking[]>("/admin/bookings");
-      return response.data;
+      const response = await api.get<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.BOOKINGS.LIST);
+      return toList<Record<string, unknown>>(response.data.data).map(normalizeBooking);
     },
-    initialData: adminBookingMockItems,
-    enabled: false,
+    placeholderData: [],
   });
+  return withDefault(query, []);
 }
 
 export function useNoShowReviews() {
-  return useQuery<NoShowReview[]>({
+  const query = useQuery<NoShowReview[]>({
     queryKey: adminBookingKeys.noShows(),
     queryFn: async () => {
-      const response = await api.get<NoShowReview[]>(
-        "/admin/bookings/no-show",
-      );
-      return response.data;
+      const response = await api.get<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.BOOKINGS.LIST, {
+        params: { status: "NO_ARRIVAL", page: 1, pageSize: 100 },
+      });
+      return toList<Record<string, unknown>>(response.data.data).map((booking) => ({
+        id: String(booking.id ?? ""),
+        bookingId: String(booking.id ?? ""),
+        petOwner: textValue(booking.customerName ?? nested(booking, "customer", "users", "fullName")),
+        provider: textValue(booking.providerName ?? nested(booking, "provider", "businessName")),
+        service: textValue(booking.serviceName ?? nested(booking, "service", "name")),
+        reportedAt: String(booking.noArrivalAt ?? booking.updateAt ?? ""),
+        providerEvidence: "Backend chưa có evidence riêng cho no-arrival.",
+        ownerResponse: "Backend chưa có phản hồi khách hàng riêng cho no-arrival.",
+        reserveAmount: Number(booking.totalAmount ?? 0),
+        status: "READY_FOR_ADMIN",
+      }));
     },
-    initialData: noShowMockItems,
-    enabled: false,
+    placeholderData: [],
   });
+  return withDefault(query, []);
 }
 
 export function useDisputeBookings() {
-  return useQuery<BookingDispute[]>({
+  const query = useQuery<BookingDispute[]>({
     queryKey: adminBookingKeys.disputes(),
     queryFn: async () => {
-      const response = await api.get<BookingDispute[]>(
-        "/admin/bookings/disputes",
-      );
-      return response.data;
+      const response = await api.get<ApiResponse<unknown>>(API_ENDPOINTS.ADMIN.DISPUTES.LIST);
+      return toList<Record<string, unknown>>(response.data.data).map((dispute) => ({
+        id: textValue(dispute.id, ""),
+        bookingId: textValue(dispute.bookingId ?? nested(dispute, "booking", "id")),
+        petOwner: textValue(dispute.customerName ?? nested(dispute, "booking", "customer", "users", "fullName")),
+        provider: textValue(dispute.providerName ?? nested(dispute, "booking", "provider", "businessName")),
+        issue: textValue(dispute.reason ?? dispute.issue ?? dispute.description),
+        requestedOutcome: textValue(dispute.requestedOutcome ?? dispute.type, "REVIEW"),
+        status: textValue(dispute.status, "PENDING"),
+        lastAuditLog: textValue(dispute.adminNote ?? dispute.updatedAt ?? dispute.createAt),
+      }));
     },
-    initialData: disputeMockItems,
-    enabled: false,
+    placeholderData: [],
   });
+  return withDefault(query, []);
 }
 
 export function useResolveBookingDispute() {
@@ -215,11 +149,17 @@ export function useResolveBookingDispute() {
 
   return useMutation({
     mutationFn: async (payload: DisputeResolutionData) => {
-      const response = await api.post(
-        "/admin/bookings/disputes/resolve",
-        payload,
+      const status =
+        payload.result === "REFUND"
+          ? "RESOLVED_CUSTOMER_WIN"
+          : payload.result === "CLOSE_CLAIM"
+            ? "CANCELLED"
+            : "RESOLVED_PROVIDER_WIN";
+      const response = await api.patch<ApiResponse<unknown>>(
+        API_ENDPOINTS.ADMIN.DISPUTES.RESOLVE(payload.disputeId),
+        { status, adminNote: payload.auditNote },
       );
-      return response.data as { success: boolean; auditLogId: string };
+      return response.data.data;
     },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminBookingKeys.all });
@@ -228,37 +168,19 @@ export function useResolveBookingDispute() {
 }
 
 export function useResolveNoShowReview() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (payload: NoShowResolutionData) => {
-      const parsedPayload = noShowResolutionSchema.parse(payload);
-      const response = await api.post<{ success: boolean; auditLogId: string }>(
-        "/admin/bookings/no-show/resolve",
-        parsedPayload,
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminBookingKeys.all });
+      void payload;
+      throw new Error("Backend chưa có API xử lý no-arrival review riêng.");
     },
   });
 }
 
 export function useOverrideBookingStatus() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (payload: BookingStatusOverrideData) => {
-      const parsedPayload = bookingStatusOverrideSchema.parse(payload);
-      const response = await api.patch<{ success: boolean; auditLogId: string }>(
-        `/admin/bookings/${parsedPayload.bookingId}/status`,
-        parsedPayload,
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminBookingKeys.all });
+      void payload;
+      throw new Error("Backend chưa có API override booking status trực tiếp.");
     },
   });
 }

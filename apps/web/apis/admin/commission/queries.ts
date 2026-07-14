@@ -1,200 +1,218 @@
-﻿"use client";
+"use client";
 
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import type { UseQueryResult } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
-import type { Commission, CommissionConfig } from "@/types/commission";
+import type { ApiResponse } from "@/types/api";
+import type {
+  Commission,
+  CommissionConfig,
+  CommissionDisplayStatus,
+  CommissionStatus,
+} from "@/types/commission";
+import { listSchema } from "@/apis/admin/supported-api";
 import { commissionConfigSchema } from "./schema";
 import type { CommissionConfigData } from "./schema";
 
 export interface CommissionSummary {
+  heldAmount: number;
+  pendingHeldAmount: number;
+  pendingCommissionAmount: number;
+  refundPendingAmount: number;
+  refundPendingCommissionAmount: number;
   reservedAmount: number;
   chargedAmount: number;
+  chargedCommissionAmount: number;
   releasedAmount: number;
+  releasedCommissionAmount: number;
+  refundedCommissionAmount: number;
+  releasedWithoutRefundCommissionAmount: number;
+  cancelledCommissionAmount: number;
   failedAmount: number;
+  failedCommissionAmount: number;
   cashCommissionAmount: number;
   onlineCommissionAmount: number;
 }
 
-export const commissionSummaryMock: CommissionSummary = {
-  reservedAmount: 1880000,
-  chargedAmount: 8450000,
-  releasedAmount: 620000,
-  failedAmount: 210000,
-  cashCommissionAmount: 5120000,
-  onlineCommissionAmount: 3330000,
+export interface CommissionListParams {
+  page?: number;
+  pageSize?: number;
+  status?: CommissionStatus;
+  paymentMethod?: "CASH" | "ONLINE";
+  providerId?: string;
+  bookingId?: string;
+  from?: string;
+  to?: string;
+}
+
+type DefinedQuery<T> = UseQueryResult<T, unknown> & { data: T };
+
+function withDefault<T>(query: UseQueryResult<T, unknown>, fallback: T): DefinedQuery<T> {
+  return { ...query, data: query.data ?? fallback } as DefinedQuery<T>;
+}
+
+const emptySummary: CommissionSummary = {
+  heldAmount: 0,
+  pendingHeldAmount: 0,
+  pendingCommissionAmount: 0,
+  refundPendingAmount: 0,
+  refundPendingCommissionAmount: 0,
+  reservedAmount: 0,
+  chargedAmount: 0,
+  chargedCommissionAmount: 0,
+  releasedAmount: 0,
+  releasedCommissionAmount: 0,
+  refundedCommissionAmount: 0,
+  releasedWithoutRefundCommissionAmount: 0,
+  cancelledCommissionAmount: 0,
+  failedAmount: 0,
+  failedCommissionAmount: 0,
+  cashCommissionAmount: 0,
+  onlineCommissionAmount: 0,
 };
 
-export const commissionMockItems: Commission[] = [
-  {
-    id: "COM-7001",
-    bookingId: "BK-92018",
-    providerId: "PRV-2001",
-    providerName: "Happy Paws Spa",
-    serviceName: "Premium Grooming",
-    bookingAmount: 680000,
-    commissionAmount: 102000,
-    rateLabel: "15%",
-    status: "PENDING",
-    paymentMethod: "CASH",
-    reservedAt: "2026-06-14 15:32",
-  },
-  {
-    id: "COM-7002",
-    bookingId: "BK-92002",
-    providerId: "PRV-2002",
-    providerName: "VetCare 24h",
-    serviceName: "Vaccination",
-    bookingAmount: 420000,
-    commissionAmount: 63000,
-    rateLabel: "15%",
-    status: "CHARGED",
-    paymentMethod: "CASH",
-    reservedAt: "2026-06-14 11:02",
-    chargedAt: "2026-06-14 11:50",
-  },
-  {
-    id: "COM-6991",
-    bookingId: "BK-91970",
-    providerId: "PRV-2004",
-    providerName: "Pet Hotel & Daycare",
-    serviceName: "Overnight Stay",
-    bookingAmount: 950000,
-    commissionAmount: 142500,
-    rateLabel: "15%",
-    status: "RELEASED",
-    paymentMethod: "MOMO",
-    reservedAt: "2026-06-13 19:00",
-  },
-  {
-    id: "COM-6986",
-    bookingId: "BK-91942",
-    providerId: "PRV-2003",
-    providerName: "Paws & Claws Spa",
-    serviceName: "Basic Bath",
-    bookingAmount: 300000,
-    commissionAmount: 45000,
-    rateLabel: "15%",
-    status: "FAILED",
-    paymentMethod: "CASH",
-    reservedAt: "2026-06-12 09:10",
-  },
-];
+function normalizeCommission(item: Record<string, unknown>): Commission {
+  return {
+    id: String(item.id ?? ""),
+    bookingId: String(item.bookingId ?? ""),
+    providerId: String(item.providerId ?? ""),
+    providerName: String(item.providerName ?? "Unknown provider"),
+    serviceName: String(item.serviceName ?? "Unknown service"),
+    bookingAmount: Number(item.bookingAmount ?? 0),
+    heldAmount: Number(item.heldAmount ?? 0),
+    commissionAmount: Number(item.commissionAmount ?? 0),
+    providerEarning: Number(item.providerEarning ?? 0),
+    rateLabel: String(item.rateLabel ?? ""),
+    status: String(item.status ?? "PENDING") as CommissionStatus,
+    displayStatus: String(
+      item.displayStatus ?? item.status ?? "PENDING",
+    ) as CommissionDisplayStatus,
+    fundSource: String(item.fundSource ?? "NONE"),
+    fundStatus: String(item.fundStatus ?? "NOT_HELD"),
+    paymentMethod: String(item.paymentMethod ?? "CASH") as Commission["paymentMethod"],
+    reservedAt: item.reservedAt ? String(item.reservedAt) : undefined,
+    chargedAt: item.chargedAt ? String(item.chargedAt) : undefined,
+    releasedAt: item.releasedAt ? String(item.releasedAt) : undefined,
+    failedAt: item.failedAt ? String(item.failedAt) : undefined,
+    collectedFrom: item.collectedFrom ? String(item.collectedFrom) : null,
+    failureReason: item.failureReason ? String(item.failureReason) : null,
+    releaseReason: item.releaseReason ? String(item.releaseReason) : null,
+  };
+}
 
-export const commissionConfigMockItems: CommissionConfig[] = [
-  {
-    id: "CFG-001",
-    name: "Default platform commission",
-    type: "PERCENTAGE",
-    scope: "GLOBAL",
-    scopeValue: "All services",
-    value: 15,
-    effectiveFrom: "2026-06-01",
-    appliesToNewBookingsOnly: true,
-    isActive: true,
-  },
-  {
-    id: "CFG-002",
-    name: "Clinic fixed safety fee",
-    type: "FIXED",
-    scope: "PROVIDER_TYPE",
-    scopeValue: "CLINIC",
-    value: 50000,
-    effectiveFrom: "2026-06-10",
-    appliesToNewBookingsOnly: true,
-    isActive: true,
-  },
-  {
-    id: "CFG-003",
-    name: "Pet hotel campaign rate",
-    type: "PERCENTAGE",
-    scope: "SERVICE_CATEGORY",
-    scopeValue: "PET_HOTEL",
-    value: 12,
-    effectiveFrom: "2026-06-15",
-    appliesToNewBookingsOnly: true,
-    isActive: false,
-  },
-];
+function normalizeSummary(data: Partial<CommissionSummary> | null | undefined): CommissionSummary {
+  return {
+    heldAmount: Number(data?.heldAmount ?? data?.reservedAmount ?? 0),
+    pendingHeldAmount: Number(data?.pendingHeldAmount ?? data?.heldAmount ?? data?.reservedAmount ?? 0),
+    pendingCommissionAmount: Number(data?.pendingCommissionAmount ?? 0),
+    refundPendingAmount: Number(data?.refundPendingAmount ?? 0),
+    refundPendingCommissionAmount: Number(data?.refundPendingCommissionAmount ?? 0),
+    reservedAmount: Number(data?.reservedAmount ?? 0),
+    chargedAmount: Number(data?.chargedAmount ?? 0),
+    chargedCommissionAmount: Number(data?.chargedCommissionAmount ?? data?.chargedAmount ?? 0),
+    releasedAmount: Number(data?.releasedAmount ?? 0),
+    releasedCommissionAmount: Number(data?.releasedCommissionAmount ?? data?.releasedAmount ?? 0),
+    refundedCommissionAmount: Number(data?.refundedCommissionAmount ?? data?.releasedCommissionAmount ?? data?.releasedAmount ?? 0),
+    releasedWithoutRefundCommissionAmount: Number(data?.releasedWithoutRefundCommissionAmount ?? 0),
+    cancelledCommissionAmount: Number(data?.cancelledCommissionAmount ?? data?.releasedWithoutRefundCommissionAmount ?? 0),
+    failedAmount: Number(data?.failedAmount ?? 0),
+    failedCommissionAmount: Number(data?.failedCommissionAmount ?? data?.failedAmount ?? 0),
+    cashCommissionAmount: Number(data?.cashCommissionAmount ?? 0),
+    onlineCommissionAmount: Number(data?.onlineCommissionAmount ?? 0),
+  };
+}
+
+function commissionParams(params?: CommissionListParams) {
+  return {
+    page: params?.page ?? 1,
+    pageSize: params?.pageSize ?? 100,
+    status: params?.status,
+    paymentMethod: params?.paymentMethod,
+    providerId: params?.providerId,
+    bookingId: params?.bookingId,
+    from: params?.from,
+    to: params?.to,
+  };
+}
 
 export function useCommissionSummary() {
-  return useQuery<CommissionSummary>({
+  const query = useQuery<CommissionSummary>({
     queryKey: queryKeys.adminCommission.summary(),
     queryFn: async () => {
-      const response = await api.get<CommissionSummary>(
+      const response = await api.get<ApiResponse<CommissionSummary>>(
         API_ENDPOINTS.ADMIN.COMMISSION.SUMMARY,
       );
-      return response.data;
+      return normalizeSummary(response.data.data);
     },
-    initialData: commissionSummaryMock,
-    enabled: false,
   });
+  return withDefault(query, emptySummary);
 }
 
-export function useCommissionRecords() {
-  return useQuery<Commission[]>({
-    queryKey: queryKeys.adminCommission.records(),
+export function useCommissionRecords(params?: CommissionListParams) {
+  const normalizedParams = commissionParams(params);
+  const query = useQuery<Commission[]>({
+    queryKey: [...queryKeys.adminCommission.records(), normalizedParams] as const,
     queryFn: async () => {
-      const response = await api.get<Commission[]>(
+      const response = await api.get<ApiResponse<unknown>>(
         API_ENDPOINTS.ADMIN.COMMISSION.RECORDS,
+        { params: normalizedParams },
       );
-      return response.data;
+      return listSchema
+        .parse(response.data.data)
+        .items.map((item) => normalizeCommission(item as Record<string, unknown>));
     },
-    initialData: commissionMockItems,
-    enabled: false,
   });
+  return withDefault(query, []);
 }
 
-export function usePendingCommissions() {
-  return useQuery<Commission[]>({
-    queryKey: queryKeys.adminCommission.pending(),
+export function usePendingCommissions(params?: Omit<CommissionListParams, "status">) {
+  const normalizedParams = commissionParams({ ...params, status: "PENDING" });
+  const query = useQuery<Commission[]>({
+    queryKey: [...queryKeys.adminCommission.pending(), normalizedParams] as const,
     queryFn: async () => {
-      const response = await api.get<Commission[]>(
+      const response = await api.get<ApiResponse<unknown>>(
         API_ENDPOINTS.ADMIN.COMMISSION.PENDING,
+        { params: normalizedParams },
       );
-      return response.data;
+      return listSchema
+        .parse(response.data.data)
+        .items.map((item) => normalizeCommission(item as Record<string, unknown>));
     },
-    initialData: commissionMockItems.filter(
-      (commission) => commission.status === "PENDING",
-    ),
-    enabled: false,
+  });
+  return withDefault(query, []);
+}
+
+export function useCommissionDetail(id?: string) {
+  return useQuery<Commission>({
+    queryKey: [...queryKeys.adminCommission.all, "detail", id] as const,
+    enabled: Boolean(id),
+    queryFn: async () => {
+      const response = await api.get<ApiResponse<Record<string, unknown>>>(
+        API_ENDPOINTS.ADMIN.COMMISSION.DETAIL(id!),
+      );
+      return normalizeCommission(response.data.data);
+    },
   });
 }
 
 export function useCommissionConfigs() {
-  return useQuery<CommissionConfig[]>({
+  const query = useQuery<CommissionConfig[]>({
     queryKey: queryKeys.adminCommission.configs(),
-    queryFn: async () => {
-      const response = await api.get<CommissionConfig[]>(
-        API_ENDPOINTS.ADMIN.COMMISSION.CONFIGS,
-      );
-      return response.data;
+    queryFn: async (): Promise<CommissionConfig[]> => {
+      throw new Error("Backend has no dedicated commission config list API. Use Admin settings platformCommissionRate instead.");
     },
-    initialData: commissionConfigMockItems,
-    enabled: false,
+    retry: false,
   });
+  return withDefault(query, []);
 }
 
 export function useSaveCommissionConfig() {
-  const queryClient = useQueryClient();
-
   return useMutation({
     mutationFn: async (payload: CommissionConfigData) => {
-      const parsedPayload = commissionConfigSchema.parse(payload);
-      const endpoint = parsedPayload.id
-        ? API_ENDPOINTS.ADMIN.COMMISSION.UPDATE_CONFIG(parsedPayload.id)
-        : API_ENDPOINTS.ADMIN.COMMISSION.CONFIGS;
-      const response = await api.post<{ success: boolean; configId: string }>(
-        endpoint,
-        parsedPayload,
-      );
-      return response.data;
-    },
-    onSuccess: () => {
-      void queryClient.invalidateQueries({
-        queryKey: queryKeys.adminCommission.all,
-      });
+      commissionConfigSchema.parse(payload);
+      throw new Error("Backend has no dedicated commission config mutation API. Use Admin settings platformCommissionRate instead.");
     },
   });
 }

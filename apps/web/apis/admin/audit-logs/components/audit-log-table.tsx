@@ -10,7 +10,7 @@ import { SearchInput } from "@/components/ui/search-input";
 import { useAuditLogs } from "../queries";
 import type { AuditLogItem } from "../queries";
 
-const actionStyles = {
+const actionStyles: Record<string, string> = {
   CONTENT_APPROVED: "border-green-200 bg-green-50 text-green-700",
   CONTENT_HIDDEN: "border-red-200 bg-red-50 text-red-700",
   REPORT_RESOLVED: "border-blue-200 bg-blue-50 text-blue-700",
@@ -19,7 +19,7 @@ const actionStyles = {
   ACCOUNT_LOCKED: "border-gray-200 bg-gray-50 text-gray-700",
 };
 
-const actionLabels: Record<AuditLogItem["actionType"], string> = {
+const actionLabels: Record<string, string> = {
   CONTENT_APPROVED: "Duyệt nội dung",
   CONTENT_HIDDEN: "Ẩn nội dung",
   REPORT_RESOLVED: "Xử lý báo cáo",
@@ -28,7 +28,7 @@ const actionLabels: Record<AuditLogItem["actionType"], string> = {
   ACCOUNT_LOCKED: "Khóa tài khoản",
 };
 
-const roleLabels: Record<AuditLogItem["actorRole"], string> = {
+const roleLabels: Record<string, string> = {
   ADMIN: "Quản trị viên",
   CUSTOMER: "Khách hàng",
   PROVIDER: "Nhà cung cấp",
@@ -44,7 +44,7 @@ export function AuditLogTable() {
   const filteredLogs = auditLogs.data.filter((log) => {
     const matchesRole = role === "ALL" || log.actorRole === role;
     const matchesAction = action === "ALL" || log.actionType === action;
-    const matchesSearch = [log.id, log.actorName, log.target, log.note, actionLabels[log.actionType]]
+    const matchesSearch = [log.id, log.actorName, log.target, log.note, actionLabels[log.actionType] ?? log.actionType]
       .join(" ").toLowerCase().includes(search.toLowerCase());
     return matchesRole && matchesAction && matchesSearch;
   });
@@ -67,7 +67,7 @@ export function AuditLogTable() {
       render: (log) => (
         <div>
           <p className="font-semibold text-gray-900">{log.actorName}</p>
-          <p className="text-xs text-gray-500">{roleLabels[log.actorRole]}</p>
+          <p className="text-xs text-gray-500">{roleLabels[log.actorRole] ?? log.actorRole}</p>
         </div>
       ),
     },
@@ -77,9 +77,9 @@ export function AuditLogTable() {
       widthClassName: "w-[20%]",
       render: (log) => (
         <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${actionStyles[log.actionType]}`}
+          className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${actionStyles[log.actionType] ?? "border-gray-200 bg-gray-50 text-gray-700"}`}
         >
-          {actionLabels[log.actionType]}
+          {actionLabels[log.actionType] ?? log.actionType}
         </span>
       ),
     },

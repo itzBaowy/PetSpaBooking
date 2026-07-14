@@ -32,16 +32,10 @@ export function useProviderBookings(params: Record<string, string | number | und
 export function useProviderBookingDetail(bookingId: string) {
   return useQuery({
     queryKey: bookingKeys.detail(bookingId),
-    queryFn: async () => {
-      const page = unwrap<ProviderPage<ProviderBookingApi>>(
-        await api.get(API_ENDPOINTS.MOBILE.PROVIDER.BOOKINGS, {
-          params: { page: 1, pageSize: 100 },
-        }),
-      );
-      const booking = page.items.find((item) => item.id === bookingId);
-      if (!booking) throw new Error("Không tìm thấy lịch đặt trong danh sách provider.");
-      return booking;
-    },
+    queryFn: async () =>
+      unwrap<ProviderBookingApi>(
+        await api.get(API_ENDPOINTS.MOBILE.PROVIDER.BOOKING_DETAIL(bookingId)),
+      ),
   });
 }
 

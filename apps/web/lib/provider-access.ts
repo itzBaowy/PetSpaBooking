@@ -20,7 +20,6 @@ export type ProviderNavigationItemId =
   | "verification"
   | "availability"
   | "services"
-  | "pricing"
   | "bookings"
   | "customers"
   | "disputes"
@@ -58,7 +57,6 @@ export const PROVIDER_NAVIGATION: readonly ProviderNavigationDefinition[] = [
   { id: "verification", label: "Xác minh", href: "/provider/verification", group: "account", limitedAccess: true },
   { id: "availability", label: "Lịch làm việc", href: "/provider/availability", group: "account", limitedAccess: false },
   { id: "services", label: "Dịch vụ", href: "/provider/services", group: "operations", limitedAccess: false },
-  { id: "pricing", label: "Giá & khuyến mãi", href: "/provider/pricing", group: "operations", limitedAccess: false },
   { id: "bookings", label: "Đặt lịch", href: "/provider/bookings", group: "operations", limitedAccess: false },
   { id: "customers", label: "Khách hàng", href: "/provider/customers", group: "operations", limitedAccess: false },
   { id: "disputes", label: "Tranh chấp", href: "/provider/disputes", group: "operations", limitedAccess: false },

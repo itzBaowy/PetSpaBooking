@@ -13,6 +13,7 @@ import {
   ProviderPageHeader,
   providerDate,
   providerErrorText,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import {
   useCreateProviderAvailabilityBlock,
@@ -123,7 +124,7 @@ export function ProviderAvailabilityPage() {
         <h2 className="text-lg font-extrabold">Khoảng thời gian đã khóa</h2>
         {blocksQuery.data?.length ? (
           <div className="mt-4 grid gap-2">
-            {blocksQuery.data.map((block) => (
+            {sortByDateDesc(blocksQuery.data, (block) => block.startAt).map((block) => (
               <div className="flex flex-col justify-between gap-3 rounded-xl bg-surface-muted p-4 sm:flex-row sm:items-center" key={block.id}>
                 <div>
                   <strong>

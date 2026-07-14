@@ -52,7 +52,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
   }
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center justify-end border-b border-shell-border bg-shell-strong px-5 shadow-sm backdrop-blur dark:bg-shell-strong">
+    <header className="sticky top-0 z-[70] flex h-16 shrink-0 items-center justify-end border-b border-shell-border bg-shell-strong px-5 shadow-sm backdrop-blur dark:bg-shell-strong">
       <div className="relative">
         {role === "admin" && (
           <button
