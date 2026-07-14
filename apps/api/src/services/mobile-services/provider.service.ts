@@ -148,7 +148,7 @@ export const mobileProviderServices = {
     }
 
     const providerWhere: Record<string, unknown> = {
-      status: "VERIFIED",
+      providerStatus: "VERIFIED",
       OR: [
         {
           businessName: {
@@ -207,6 +207,7 @@ export const mobileProviderServices = {
         },
         {
           provider: {
+            providerStatus: "VERIFIED",
             businessName: {
               contains: searchTerm,
               mode: "insensitive",
@@ -224,6 +225,7 @@ export const mobileProviderServices = {
       prisma.providers.findMany({
         where: providerWhere,
         select: {
+          id: true,
           businessName: true,
         },
         orderBy: { createAt: "desc" },
@@ -231,8 +233,9 @@ export const mobileProviderServices = {
         take: pageSize,
       }),
       prisma.services.findMany({
-        where: serviceWhere,
+        where: { ...serviceWhere, provider: { providerStatus: "VERIFIED" } },
         select: {
+          id: true,
           name: true,
         },
         orderBy: { createAt: "desc" },
@@ -242,8 +245,8 @@ export const mobileProviderServices = {
     ]);
 
     return {
-      providers: rawProviders.map((p) => p.businessName),
-      services: rawServices.map((s) => s.name),
+      providers: rawProviders.map((p) => ({ id: p.id, name: p.businessName })),
+      services: rawServices.map((p) => ({ id: p.id, name: p.name })),
     };
   },
 
