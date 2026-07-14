@@ -1,20 +1,27 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
-import { api } from "@/lib/axios";
+import { useMutation } from "@tanstack/react-query";
+import {
+  serviceKeys,
+  useProviderServices,
+  useToggleProviderService,
+} from "@/apis/provider/services/queries";
 
 export const pricingKeys = {
-  all: ["pricing"] as const,
-  list: () => [...pricingKeys.all, "list"] as const,
+  all: serviceKeys.all,
+  list: serviceKeys.list,
 };
 
 export function usePricing() {
-  return useQuery({
-    queryKey: pricingKeys.list(),
-    queryFn: () => api.get("/pricing"),
-  });
+  return useProviderServices();
+}
+
+export function useTogglePricingService() {
+  return useToggleProviderService();
 }
 
 export function useCreatePromotion() {
   return useMutation({
-    mutationFn: (data: any) => api.post("/promotions", data),
+    mutationFn: async () => {
+      throw new Error("Backend has no provider promotion API yet.");
+    },
   });
 }
