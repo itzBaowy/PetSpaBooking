@@ -19,3 +19,20 @@ export const saveDeviceToken = async (
     next(error);
   }
 };
+
+export const removeDeviceToken = async (
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): Promise<void> => {
+  try {
+    const userId = (req as any).user?.userId;
+
+    const data = await userMobileService.removeDeviceToken(userId);
+
+    const response = responseSuccess(data, "Device token removed successfully");
+    res.status(response.statusCode).json(response);
+  } catch (error) {
+    next(error);
+  }
+};

@@ -518,6 +518,55 @@ Không tự set `Content-Type`; React Native/fetch sẽ thêm multipart boundary
 
 Một booking chỉ có 1 dispute.
 
+### 3.4.1 Xem/Theo dõi dispute (Tracking)
+
+Customer có thể xem danh sách dispute của mình và xem chi tiết (bao gồm cả phản hồi của provider và quyết định của admin) để làm giao diện tracking.
+
+```http
+GET /api/mobile/customer/disputes
+GET /api/mobile/customer/disputes/{id}
+```
+
+- `GET /api/mobile/customer/disputes`: Hỗ trợ phân trang (`page`, `limit`). Trả về danh sách dispute kèm thông tin `booking`, `provider`, `service`.
+- `GET /api/mobile/customer/disputes/{id}`: Trả về chi tiết 1 dispute cụ thể.
+
+Dữ liệu trả về (đã được parse sẵn các trường evidence):
+
+```json
+{
+  "id": "...",
+  "bookingId": "...",
+  "reason": "Service quality issue",
+  "description": "The service was not completed as agreed.",
+  "evidence": [
+    {
+      "url": "https://...",
+      "type": "IMAGE"
+    }
+  ],
+  "providerResponse": "The service was completed as agreed.",
+  "providerEvidence": [
+    {
+      "url": "https://...",
+      "type": "IMAGE"
+    }
+  ],
+  "adminNote": "Manual refund required.",
+  "adminEvidence": [],
+  "status": "RESOLVED_CUSTOMER_WIN",
+  "createAt": "...",
+  "booking": {
+    "status": "CANCELLED",
+    "totalAmount": 300000,
+    "provider": {
+      "businessName": "Pet Spa"
+    }
+  }
+}
+```
+
+Lưu ý: Customer chỉ gửi dispute 1 lần duy nhất lúc tạo, không có API để customer phản hồi lại sau khi provider/admin đã trả lời. Giao diện tracking chỉ mang tính chất hiển thị trạng thái và nội dung phản hồi của 3 bên (Customer, Provider, Admin).
+
 ### 3.5 Customer cancel booking
 
 Customer token required.

@@ -77,6 +77,9 @@ async function sendPushNotification(userId: string, notification: any) {
           title: notification.title,
           body: notification.message,
           data: notification.data ? JSON.parse(notification.data) : undefined,
+          sound: "default",
+          priority: "high",
+          badge: 1,
         }),
       });
     }
@@ -101,6 +104,9 @@ async function sendPushNotificationBatch(inputs: CreateNotificationInput[]) {
         title: input.title,
         body: input.message,
         data: input.data,
+        sound: "default",
+        priority: "high",
+        badge: 1,
       }));
 
     if (messages.length > 0) {
