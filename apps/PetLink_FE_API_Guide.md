@@ -368,6 +368,35 @@ Provider check-in sẽ bị chặn nếu booking `ONLINE` nhưng `paymentStatus 
 
 Backend cần cấu hình MoMo sandbox trước khi API tạo payment gọi được MoMo thật:
 
+Fallback sync cho customer booking payment:
+
+```http
+POST /api/mobile/bookings/{bookingId}/momo/sync
+Authorization: Bearer <customer_accessToken>
+Content-Type: application/json
+```
+
+Body optional:
+
+```json
+{
+  "orderId": "booking-..."
+}
+```
+
+Nếu customer thanh toán xong nhưng thoát MoMo giữa chừng, không quay lại frontend return page, mobile app gọi endpoint này khi user quay lại app hoặc mở lại màn booking/payment. Nếu không gửi `orderId`, backend sync payment MoMo `PENDING` mới nhất của booking đó. Khi MoMo query trả `resultCode = 0`, backend cập nhật:
+
+```txt
+booking.paymentStatus = SUCCESS
+booking.paymentReference = transId hoặc orderId
+booking.paidAt = now
+payment_transactions.status = SUCCESS
+commission_records.heldAmount = booking.totalAmount
+commission_records.fundStatus = HELD
+```
+
+Response `data` có `booking`, `payment`, `momoResponse`, `synced`.
+
 ```env
 MOMO_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/create
 MOMO_QUERY_ENDPOINT=https://test-payment.momo.vn/v2/gateway/api/query
@@ -379,9 +408,21 @@ MOMO_REDIRECT_URL=http://localhost:3000/payment/momo/return
 MOMO_IPN_URL=http://localhost:5500/api/mobile/payments/momo/ipn
 MOMO_PROVIDER_DEPOSIT_REDIRECT_URL=http://localhost:3000/provider/wallet/deposit/return
 MOMO_PROVIDER_DEPOSIT_IPN_URL=http://localhost:5500/api/mobile/payments/momo/provider-deposit/ipn
+ENABLE_MOMO_PAYMENT_SYNC_JOB=true
+MOMO_PAYMENT_SYNC_CRON_SECONDS=30
+MOMO_PAYMENT_SYNC_BATCH_SIZE=20
 ```
 
 `MOMO_REQUEST_TYPE=payWithMethod` dùng MoMo Collection Link để payment page có thể hiển thị nhiều phương thức như ví MoMo, ATM hoặc thẻ nếu sandbox merchant được MoMo bật các phương thức đó. Nếu đổi về `captureWallet`, page thường chỉ tập trung vào ví MoMo/QR/deeplink.
+
+Backend có cron `momo-payment-sync` để tự query MoMo cho các payment `PENDING` mỗi 30 giây:
+
+```txt
+BOOKING payment -> cập nhật booking paymentStatus, payment transaction, commission heldAmount
+PROVIDER_DEPOSIT payment -> cộng depositBalance, cập nhật depositStatus, ghi wallet transaction
+```
+
+Manual sync endpoint vẫn nên giữ ở FE/mobile khi cần refresh ngay lập tức, nhưng cron giúp xử lý trường hợp user đóng MoMo, không về return page và IPN local không tới được.
 
 Redirect URL nên trỏ về frontend để user thấy màn hình kết quả:
 

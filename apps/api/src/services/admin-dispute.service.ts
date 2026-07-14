@@ -8,6 +8,7 @@ import {
 } from "../common/helpers/exception.helper.ts";
 import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts";
 import { bookingFinanceService } from "./booking-finance.service.ts";
+import { commissionRecordService } from "./commission-record.service.ts";
 import { notificationService } from "./notification.service.ts";
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
 
@@ -320,6 +321,13 @@ export const adminDisputeService = {
     if (shouldProcessCommission(status)) {
       await bookingFinanceService.processCompletedBookingCommission(
         dispute.bookingId,
+      );
+    }
+
+    if (status === "RESOLVED_CUSTOMER_WIN") {
+      await commissionRecordService.releaseForBooking(
+        dispute.bookingId,
+        "Dispute resolved in customer favor",
       );
     }
 

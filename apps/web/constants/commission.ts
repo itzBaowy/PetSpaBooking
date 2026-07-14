@@ -12,9 +12,9 @@ export const COMMISSION_STATUSES = {
 } as const satisfies Record<CommissionStatus, CommissionStatus>;
 
 export const COMMISSION_STATUS_LABELS: Record<CommissionStatus, string> = {
-  PENDING: "Đang giữ",
+  PENDING: "Chờ xử lý",
   CHARGED: "Đã thu",
-  RELEASED: "Đã hoàn",
+  RELEASED: "Đã xử lý",
   FAILED: "Thất bại",
 };
 

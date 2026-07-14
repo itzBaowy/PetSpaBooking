@@ -127,6 +127,13 @@ function getFundSnapshot(booking: BookingCommissionInput) {
 }
 
 function toCommissionDto(record: any) {
+  const displayStatus = (() => {
+    if (record.status !== "RELEASED") return record.status;
+    if (record.fundStatus === "REFUND_PENDING") return "REFUND_PENDING";
+    if (record.fundStatus === "REFUNDED") return "REFUNDED";
+    return "CANCELLED";
+  })();
+
   return {
     id: record.id,
     bookingId: record.bookingId,
@@ -139,6 +146,7 @@ function toCommissionDto(record: any) {
     providerEarning: record.providerEarning,
     rateLabel: rateLabel(record.commissionRate),
     status: record.status,
+    displayStatus,
     fundSource: record.fundSource ?? "NONE",
     fundStatus: record.fundStatus ?? "NOT_HELD",
     paymentMethod: record.paymentMethod === "ONLINE" ? "MOMO" : record.paymentMethod,
@@ -158,6 +166,20 @@ async function getCommissionData(booking: BookingCommissionInput) {
     commissionRate,
     ...calculateCommission(booking.totalAmount, commissionRate),
   };
+}
+
+async function reconcileRefundedCommissionRecords() {
+  await prisma.commission_records.updateMany({
+    where: {
+      status: { in: ["PENDING", "FAILED"] },
+      fundStatus: "REFUNDED",
+    },
+    data: {
+      status: "RELEASED",
+      releaseReason: "Customer refund completed",
+      releasedAt: new Date(),
+    },
+  });
 }
 
 export const commissionRecordService = {
@@ -287,11 +309,14 @@ export const commissionRecordService = {
     return prisma.commission_records.updateMany({
       where: {
         bookingId,
-        heldAmount: { gt: 0 },
+        status: { not: "CHARGED" },
       },
       data: {
+        status: "RELEASED",
         heldAmount: 0,
         fundStatus: "REFUNDED",
+        releaseReason: "Customer refund completed",
+        releasedAt: new Date(),
       },
     });
   },
@@ -311,11 +336,15 @@ export const commissionRecordService = {
   },
 
   async getSummary() {
+    await reconcileRefundedCommissionRecords();
+
     const [
       held,
       pending,
       charged,
-      released,
+      refundPending,
+      refunded,
+      releasedWithoutRefund,
       failed,
       cash,
       online,
@@ -333,7 +362,24 @@ export const commissionRecordService = {
         _sum: { commissionAmount: true },
       }),
       prisma.commission_records.aggregate({
-        where: { status: "RELEASED" },
+        where: {
+          status: "RELEASED",
+          fundStatus: "REFUND_PENDING",
+        },
+        _sum: { heldAmount: true, commissionAmount: true },
+      }),
+      prisma.commission_records.aggregate({
+        where: {
+          status: "RELEASED",
+          fundStatus: "REFUNDED",
+        },
+        _sum: { commissionAmount: true },
+      }),
+      prisma.commission_records.aggregate({
+        where: {
+          status: "RELEASED",
+          fundStatus: { notIn: ["REFUND_PENDING", "REFUNDED"] },
+        },
         _sum: { commissionAmount: true },
       }),
       prisma.commission_records.aggregate({
@@ -354,11 +400,20 @@ export const commissionRecordService = {
       heldAmount: held._sum.heldAmount ?? 0,
       pendingHeldAmount: held._sum.heldAmount ?? 0,
       pendingCommissionAmount: pending._sum.commissionAmount ?? 0,
+      refundPendingAmount: refundPending._sum.heldAmount ?? 0,
+      refundPendingCommissionAmount:
+        refundPending._sum.commissionAmount ?? 0,
       reservedAmount: held._sum.heldAmount ?? 0,
       chargedAmount: charged._sum.commissionAmount ?? 0,
       chargedCommissionAmount: charged._sum.commissionAmount ?? 0,
-      releasedAmount: released._sum.commissionAmount ?? 0,
-      releasedCommissionAmount: released._sum.commissionAmount ?? 0,
+      releasedAmount:
+        refunded._sum.commissionAmount ?? 0,
+      releasedCommissionAmount: refunded._sum.commissionAmount ?? 0,
+      refundedCommissionAmount: refunded._sum.commissionAmount ?? 0,
+      releasedWithoutRefundCommissionAmount:
+        releasedWithoutRefund._sum.commissionAmount ?? 0,
+      cancelledCommissionAmount:
+        releasedWithoutRefund._sum.commissionAmount ?? 0,
       failedAmount: failed._sum.commissionAmount ?? 0,
       failedCommissionAmount: failed._sum.commissionAmount ?? 0,
       cashCommissionAmount: cash._sum.commissionAmount ?? 0,
@@ -367,6 +422,8 @@ export const commissionRecordService = {
   },
 
   async getAll(req: Request) {
+    await reconcileRefundedCommissionRecords();
+
     const { page, pageSize, index, where } = buildQueryPrisma(
       req.query as Record<string, unknown>,
     );
