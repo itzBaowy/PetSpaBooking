@@ -213,6 +213,19 @@ export const mobileBookingController = {
     }
   },
 
+  async syncMomoPayment(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await momoPaymentService.syncBookingPayment(req);
+      const response = responseSuccess(
+        result,
+        "MoMo booking payment synced successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async handleMomoIpn(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await momoPaymentService.handleIpn(req);
