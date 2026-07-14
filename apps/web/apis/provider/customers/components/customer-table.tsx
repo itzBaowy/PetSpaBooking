@@ -7,6 +7,7 @@ import {
   ProviderError,
   ProviderLoading,
   providerDate,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import { useCustomers } from "../queries";
 
@@ -19,7 +20,7 @@ export function CustomerTable() {
     return <ProviderError error={query.error} retry={() => void query.refetch()} />;
   }
 
-  const customers = query.data ?? [];
+  const customers = sortByDateDesc(query.data ?? [], (customer) => customer.lastBookingAt);
   if (customers.length === 0) {
     return <ProviderEmpty text="Chưa có khách hàng nào từng booking dịch vụ của bạn." />;
   }

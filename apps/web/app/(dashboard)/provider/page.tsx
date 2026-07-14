@@ -1,3 +1,6 @@
+"use client";
+
+import { useProfile } from "@/apis/auth/queries";
 import Link from "next/link";
 
 const quickLinks = [
@@ -8,11 +11,28 @@ const quickLinks = [
 ];
 
 export default function ProviderDashboard() {
+  const profileQuery = useProfile();
+  const providerStatus = profileQuery.data?.providerStatus;
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mx-auto max-w-7xl space-y-6">
-        <h1 className="text-3xl font-black">Tổng quan nhà cung cấp</h1>
-        <div className="flex flex-col gap-5 rounded-2xl border border-warning/25 bg-warning-soft p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-brand">Trung tâm vận hành</p>
+            <h1 className="mt-1 text-3xl font-black tracking-tight">Tổng quan nhà cung cấp</h1>
+          </div>
+          {providerStatus === "VERIFIED" && (
+            <span className="inline-flex w-fit items-center gap-2 rounded-full border border-success/20 bg-success-soft px-3 py-1.5 text-xs font-bold text-success">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-success text-[10px] text-white" aria-hidden="true">✓</span>
+              Doanh nghiệp đã xác minh
+            </span>
+          )}
+        </div>
+        {profileQuery.isLoading ? (
+          <div className="h-28 animate-pulse rounded-2xl border border-border-subtle bg-surface-muted" />
+        ) : providerStatus !== "VERIFIED" ? (
+          <div className="flex flex-col gap-5 rounded-2xl border border-warning/25 bg-warning-soft p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div className="flex gap-4">
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-surface text-warning shadow-sm">
               !
@@ -30,7 +50,8 @@ export default function ProviderDashboard() {
           >
             Xác minh ngay
           </Link>
-        </div>
+          </div>
+        ) : null}
         <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
           {quickLinks.map((item) => (
             <Link
