@@ -21,6 +21,11 @@ import {
 import { ObjectId } from "mongodb";
 import { getSystemSettingValue } from "../system-setting.service.ts";
 import { notificationService } from "../notification.service.ts";
+import {
+  deleteDisputeEvidenceFiles,
+  encodeDisputeEvidence,
+  uploadDisputeEvidenceFiles,
+} from "../dispute-evidence.service.ts";
 
 function getRequesterId(req: Request): string {
   const userId = (req as Request & { user?: { userId?: string } }).user?.userId;
@@ -59,49 +64,12 @@ type EvidenceItem = {
   type?: string;
   title?: string;
   note?: string;
+  publicId?: string;
+  resourceType?: string;
+  mimeType?: string;
+  originalName?: string;
+  size?: number;
 };
-
-function getEvidence(value: unknown, fieldName: string): EvidenceItem[] {
-  if (value === undefined || value === null) return [];
-  if (!Array.isArray(value)) {
-    throw new BadRequestException(`${fieldName} must be an array`);
-  }
-  if (value.length > 10) {
-    throw new BadRequestException(`${fieldName} can contain at most 10 items`);
-  }
-
-  return value.map((item, index) => {
-    if (typeof item === "string") {
-      const url = item.trim();
-      if (!url) {
-        throw new BadRequestException(`${fieldName}[${index}] url is required`);
-      }
-      return { url };
-    }
-
-    if (typeof item !== "object" || item === null) {
-      throw new BadRequestException(
-        `${fieldName}[${index}] must be a string URL or object`,
-      );
-    }
-
-    const raw = item as Record<string, unknown>;
-    if (typeof raw.url !== "string" || !raw.url.trim()) {
-      throw new BadRequestException(`${fieldName}[${index}].url is required`);
-    }
-
-    return {
-      url: raw.url.trim(),
-      type: typeof raw.type === "string" ? raw.type.trim() : undefined,
-      title: typeof raw.title === "string" ? raw.title.trim() : undefined,
-      note: typeof raw.note === "string" ? raw.note.trim() : undefined,
-    };
-  });
-}
-
-function encodeEvidence(evidence: EvidenceItem[]) {
-  return evidence.length > 0 ? JSON.stringify(evidence) : null;
-}
 
 function decodeEvidence(value: string | null | undefined): EvidenceItem[] {
   if (!value) return [];
@@ -180,7 +148,7 @@ export const mobileProviderServices = {
     }
 
     const providerWhere: Record<string, unknown> = {
-      status: "VERIFIED",
+      providerStatus: "VERIFIED",
       OR: [
         {
           businessName: {
@@ -239,6 +207,7 @@ export const mobileProviderServices = {
         },
         {
           provider: {
+            providerStatus: "VERIFIED",
             businessName: {
               contains: searchTerm,
               mode: "insensitive",
@@ -256,6 +225,7 @@ export const mobileProviderServices = {
       prisma.providers.findMany({
         where: providerWhere,
         select: {
+          id: true,
           businessName: true,
         },
         orderBy: { createAt: "desc" },
@@ -263,8 +233,9 @@ export const mobileProviderServices = {
         take: pageSize,
       }),
       prisma.services.findMany({
-        where: serviceWhere,
+        where: { ...serviceWhere, provider: { providerStatus: "VERIFIED" } },
         select: {
+          id: true,
           name: true,
         },
         orderBy: { createAt: "desc" },
@@ -274,8 +245,8 @@ export const mobileProviderServices = {
     ]);
 
     return {
-      providers: rawProviders.map((p) => p.businessName),
-      services: rawServices.map((s) => s.name),
+      providers: rawProviders.map((p) => ({ id: p.id, name: p.businessName })),
+      services: rawServices.map((p) => ({ id: p.id, name: p.name })),
     };
   },
 
@@ -913,16 +884,15 @@ export const mobileProviderServices = {
   async respondDispute(req: Request) {
     const userId = getRequesterId(req);
     const id = getRouteObjectId(req, "id");
-    const { response, evidence } = req.body as {
+    const { response } = req.body as {
       response?: unknown;
-      evidence?: unknown;
     };
+    const evidenceFiles = (req.files ?? []) as Express.Multer.File[];
 
     if (typeof response !== "string" || !response.trim()) {
       throw new BadRequestException("response is required");
     }
 
-    const parsedEvidence = getEvidence(evidence, "evidence");
     const provider = await prisma.providers.findUnique({
       where: { userId },
       select: { id: true },
@@ -939,6 +909,7 @@ export const mobileProviderServices = {
         status: true,
         bookingId: true,
         customerId: true,
+        providerEvidence: true,
       },
     });
 
@@ -950,40 +921,53 @@ export const mobileProviderServices = {
       throw new BadRequestException("Only PENDING disputes can be responded");
     }
 
-    const updatedDispute = await prisma.booking_disputes.update({
-      where: { id: dispute.id },
-      data: {
-        providerResponse: response.trim(),
-        providerEvidence: encodeEvidence(parsedEvidence),
-        providerRespondedAt: new Date(),
-      },
-      include: {
-        booking: {
-          select: {
-            id: true,
-            status: true,
-            paymentMethod: true,
-            paymentStatus: true,
-            totalAmount: true,
-            checkedOutAt: true,
-            service: { select: { id: true, name: true } },
-            customer: {
-              select: {
-                id: true,
-                users: {
-                  select: {
-                    id: true,
-                    userName: true,
-                    fullName: true,
-                    phone: true,
+    const parsedEvidence = await uploadDisputeEvidenceFiles(
+      evidenceFiles,
+      "provider",
+    );
+
+    let updatedDispute;
+    try {
+      updatedDispute = await prisma.booking_disputes.update({
+        where: { id: dispute.id },
+        data: {
+          providerResponse: response.trim(),
+          providerEvidence: encodeDisputeEvidence(parsedEvidence),
+          providerRespondedAt: new Date(),
+        },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              status: true,
+              paymentMethod: true,
+              paymentStatus: true,
+              totalAmount: true,
+              checkedOutAt: true,
+              service: { select: { id: true, name: true } },
+              customer: {
+                select: {
+                  id: true,
+                  users: {
+                    select: {
+                      id: true,
+                      userName: true,
+                      fullName: true,
+                      phone: true,
+                    },
                   },
                 },
               },
             },
           },
         },
-      },
-    });
+      });
+    } catch (error) {
+      await deleteDisputeEvidenceFiles(parsedEvidence);
+      throw error;
+    }
+
+    await deleteDisputeEvidenceFiles(decodeEvidence(dispute.providerEvidence));
 
     const [customer, admins] = await Promise.all([
       prisma.customers.findUnique({

@@ -2,6 +2,7 @@ import express from "express";
 import { mobileProviderController } from "../../controllers/mobile-controllers/provider.controller.ts";
 import { protect } from "../../middlewares/protect.middleware.ts";
 import { checkRole } from "../../middlewares/authorization.middleware.ts";
+import { uploadDisputeEvidenceFiles } from "../../common/multer/memory.multer.ts";
 
 const providerRouterMobile = express.Router();
 
@@ -575,7 +576,7 @@ providerRouterMobile.get(
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -584,26 +585,13 @@ providerRouterMobile.get(
  *               response:
  *                 type: string
  *                 example: "The service was completed as agreed. Please see attached checkout photos."
- *               evidence:
+ *               evidenceFiles:
  *                 type: array
+ *                 description: Evidence files uploaded directly. Supports JPEG, PNG, WEBP, PDF, MP4, and MOV; maximum 10 files and 8 MB per file.
  *                 maxItems: 10
  *                 items:
- *                   type: object
- *                   required:
- *                     - url
- *                   properties:
- *                     url:
- *                       type: string
- *                       example: "https://res.cloudinary.com/.../provider-proof.jpg"
- *                     type:
- *                       type: string
- *                       example: "IMAGE"
- *                     title:
- *                       type: string
- *                       example: "Checkout photo"
- *                     note:
- *                       type: string
- *                       example: "Photo taken at checkout."
+ *                   type: string
+ *                   format: binary
  *     responses:
  *       200:
  *         description: Provider dispute response submitted successfully
@@ -620,6 +608,7 @@ providerRouterMobile.post(
   "/provider/disputes/:id/response",
   protect,
   checkRole("PROVIDER"),
+  uploadDisputeEvidenceFiles,
   mobileProviderController.respondDispute,
 );
 

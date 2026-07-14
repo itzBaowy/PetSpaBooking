@@ -30,8 +30,8 @@ export type GlobalSearchServiceItem = {
 };
 
 export type GlobalSearchResponse = {
-  providers: string[];
-  services: string[];
+  providers: { id: string; name: string }[];
+  services: { id: string; name: string }[];
 };
 
 export type ProviderItem = {
