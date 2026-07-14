@@ -44,6 +44,12 @@ const DISPUTE_INCLUDE = {
       paymentMethod: true,
       paymentStatus: true,
       totalAmount: true,
+      refundAmount: true,
+      refundRequestedAt: true,
+      refundResolvedAt: true,
+      refundMethod: true,
+      refundReference: true,
+      refundReason: true,
       checkedOutAt: true,
       completedAt: true,
       cancelledAt: true,
@@ -66,9 +72,10 @@ const DISPUTE_INCLUDE = {
       provider: {
         select: {
           id: true,
+          userId: true,
           businessName: true,
+          email: true,
           phone: true,
-          users: { select: { id: true, email: true, userName: true } },
         },
       },
       service: {
@@ -187,6 +194,80 @@ function decodeEvidence(value: string | null | undefined): EvidenceItem[] {
   } catch {
     return [];
   }
+}
+
+function getDisputeRefundAction(dispute: {
+  id: string;
+  bookingId: string;
+  status: string;
+  booking?: unknown;
+}) {
+  if (dispute.status !== "RESOLVED_CUSTOMER_WIN") return null;
+  if (typeof dispute.booking !== "object" || dispute.booking === null) {
+    return null;
+  }
+
+  const booking = dispute.booking as {
+    id?: unknown;
+    paymentMethod?: unknown;
+    paymentStatus?: unknown;
+    totalAmount?: unknown;
+    refundAmount?: unknown;
+    refundRequestedAt?: unknown;
+    refundResolvedAt?: unknown;
+    refundMethod?: unknown;
+    refundReference?: unknown;
+    refundReason?: unknown;
+  };
+
+  if (booking.paymentStatus === "REFUND_PENDING") {
+    return {
+      status: "PENDING",
+      message: "This dispute was resolved in customer favor and is waiting for manual refund.",
+      bookingId: dispute.bookingId,
+      refundAmount:
+        typeof booking.refundAmount === "number"
+          ? booking.refundAmount
+          : typeof booking.totalAmount === "number"
+            ? booking.totalAmount
+            : null,
+      refundSource:
+        booking.paymentMethod === "CASH"
+          ? "PROVIDER_WALLET_DEPOSIT"
+          : "ONLINE_PAYMENT",
+      refundRequestedAt: booking.refundRequestedAt ?? null,
+      refundReason: booking.refundReason ?? null,
+      canOpenRefund: true,
+      refundDetailPath: `/admin/refunds/${dispute.bookingId}`,
+      refundDetailApi: `/api/admin/refunds/${dispute.bookingId}`,
+    };
+  }
+
+  if (booking.paymentStatus === "REFUNDED") {
+    return {
+      status: "COMPLETED",
+      message: "This dispute refund has been completed.",
+      bookingId: dispute.bookingId,
+      refundAmount:
+        typeof booking.refundAmount === "number"
+          ? booking.refundAmount
+          : typeof booking.totalAmount === "number"
+            ? booking.totalAmount
+            : null,
+      refundSource:
+        booking.paymentMethod === "CASH"
+          ? "PROVIDER_WALLET_DEPOSIT"
+          : "ONLINE_PAYMENT",
+      refundResolvedAt: booking.refundResolvedAt ?? null,
+      refundMethod: booking.refundMethod ?? null,
+      refundReference: booking.refundReference ?? null,
+      canOpenRefund: false,
+      refundDetailPath: null,
+      refundDetailApi: null,
+    };
+  }
+
+  return null;
 }
 
 function getBookingResolutionUpdate(status: ResolutionStatus, resolvedAt: Date) {
@@ -345,6 +426,7 @@ function mapDispute(dispute: {
     createdAt: dispute.createAt,
     updatedAt: dispute.updateAt,
     booking: dispute.booking,
+    refundAction: getDisputeRefundAction(dispute),
   };
 }
 

@@ -43,6 +43,7 @@ export function AdminDisputeDetailPage({ id }: { id: string }) {
   const providerEvidence = toEvidence(dispute.providerEvidence);
   const resolvedAdminEvidence = toEvidence(dispute.adminEvidence);
   const booking = dispute.booking;
+  const refundAction = toRefundAction(dispute.refundAction);
 
   const resolve = (status: string) => {
     const cleanEvidence = adminEvidence
@@ -86,6 +87,8 @@ export function AdminDisputeDetailPage({ id }: { id: string }) {
           <StatusPill value={dispute.status} />
         </div>
       </section>
+
+      {refundAction ? <RefundActionBanner action={refundAction} /> : null}
 
       <section className="grid gap-4 rounded-2xl border border-border-subtle bg-surface p-5 shadow-sm md:grid-cols-4">
         <Metric label="Khách hàng" value={textValue(nested(booking, "customer", "users", "fullName") ?? dispute.customerId)} />
@@ -151,6 +154,130 @@ export function AdminDisputeDetailPage({ id }: { id: string }) {
         </div>
       </div>
     </div>
+  );
+}
+
+type RefundAction = {
+  status: string;
+  message: string;
+  bookingId: string;
+  refundAmount: number | null;
+  refundSource: string;
+  refundRequestedAt: string | null;
+  refundResolvedAt: string | null;
+  refundReason: string | null;
+  refundMethod: string | null;
+  refundReference: string | null;
+  canOpenRefund: boolean;
+};
+
+function toRefundAction(value: unknown): RefundAction | null {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  const status = textValue(record.status);
+  const bookingId = textValue(record.bookingId);
+  if (!status || !bookingId) return null;
+
+  return {
+    status,
+    message: textValue(record.message),
+    bookingId,
+    refundAmount:
+      typeof record.refundAmount === "number" && Number.isFinite(record.refundAmount)
+        ? record.refundAmount
+        : null,
+    refundSource: textValue(record.refundSource),
+    refundRequestedAt:
+      typeof record.refundRequestedAt === "string" ? record.refundRequestedAt : null,
+    refundResolvedAt:
+      typeof record.refundResolvedAt === "string" ? record.refundResolvedAt : null,
+    refundReason: typeof record.refundReason === "string" ? record.refundReason : null,
+    refundMethod: typeof record.refundMethod === "string" ? record.refundMethod : null,
+    refundReference:
+      typeof record.refundReference === "string" ? record.refundReference : null,
+    canOpenRefund: record.canOpenRefund === true,
+  };
+}
+
+function refundSourceLabel(value: string) {
+  if (value === "PROVIDER_WALLET_DEPOSIT") return "Ví/ký quỹ provider";
+  if (value === "ONLINE_PAYMENT") return "Thanh toán online";
+  return textValue(value, "Không xác định");
+}
+
+function RefundActionBanner({ action }: { action: RefundAction }) {
+  const isPending = action.status === "PENDING";
+  const href = `/admin/finance/refunds/${action.bookingId}`;
+
+  return (
+    <section className="rounded-2xl border border-border-subtle bg-surface p-6 shadow-sm">
+      <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-start">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-3">
+            <StatusPill value={isPending ? "REFUND_PENDING" : "REFUNDED"} />
+            <h3 className="text-base font-extrabold text-foreground">
+              {isPending
+                ? "Tranh chấp này đang chờ hoàn tiền"
+                : "Tranh chấp này đã hoàn tiền"}
+            </h3>
+          </div>
+          <p className="mt-2 text-sm text-muted">
+            {action.message ||
+              (isPending
+                ? "Admin cần hoàn tiền thủ công cho khách hàng."
+                : "Refund đã được xác nhận hoàn tất.")}
+          </p>
+          <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-3">
+            <div className="rounded-xl bg-surface-muted p-3">
+              <dt className="text-xs font-bold uppercase text-subtle">Số tiền</dt>
+              <dd className="mt-1 font-extrabold text-foreground">
+                {action.refundAmount !== null
+                  ? money.format(action.refundAmount)
+                  : "Chưa có"}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-surface-muted p-3">
+              <dt className="text-xs font-bold uppercase text-subtle">Nguồn tiền</dt>
+              <dd className="mt-1 font-extrabold text-foreground">
+                {refundSourceLabel(action.refundSource)}
+              </dd>
+            </div>
+            <div className="rounded-xl bg-surface-muted p-3">
+              <dt className="text-xs font-bold uppercase text-subtle">
+                {isPending ? "Tạo yêu cầu" : "Hoàn tất"}
+              </dt>
+              <dd className="mt-1 font-extrabold text-foreground">
+                {displayValue(
+                  isPending ? action.refundRequestedAt : action.refundResolvedAt,
+                  isPending ? "createdAt" : "resolvedAt",
+                )}
+              </dd>
+            </div>
+          </dl>
+          {action.refundReason ? (
+            <p className="mt-3 text-xs font-semibold text-muted">
+              Lý do: {action.refundReason}
+            </p>
+          ) : null}
+          {!isPending && (action.refundMethod || action.refundReference) ? (
+            <p className="mt-3 text-xs font-semibold text-muted">
+              {action.refundMethod ? `Phương thức: ${action.refundMethod}` : null}
+              {action.refundMethod && action.refundReference ? " · " : null}
+              {action.refundReference ? `Mã tham chiếu: ${action.refundReference}` : null}
+            </p>
+          ) : null}
+        </div>
+
+        {isPending && action.canOpenRefund ? (
+          <Link
+            href={href}
+            className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl bg-brand px-4 py-2 text-sm font-bold text-brand-foreground shadow-sm transition hover:bg-brand-hover sm:px-6"
+          >
+            Đi tới hoàn tiền
+          </Link>
+        ) : null}
+      </div>
+    </section>
   );
 }
 

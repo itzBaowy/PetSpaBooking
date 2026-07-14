@@ -10,7 +10,7 @@ export type CreateBookingDisputePayload = {
   bookingId: string;
   reason: string;
   description?: string;
-  evidence?: DisputeEvidence[];
+  evidenceFiles?: File[];
 };
 
 export type CreatedBookingDispute = {
@@ -25,13 +25,17 @@ export type CreatedBookingDispute = {
 
 export function useCreateBookingDispute() {
   return useMutation({
-    mutationFn: async ({ bookingId, reason, description, evidence = [] }: CreateBookingDisputePayload) =>
-      unwrap<CreatedBookingDispute>(
-        await api.post(API_ENDPOINTS.MOBILE.BOOKINGS.CREATE_DISPUTE(bookingId), {
-          reason,
-          ...(description ? { description } : {}),
-          evidence,
+    mutationFn: async ({ bookingId, reason, description, evidenceFiles = [] }: CreateBookingDisputePayload) => {
+      const formData = new FormData();
+      formData.append("reason", reason);
+      if (description) formData.append("description", description);
+      evidenceFiles.forEach((file) => formData.append("evidenceFiles", file));
+
+      return unwrap<CreatedBookingDispute>(
+        await api.post(API_ENDPOINTS.MOBILE.BOOKINGS.CREATE_DISPUTE(bookingId), formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         }),
-      ),
+      );
+    },
   });
 }

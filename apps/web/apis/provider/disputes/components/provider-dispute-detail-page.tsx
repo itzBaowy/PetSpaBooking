@@ -21,12 +21,18 @@ import {
   useRespondProviderDispute,
 } from "@/apis/provider/disputes/queries";
 
+const MAX_EVIDENCE_FILES = 10;
+const MAX_EVIDENCE_FILE_SIZE = 8 * 1024 * 1024;
+const EVIDENCE_ACCEPT =
+  "image/jpeg,image/png,image/webp,application/pdf,video/mp4,video/quicktime";
+const ALLOWED_EVIDENCE_TYPES = new Set(EVIDENCE_ACCEPT.split(","));
+
 export function ProviderDisputeDetailPage({ disputeId }: { disputeId: string }) {
   const query = useProviderDisputeDetail(disputeId);
   const respond = useRespondProviderDispute();
   const { showToast } = useToast();
   const [response, setResponse] = useState("");
-  const [evidence, setEvidence] = useState<DisputeEvidence[]>([]);
+  const [evidenceFiles, setEvidenceFiles] = useState<File[]>([]);
   const [formError, setFormError] = useState("");
 
   if (query.isLoading) return <ProviderLoading />;
@@ -38,16 +44,33 @@ export function ProviderDisputeDetailPage({ disputeId }: { disputeId: string }) 
   const booking = dispute.booking;
   const canRespond = dispute.status === "PENDING";
 
+  const selectEvidenceFiles = (files: FileList | null) => {
+    if (!files) return;
+
+    const incoming = Array.from(files);
+    if (evidenceFiles.length + incoming.length > MAX_EVIDENCE_FILES) {
+      setFormError(`Chỉ được tải lên tối đa ${MAX_EVIDENCE_FILES} file.`);
+      return;
+    }
+
+    const unsupported = incoming.find((file) => !ALLOWED_EVIDENCE_TYPES.has(file.type));
+    if (unsupported) {
+      setFormError(`File ${unsupported.name} không đúng định dạng được hỗ trợ.`);
+      return;
+    }
+
+    const oversized = incoming.find((file) => file.size > MAX_EVIDENCE_FILE_SIZE);
+    if (oversized) {
+      setFormError(`File ${oversized.name} vượt quá giới hạn 8 MB.`);
+      return;
+    }
+
+    setEvidenceFiles((current) => [...current, ...incoming]);
+    setFormError("");
+  };
+
   const submit = () => {
     const cleanResponse = response.trim();
-    const cleanEvidence = evidence
-      .map((item) => ({
-        url: item.url.trim(),
-        type: item.type?.trim() || undefined,
-        title: item.title?.trim() || undefined,
-        note: item.note?.trim() || undefined,
-      }))
-      .filter((item) => item.url);
 
     if (!cleanResponse) {
       setFormError("Vui lòng nhập phản hồi cho tranh chấp.");
@@ -55,11 +78,11 @@ export function ProviderDisputeDetailPage({ disputeId }: { disputeId: string }) 
     }
 
     respond.mutate(
-      { disputeId: dispute.id, response: cleanResponse, evidence: cleanEvidence },
+      { disputeId: dispute.id, response: cleanResponse, evidenceFiles },
       {
         onSuccess: () => {
           setResponse("");
-          setEvidence([]);
+          setEvidenceFiles([]);
           setFormError("");
           showToast("Đã gửi phản hồi tranh chấp.", "success");
         },
@@ -117,7 +140,15 @@ export function ProviderDisputeDetailPage({ disputeId }: { disputeId: string }) 
                   placeholder="Giải thích quá trình cung cấp dịch vụ và phản hồi khiếu nại..."
                 />
               </label>
-              <EvidenceEditor items={evidence} onChange={setEvidence} />
+              <EvidenceFileEditor
+                files={evidenceFiles}
+                onSelect={selectEvidenceFiles}
+                onRemove={(index) =>
+                  setEvidenceFiles((current) =>
+                    current.filter((_, currentIndex) => currentIndex !== index),
+                  )
+                }
+              />
               {formError ? <p className="text-sm font-bold text-danger">{formError}</p> : null}
               <Button disabled={respond.isPending} onClick={submit}>
                 {respond.isPending ? "Đang gửi..." : "Gửi phản hồi"}
@@ -204,27 +235,59 @@ function EvidenceList({ title, items }: { title: string; items: DisputeEvidence[
   );
 }
 
-function EvidenceEditor({ items, onChange }: { items: DisputeEvidence[]; onChange: (items: DisputeEvidence[]) => void }) {
-  const add = () => onChange([...items, { url: "", type: "image", title: "", note: "" }]);
-  const update = (index: number, patch: Partial<DisputeEvidence>) => {
-    onChange(items.map((item, current) => (current === index ? { ...item, ...patch } : item)));
-  };
-
+function EvidenceFileEditor({
+  files,
+  onSelect,
+  onRemove,
+}: {
+  files: File[];
+  onSelect: (files: FileList | null) => void;
+  onRemove: (index: number) => void;
+}) {
   return (
     <div className="space-y-3">
-      <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-extrabold">Evidence URL</h3>
-        <Button type="button" variant="outline" onClick={add} disabled={items.length >= 10}>Thêm URL</Button>
-      </div>
-      {items.map((item, index) => (
-        <div key={index} className="grid gap-2 rounded-xl border border-border-subtle p-3 sm:grid-cols-2">
-          <Input className="sm:col-span-2" value={item.url} onChange={(event) => update(index, { url: event.target.value })} placeholder="https://..." />
-          <Input value={item.title ?? ""} onChange={(event) => update(index, { title: event.target.value })} placeholder="Tiêu đề" />
-          <Input value={item.type ?? ""} onChange={(event) => update(index, { type: event.target.value })} placeholder="image, video, document..." />
-          <Input className="sm:col-span-2" value={item.note ?? ""} onChange={(event) => update(index, { note: event.target.value })} placeholder="Ghi chú" />
-          <Button type="button" variant="outline" onClick={() => onChange(items.filter((_, current) => current !== index))}>Xóa URL</Button>
+      <label className="block rounded-xl border border-dashed border-border-muted bg-surface-muted p-4">
+        <span className="block text-sm font-extrabold text-foreground">Tải bằng chứng</span>
+        <span className="mt-1 block text-xs leading-5 text-muted">
+          JPEG, PNG, WEBP, PDF, MP4 hoặc MOV. Tối đa 10 file, mỗi file 8 MB.
+        </span>
+        <Input
+          className="mt-3 bg-surface"
+          type="file"
+          multiple
+          accept={EVIDENCE_ACCEPT}
+          onChange={(event) => {
+            onSelect(event.target.files);
+            event.target.value = "";
+          }}
+        />
+      </label>
+
+      {files.length > 0 ? (
+        <div className="grid gap-2">
+          {files.map((file, index) => (
+            <div
+              key={`${file.name}-${file.lastModified}-${index}`}
+              className="flex min-w-0 items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface px-3 py-2"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-bold text-foreground">{file.name}</p>
+                <p className="text-xs text-muted">
+                  {file.type || "Tệp đính kèm"} · {formatFileSize(file.size)}
+                </p>
+              </div>
+              <Button type="button" variant="outline" onClick={() => onRemove(index)}>
+                Xóa
+              </Button>
+            </div>
+          ))}
         </div>
-      ))}
+      ) : null}
     </div>
   );
+}
+
+function formatFileSize(size: number) {
+  if (size < 1024 * 1024) return `${Math.max(1, Math.round(size / 1024))} KB`;
+  return `${(size / (1024 * 1024)).toFixed(1)} MB`;
 }

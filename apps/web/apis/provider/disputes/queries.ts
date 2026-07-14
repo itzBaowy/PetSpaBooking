@@ -10,6 +10,9 @@ export type DisputeEvidence = {
   type?: string;
   title?: string;
   note?: string;
+  mimeType?: string;
+  originalName?: string;
+  size?: number;
 };
 
 export type ProviderDispute = {
@@ -51,7 +54,7 @@ export type ProviderDispute = {
 export type ProviderDisputeResponsePayload = {
   disputeId: string;
   response: string;
-  evidence?: DisputeEvidence[];
+  evidenceFiles?: File[];
 };
 
 export const providerDisputeKeys = {
@@ -85,13 +88,17 @@ export function useRespondProviderDispute() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ disputeId, response, evidence = [] }: ProviderDisputeResponsePayload) =>
-      unwrap<ProviderDispute>(
-        await api.post(API_ENDPOINTS.MOBILE.PROVIDER.DISPUTE_RESPONSE(disputeId), {
-          response,
-          evidence,
+    mutationFn: async ({ disputeId, response, evidenceFiles = [] }: ProviderDisputeResponsePayload) => {
+      const formData = new FormData();
+      formData.append("response", response);
+      evidenceFiles.forEach((file) => formData.append("evidenceFiles", file));
+
+      return unwrap<ProviderDispute>(
+        await api.post(API_ENDPOINTS.MOBILE.PROVIDER.DISPUTE_RESPONSE(disputeId), formData, {
+          headers: { "Content-Type": "multipart/form-data" },
         }),
-      ),
+      );
+    },
     onSuccess: (dispute) => {
       void queryClient.invalidateQueries({ queryKey: providerDisputeKeys.all });
       if (dispute?.id) {
