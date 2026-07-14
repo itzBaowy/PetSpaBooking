@@ -465,7 +465,7 @@ providerRouterMobile.get(
  *         name: type
  *         schema:
  *           type: string
- *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, DEPOSIT_TOP_UP, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT, WITHDRAWAL_HOLD, WITHDRAWAL_RELEASE]
+ *           enum: [ONLINE_EARNING, CASH_COMMISSION_DEDUCTION, DEPOSIT_COMMISSION_DEDUCTION, CASH_REFUND_DEDUCTION, DEPOSIT_TOP_UP, MANUAL_ADJUSTMENT, WITHDRAWAL_PAYOUT, WITHDRAWAL_HOLD, WITHDRAWAL_RELEASE]
  *     responses:
  *       200:
  *         description: Provider wallet transactions retrieved successfully
@@ -481,6 +481,146 @@ providerRouterMobile.get(
   protect,
   checkRole("PROVIDER"),
   mobileProviderController.getWalletTransactions,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/disputes:
+ *   get:
+ *     summary: Get provider disputes
+ *     description: Provider retrieves disputes related to their bookings.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *       - in: query
+ *         name: pageSize
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, RESOLVED_PROVIDER_WIN, RESOLVED_CUSTOMER_WIN, CANCELLED]
+ *     responses:
+ *       200:
+ *         description: Provider disputes retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ */
+providerRouterMobile.get(
+  "/provider/disputes",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.getDisputes,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/disputes/{id}:
+ *   get:
+ *     summary: Get provider dispute detail
+ *     description: Provider retrieves a dispute related to their booking, including customer evidence and their own response.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Dispute ID
+ *     responses:
+ *       200:
+ *         description: Provider dispute retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ *       404:
+ *         description: Dispute not found
+ */
+providerRouterMobile.get(
+  "/provider/disputes/:id",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.getDisputeById,
+);
+
+/**
+ * @swagger
+ * /api/mobile/provider/disputes/{id}/response:
+ *   post:
+ *     summary: Respond to a pending dispute
+ *     description: Provider submits their explanation and optional evidence for a PENDING dispute. Admin will review both sides before resolving.
+ *     tags: [Mobile-Provider]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Dispute ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - response
+ *             properties:
+ *               response:
+ *                 type: string
+ *                 example: "The service was completed as agreed. Please see attached checkout photos."
+ *               evidence:
+ *                 type: array
+ *                 maxItems: 10
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - url
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                       example: "https://res.cloudinary.com/.../provider-proof.jpg"
+ *                     type:
+ *                       type: string
+ *                       example: "IMAGE"
+ *                     title:
+ *                       type: string
+ *                       example: "Checkout photo"
+ *                     note:
+ *                       type: string
+ *                       example: "Photo taken at checkout."
+ *     responses:
+ *       200:
+ *         description: Provider dispute response submitted successfully
+ *       400:
+ *         description: Dispute is not pending or invalid payload
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Provider role required
+ *       404:
+ *         description: Dispute not found
+ */
+providerRouterMobile.post(
+  "/provider/disputes/:id/response",
+  protect,
+  checkRole("PROVIDER"),
+  mobileProviderController.respondDispute,
 );
 
 /**

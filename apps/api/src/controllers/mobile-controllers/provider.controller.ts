@@ -106,6 +106,57 @@ export const mobileProviderController = {
     }
   },
 
+  async getDisputes(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.getDisputes(req);
+      const response = responseSuccess(
+        result,
+        "Provider disputes retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getDisputeById(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.getDisputeById(req);
+      const response = responseSuccess(
+        result,
+        "Provider dispute retrieved successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async respondDispute(
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> {
+    try {
+      const result = await mobileProviderServices.respondDispute(req);
+      const response = responseSuccess(
+        result,
+        "Provider dispute response submitted successfully",
+      );
+      res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
   async createWithdrawal(
     req: Request,
     res: Response,
