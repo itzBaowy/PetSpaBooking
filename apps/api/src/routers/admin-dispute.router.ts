@@ -90,7 +90,7 @@ adminDisputeRouter.get(
  * /api/admin/disputes/{id}/resolve:
  *   patch:
  *     summary: Resolve a pending dispute
- *     description: Admin resolves a PENDING dispute. Provider win or cancelled dispute completes the booking and triggers commission processing. Customer win cancels the booking without commission processing; if the booking was paid online, it moves to REFUND_PENDING for manual refund processing.
+ *     description: Admin resolves a PENDING dispute. Provider win or cancelled dispute completes the booking and triggers commission processing. Customer win cancels the booking without commission processing. Paid online bookings move to REFUND_PENDING for manual refund processing; cash bookings also move to REFUND_PENDING and debit the provider wallet first, then deposit.
  *     tags: [Admin-Disputes]
  *     security:
  *       - bearerAuth: []
@@ -118,6 +118,27 @@ adminDisputeRouter.get(
  *                 type: string
  *                 nullable: true
  *                 example: "Provider completed the service correctly."
+ *               adminEvidence:
+ *                 type: array
+ *                 description: Optional admin-side evidence or decision documents.
+ *                 maxItems: 10
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - url
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                       example: "https://res.cloudinary.com/.../admin-proof.pdf"
+ *                     type:
+ *                       type: string
+ *                       example: "PDF"
+ *                     title:
+ *                       type: string
+ *                       example: "Refund proof"
+ *                     note:
+ *                       type: string
+ *                       example: "Manual refund receipt."
  *     responses:
  *       200:
  *         description: Dispute resolved successfully

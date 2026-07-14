@@ -18,6 +18,7 @@ const WALLET_TRANSACTION_TYPES = [
   "ONLINE_EARNING",
   "CASH_COMMISSION_DEDUCTION",
   "DEPOSIT_COMMISSION_DEDUCTION",
+  "CASH_REFUND_DEDUCTION",
   "DEPOSIT_TOP_UP",
   "MANUAL_ADJUSTMENT",
   "WITHDRAWAL_PAYOUT",
@@ -26,7 +27,12 @@ const WALLET_TRANSACTION_TYPES = [
 ] as const;
 
 const BALANCE_TYPES = ["WALLET", "DEPOSIT"] as const;
-const REFUND_METHODS = ["MOMO_MANUAL", "BANK_TRANSFER", "OTHER"] as const;
+const REFUND_METHODS = [
+  "MOMO_MANUAL",
+  "BANK_TRANSFER",
+  "PROVIDER_BALANCE",
+  "OTHER",
+] as const;
 
 type WalletTransactionType = (typeof WALLET_TRANSACTION_TYPES)[number];
 type BalanceType = (typeof BALANCE_TYPES)[number];
@@ -373,7 +379,6 @@ export const adminFinanceService = {
       req.query as Record<string, unknown>,
     );
 
-    where.paymentMethod = "ONLINE";
     where.paymentStatus = "REFUND_PENDING";
 
     const [totalItems, items] = await Promise.all([
@@ -518,7 +523,7 @@ export const adminFinanceService = {
       userId: updatedBooking.customer.users.id,
       type: "REFUND_COMPLETED",
       title: "Refund completed",
-      message: "Your cancelled online booking has been marked as refunded.",
+      message: "Your cancelled booking has been marked as refunded.",
       data: {
         bookingId: updatedBooking.id,
         refundReference: updatedBooking.refundReference,
@@ -586,11 +591,23 @@ export const adminFinanceService = {
             users: true,
           },
         },
+        dispute: {
+          select: {
+            id: true,
+            status: true,
+          },
+        },
       },
     });
 
     if (!booking || booking.paymentStatus !== "REFUND_PENDING") {
       throw new NotFoundException("Refund request not found");
+    }
+
+    if (booking.dispute?.status === "RESOLVED_CUSTOMER_WIN") {
+      throw new BadRequestException(
+        "Refund cannot be rejected because the dispute was resolved in customer favor",
+      );
     }
 
     const updatedBooking = await prisma.bookings.update({

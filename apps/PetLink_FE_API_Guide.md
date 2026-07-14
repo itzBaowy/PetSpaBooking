@@ -478,6 +478,25 @@ Chỉ tạo được khi booking đang `CHECKED_OUT` và còn trong hold window.
 POST /api/mobile/bookings/{id}/disputes
 ```
 
+Body hỗ trợ evidence:
+
+```json
+{
+  "reason": "Service quality issue",
+  "description": "The service was not completed as agreed.",
+  "evidence": [
+    {
+      "url": "https://res.cloudinary.com/.../dispute-photo.jpg",
+      "type": "IMAGE",
+      "title": "Photo after checkout",
+      "note": "Pet was not groomed as requested."
+    }
+  ]
+}
+```
+
+`evidence` optional, tối đa 10 item. FE/mobile upload ảnh/video/pdf lên Cloudinary/storage trước rồi gửi URL vào API này. Backend lưu evidence để admin xem khi giải quyết.
+
 Body:
 
 ```json
@@ -728,6 +747,7 @@ Transaction type filter:
 ONLINE_EARNING
 CASH_COMMISSION_DEDUCTION
 DEPOSIT_COMMISSION_DEDUCTION
+CASH_REFUND_DEDUCTION
 DEPOSIT_TOP_UP
 MANUAL_ADJUSTMENT
 WITHDRAWAL_PAYOUT
@@ -762,6 +782,52 @@ Rule:
 - Wallet phải đủ tiền; số tiền sẽ bị hold ngay sau khi tạo request thành công.
 - Provider phải có bank account.
 - Nếu provider có dispute `PENDING` thì bị chặn.
+
+### 4.6 Provider disputes
+
+Provider xem và phản hồi khiếu nại liên quan tới booking của mình:
+
+```http
+GET /api/mobile/provider/disputes?status=PENDING
+GET /api/mobile/provider/disputes/{disputeId}
+POST /api/mobile/provider/disputes/{disputeId}/response
+```
+
+Response detail có:
+
+```txt
+reason
+description
+evidence: bằng chứng customer gửi
+providerResponse
+providerEvidence
+providerRespondedAt
+status
+booking: thông tin booking, customer, service, payment
+```
+
+Body provider response:
+
+```json
+{
+  "response": "The service was completed as agreed. Please see attached checkout photos.",
+  "evidence": [
+    {
+      "url": "https://res.cloudinary.com/.../provider-proof.jpg",
+      "type": "IMAGE",
+      "title": "Checkout photo",
+      "note": "Photo taken at checkout."
+    }
+  ]
+}
+```
+
+Rule:
+
+- Provider chỉ xem/phản hồi dispute thuộc booking của mình.
+- Chỉ phản hồi được dispute `PENDING`.
+- Evidence optional, tối đa 10 item, FE upload file trước rồi gửi URL.
+- Sau khi provider phản hồi, customer và admin nhận notification `DISPUTE_PROVIDER_RESPONSE`.
 
 ## 5. Mobile Notifications
 
@@ -1241,6 +1307,8 @@ GET /api/admin/disputes/{id}
 PATCH /api/admin/disputes/{id}/resolve
 ```
 
+Admin detail `GET /api/admin/disputes/{id}` trả evidence customer gửi, providerResponse/providerEvidence nếu provider đã phản hồi, adminEvidence nếu đã resolve, và booking kèm customer/provider/service/payment để admin đủ dữ liệu ra quyết định.
+
 Resolve body:
 
 ```json
@@ -1250,11 +1318,42 @@ Resolve body:
 }
 ```
 
+Resolve body có thể kèm evidence của admin:
+
+```json
+{
+  "status": "RESOLVED_CUSTOMER_WIN",
+  "adminNote": "Customer evidence is valid. Manual refund required.",
+  "adminEvidence": [
+    {
+      "url": "https://res.cloudinary.com/.../admin-proof.pdf",
+      "type": "PDF",
+      "title": "Admin decision proof",
+      "note": "Reviewed customer evidence and provider records."
+    }
+  ]
+}
+```
+
 Resolution rules:
 
 - `RESOLVED_PROVIDER_WIN`: booking -> `COMPLETED`, chạy commission.
-- `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission. Nếu booking `ONLINE` đã paid `SUCCESS`, backend set `paymentStatus = REFUND_PENDING` và tạo refund metadata để admin hoàn tiền thủ công bên ngoài hệ thống.
+- `RESOLVED_CUSTOMER_WIN`: booking -> `CANCELLED`, không chạy commission, release commission record.
+  - Booking `ONLINE` đã paid `SUCCESS`: backend set `paymentStatus = REFUND_PENDING` và tạo refund metadata để admin hoàn tiền thủ công bên ngoài hệ thống.
+  - Booking `CASH`: backend cũng set `paymentStatus = REFUND_PENDING`, đồng thời trừ tiền provider để bù hoàn khách. Thứ tự trừ tiền là `walletBalance` trước, thiếu thì trừ tiếp `depositBalance`. Ledger ghi `CASH_REFUND_DEDUCTION` với `balanceType = WALLET|DEPOSIT`.
 - `CANCELLED`: hiểu là hủy khiếu nại, booking -> `COMPLETED`, chạy commission.
+
+Luồng admin khép kín:
+
+1. Admin mở `GET /api/admin/disputes?status=PENDING`.
+2. Admin mở detail để xem `evidence`, booking, customer, provider, service và payment.
+3. Admin resolve:
+   - `RESOLVED_PROVIDER_WIN`: booking `COMPLETED`, chạy commission.
+   - `RESOLVED_CUSTOMER_WIN`: booking `CANCELLED`, commission release; nếu online đã paid hoặc là booking cash thì `paymentStatus = REFUND_PENDING`.
+   - `CANCELLED`: hủy khiếu nại, booking `COMPLETED`, chạy commission.
+4. Nếu có `REFUND_PENDING`, admin hoàn tiền thủ công bên ngoài rồi gọi `PATCH /api/admin/refunds/{bookingId}/mark-refunded`.
+   - Nếu refund đến từ dispute `RESOLVED_CUSTOMER_WIN`, không được reject refund; admin bắt buộc hoàn tiền thủ công rồi mark-refunded.
+   - Với booking `CASH`, tiền đã bị trừ từ provider `walletBalance/depositBalance` lúc resolve dispute; `mark-refunded` chỉ xác nhận admin đã trả tiền cho customer bên ngoài.
 
 ### 6.8 Admin finance
 
@@ -1298,8 +1397,12 @@ Rule:
 
 Refund v1 là manual refund:
 
-- API list chỉ trả booking `paymentMethod = ONLINE` và `paymentStatus = REFUND_PENDING`.
-- Khi booking online đã paid `SUCCESS` bị customer/provider cancel hoặc dispute được xử khách hàng thắng, backend tự set refund metadata:
+- API list trả các booking `paymentStatus = REFUND_PENDING`.
+- Khi booking online đã paid `SUCCESS` bị customer/provider cancel hoặc dispute được xử khách hàng thắng, backend tự set refund metadata.
+- Khi booking `CASH` được xử dispute khách hàng thắng, backend tự set refund metadata và trừ tiền provider:
+  - Trừ `walletBalance` trước.
+  - Nếu ví không đủ, trừ phần còn lại vào `depositBalance`.
+  - Ghi ledger `CASH_REFUND_DEDUCTION`.
   - `refundReason`
   - `refundRequestedBy = CUSTOMER|PROVIDER|ADMIN`
   - `refundRequestedAt`
@@ -1326,6 +1429,7 @@ Mark refunded body optional:
 ```txt
 MOMO_MANUAL
 BANK_TRANSFER
+PROVIDER_BALANCE
 OTHER
 ```
 
@@ -1667,6 +1771,7 @@ Admin resolve:
 DISPUTE + RESOLVED_PROVIDER_WIN -> COMPLETED
 DISPUTE + RESOLVED_CUSTOMER_WIN -> CANCELLED
 DISPUTE + RESOLVED_CUSTOMER_WIN + ONLINE paid SUCCESS -> CANCELLED + REFUND_PENDING
+DISPUTE + RESOLVED_CUSTOMER_WIN + CASH -> CANCELLED + REFUND_PENDING + provider wallet/deposit debit
 DISPUTE + CANCELLED -> COMPLETED
 ```
 
