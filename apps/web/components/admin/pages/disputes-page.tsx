@@ -54,7 +54,7 @@ export function AdminDisputesPage() {
       <EntityTable
         loading={query.isLoading}
         items={query.data?.items}
-        columns={["bookingId", "reason", "status", "createAt"]}
+        columns={["bookingId", "reason", "status", "createdAt"]}
         detailBase="/admin/bookings/disputes"
       />
       <Pager data={query.data} setPage={setPage} setPageSize={setPageSize} />
