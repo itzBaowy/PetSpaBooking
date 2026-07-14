@@ -17,6 +17,17 @@ export function providerDate(value?: string | null) {
   }).format(new Date(value));
 }
 
+export function sortByDateDesc<T>(
+  items: readonly T[],
+  getDate: (item: T) => string | null | undefined,
+) {
+  return [...items].sort((a, b) => {
+    const right = Date.parse(getDate(b) ?? "") || 0;
+    const left = Date.parse(getDate(a) ?? "") || 0;
+    return right - left;
+  });
+}
+
 const providerStatusLabels: Record<string, string> = {
   ACTIVE: "Đang hoạt động",
   INACTIVE: "Ngừng hoạt động",

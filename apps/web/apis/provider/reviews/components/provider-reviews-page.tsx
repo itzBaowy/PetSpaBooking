@@ -10,6 +10,7 @@ import {
   ProviderLoading,
   ProviderPageHeader,
   providerDate,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import { useProviderPublicReviews, type ProviderReviewApi } from "../queries";
 
@@ -29,10 +30,12 @@ export function ProviderReviewsPage() {
 
   const data = reviews.data;
   const items = data?.responseReviews ?? [];
-  const filtered =
+  const filtered = sortByDateDesc(
     rating === "all"
       ? items
-      : items.filter((item) => item.rating === Number(rating));
+      : items.filter((item) => item.rating === Number(rating)),
+    (review) => review.createdAt,
+  );
   const average = items.length
     ? items.reduce((total, item) => total + item.rating, 0) / items.length
     : 0;

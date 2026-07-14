@@ -10,6 +10,7 @@ import {
   ProviderPageHeader,
   providerDate,
   providerMoney,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import { useProviderBookings } from "@/apis/provider/bookings/queries";
 
@@ -22,7 +23,7 @@ export function ProviderDisputesPage() {
     return <ProviderError error={query.error} retry={() => void query.refetch()} />;
   }
 
-  const disputes = query.data?.items ?? [];
+  const disputes = sortByDateDesc(query.data?.items ?? [], (booking) => booking.appointmentStart);
 
   return (
     <div className="space-y-5">
