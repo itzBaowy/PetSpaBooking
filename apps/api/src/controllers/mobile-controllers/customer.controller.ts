@@ -12,4 +12,24 @@ export const mobileCustomerController = {
       next(error);
     }
   },
+
+  async getDisputes(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileCustomerServices.getDisputes(req);
+      const response = responseSuccess(result, "Customer disputes retrieved successfully");
+      return res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getDisputeById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const result = await mobileCustomerServices.getDisputeById(req);
+      const response = responseSuccess(result, "Customer dispute retrieved successfully");
+      return res.status(response.statusCode).json(response);
+    } catch (error) {
+      next(error);
+    }
+  },
 };

@@ -1,6 +1,11 @@
 import { Request } from "express";
 import prisma from "../../../connect.prisma.ts";
-import { BadRequestException } from "../../common/helpers/exception.helper.ts";
+import {
+  BadRequestException,
+  NotFoundException,
+  UnauthorizedException,
+} from "../../common/helpers/exception.helper.ts";
+import { buildQueryPrisma } from "../../common/helpers/build-query-prisma.helper.ts";
 import { ObjectId } from "mongodb";
 import cloudinary from "../../common/cloudinary/init.cloudinary.ts";
 
@@ -116,5 +121,148 @@ export const mobileCustomerServices = {
         location: location,
       },
     });
+  },
+
+  async getDisputes(req: Request) {
+    const userId = (req as Request & { user?: { userId: string } }).user
+      ?.userId;
+    if (!userId) throw new UnauthorizedException("Unauthorized");
+
+    const customer = await prisma.customers.findUnique({ where: { userId } });
+    if (!customer) throw new NotFoundException("Customer not found");
+
+    const {
+      page,
+      pageSize,
+      index,
+      where: baseWhere,
+    } = buildQueryPrisma(req.query);
+    const where = { ...baseWhere, customerId: customer.id };
+
+    const [disputes, totalItems] = await Promise.all([
+      prisma.booking_disputes.findMany({
+        where,
+        skip: index,
+        take: pageSize,
+        orderBy: { createAt: "desc" },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              status: true,
+              totalAmount: true,
+              provider: {
+                select: {
+                  id: true,
+                  businessName: true,
+                  avatarUrl: true,
+                },
+              },
+              service: {
+                select: {
+                  id: true,
+                  name: true,
+                  imageUrls: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.booking_disputes.count({ where }),
+    ]);
+
+    const totalPages = Math.ceil(totalItems / pageSize);
+
+    console.log(disputes);
+
+    return {
+      items: disputes.map((dispute) => ({
+        ...dispute,
+        evidence: dispute.evidence ? JSON.parse(dispute.evidence) : [],
+        providerEvidence: dispute.providerEvidence
+          ? JSON.parse(dispute.providerEvidence)
+          : [],
+        adminEvidence: dispute.adminEvidence
+          ? JSON.parse(dispute.adminEvidence)
+          : [],
+      })),
+      meta: {
+        page,
+        pageSize,
+        totalItems,
+        totalPages,
+        hasNextPage: page < totalPages,
+        hasPrevPage: page > 1,
+      },
+    };
+  },
+
+  async getDisputeById(req: Request) {
+    const userId = (req as Request & { user?: { userId: string } }).user
+      ?.userId;
+    if (!userId) throw new UnauthorizedException("Unauthorized");
+
+    const customer = await prisma.customers.findUnique({ where: { userId } });
+    if (!customer) throw new NotFoundException("Customer not found");
+
+    const id = req.params.id as string;
+    if (!id || !ObjectId.isValid(id)) {
+      throw new BadRequestException("Invalid dispute ID");
+    }
+
+    const dispute = await prisma.booking_disputes.findUnique({
+      where: { id },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            status: true,
+            paymentMethod: true,
+            paymentStatus: true,
+            totalAmount: true,
+            refundAmount: true,
+            refundRequestedAt: true,
+            refundResolvedAt: true,
+            refundMethod: true,
+            refundReference: true,
+            refundReason: true,
+            checkedOutAt: true,
+            completedAt: true,
+            cancelledAt: true,
+            provider: {
+              select: {
+                id: true,
+                businessName: true,
+                avatarUrl: true,
+                phone: true,
+              },
+            },
+            service: {
+              select: {
+                id: true,
+                name: true,
+                imageUrls: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!dispute || dispute.customerId !== customer.id) {
+      throw new NotFoundException("Dispute not found");
+    }
+
+    return {
+      ...dispute,
+      evidence: dispute.evidence ? JSON.parse(dispute.evidence) : [],
+      providerEvidence: dispute.providerEvidence
+        ? JSON.parse(dispute.providerEvidence)
+        : [],
+      adminEvidence: dispute.adminEvidence
+        ? JSON.parse(dispute.adminEvidence)
+        : [],
+    };
   },
 };

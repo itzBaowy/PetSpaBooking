@@ -909,6 +909,7 @@ export const mobileProviderServices = {
         status: true,
         bookingId: true,
         customerId: true,
+        providerResponse: true,
         providerEvidence: true,
       },
     });
@@ -921,6 +922,10 @@ export const mobileProviderServices = {
       throw new BadRequestException("Only PENDING disputes can be responded");
     }
 
+    if (dispute.providerResponse !== null || dispute.providerEvidence !== null) {
+      throw new BadRequestException("You have already responded to this dispute");
+    }
+
     const parsedEvidence = await uploadDisputeEvidenceFiles(
       evidenceFiles,
       "provider",
@@ -928,16 +933,26 @@ export const mobileProviderServices = {
 
     let updatedDispute;
     try {
-      updatedDispute = await prisma.booking_disputes.update({
-        where: { id: dispute.id },
-        data: {
-          providerResponse: response.trim(),
-          providerEvidence: encodeDisputeEvidence(parsedEvidence),
-          providerRespondedAt: new Date(),
-        },
-        include: {
-          booking: {
-            select: {
+      updatedDispute = await prisma.$transaction(async (tx) => {
+        const currentDispute = await tx.booking_disputes.findUnique({
+          where: { id: dispute.id },
+          select: { providerResponse: true, providerEvidence: true },
+        });
+
+        if (currentDispute?.providerResponse !== null || currentDispute?.providerEvidence !== null) {
+          throw new BadRequestException("You have already responded to this dispute");
+        }
+
+        return await tx.booking_disputes.update({
+          where: { id: dispute.id },
+          data: {
+            providerResponse: response.trim(),
+            providerEvidence: encodeDisputeEvidence(parsedEvidence),
+            providerRespondedAt: new Date(),
+          },
+          include: {
+            booking: {
+              select: {
               id: true,
               status: true,
               paymentMethod: true,
@@ -960,7 +975,8 @@ export const mobileProviderServices = {
               },
             },
           },
-        },
+          },
+        });
       });
     } catch (error) {
       await deleteDisputeEvidenceFiles(parsedEvidence);
