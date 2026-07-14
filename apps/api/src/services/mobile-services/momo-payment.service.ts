@@ -711,6 +711,101 @@ export const momoPaymentService = {
     };
   },
 
+  async syncBookingPayment(req: Request) {
+    const userId = getRequesterId(req);
+    const bookingId = getRouteParam(req, "id");
+    const customer = await getCustomerByUser(userId);
+    const rawOrderId = req.body?.orderId;
+
+    if (
+      rawOrderId !== undefined &&
+      (typeof rawOrderId !== "string" || !rawOrderId.trim())
+    ) {
+      throw new BadRequestException("orderId must be a non-empty string");
+    }
+
+    const booking = await prisma.bookings.findUnique({
+      where: { id: bookingId },
+      select: {
+        id: true,
+        customerId: true,
+        paymentMethod: true,
+        paymentStatus: true,
+      },
+    });
+
+    if (!booking || booking.customerId !== customer.id) {
+      throw new NotFoundException("Booking not found");
+    }
+
+    if (booking.paymentMethod !== "ONLINE") {
+      throw new BadRequestException("Booking paymentMethod must be ONLINE");
+    }
+
+    const payment = await prisma.payment_transactions.findFirst({
+      where: {
+        bookingId: booking.id,
+        customerId: customer.id,
+        type: MOMO_PAYMENT_TYPE_BOOKING,
+        provider: MOMO_PROVIDER,
+        ...(typeof rawOrderId === "string" && rawOrderId.trim()
+          ? { orderId: rawOrderId.trim() }
+          : { status: "PENDING" }),
+      },
+      orderBy: { createAt: "desc" },
+    });
+
+    if (!payment) {
+      throw new NotFoundException("Booking MoMo payment not found");
+    }
+
+    if (payment.type !== MOMO_PAYMENT_TYPE_BOOKING) {
+      throw new BadRequestException("Payment is not a booking payment");
+    }
+
+    if (payment.status === "SUCCESS") {
+      return {
+        bookingId: booking.id,
+        payment,
+        momoResponse: null,
+        synced: false,
+      };
+    }
+
+    const momoResponse = await fetchMomoQueryPayment(payment.orderId);
+    const responsePayload = {
+      ...momoResponse,
+      orderId: payment.orderId,
+      amount: momoResponse.amount ?? payment.amount,
+    };
+
+    const updatedPayment = await applyPaymentResult(
+      payment,
+      responsePayload as Record<string, unknown>,
+      JSON.stringify(momoResponse),
+      { markNonSuccessFailed: false },
+    );
+
+    const updatedBooking = await prisma.bookings.findUnique({
+      where: { id: booking.id },
+      select: {
+        id: true,
+        status: true,
+        paymentStatus: true,
+        paymentReference: true,
+        paidAt: true,
+      },
+    });
+
+    return {
+      bookingId: booking.id,
+      booking: updatedBooking,
+      payment: updatedPayment,
+      momoResponse,
+      synced: Number(momoResponse.resultCode) === 0,
+    };
+  },
+
   async createProviderDepositPayment(req: Request) {
     const userId = getRequesterId(req);
     const provider = await getProviderByUser(userId);
@@ -856,6 +951,60 @@ export const momoPaymentService = {
       momoResponse,
       synced: Number(momoResponse.resultCode) === 0,
     };
+  },
+
+  async syncPendingMomoPayments(limit = 20) {
+    const safeLimit = Math.min(Math.max(Math.floor(limit), 1), 100);
+    const payments = await prisma.payment_transactions.findMany({
+      where: {
+        provider: MOMO_PROVIDER,
+        status: "PENDING",
+        type: {
+          in: [
+            MOMO_PAYMENT_TYPE_BOOKING,
+            MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT,
+          ],
+        },
+      },
+      orderBy: { createAt: "asc" },
+      take: safeLimit,
+    });
+
+    const result = {
+      scanned: payments.length,
+      synced: 0,
+      failed: 0,
+    };
+
+    for (const payment of payments) {
+      try {
+        const momoResponse = await fetchMomoQueryPayment(payment.orderId);
+        const responsePayload = {
+          ...momoResponse,
+          orderId: payment.orderId,
+          amount: momoResponse.amount ?? payment.amount,
+        };
+
+        await applyPaymentResult(
+          payment,
+          responsePayload as Record<string, unknown>,
+          JSON.stringify(momoResponse),
+          { markNonSuccessFailed: false },
+        );
+
+        if (Number(momoResponse.resultCode) === 0) {
+          result.synced += 1;
+        }
+      } catch (error) {
+        result.failed += 1;
+        console.error(
+          `[momo-payment-sync] Failed to sync payment ${payment.orderId}:`,
+          error,
+        );
+      }
+    }
+
+    return result;
   },
 
   async handleIpn(req: Request) {

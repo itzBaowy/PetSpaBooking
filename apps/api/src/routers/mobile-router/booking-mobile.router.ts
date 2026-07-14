@@ -300,6 +300,52 @@ mobileBookingRouter.post(
 
 /**
  * @swagger
+ * /api/mobile/bookings/{id}/momo/sync:
+ *   post:
+ *     summary: Sync booking MoMo payment status
+ *     description: Customer queries MoMo for a pending booking payment. If orderId is omitted, backend syncs the latest pending MoMo payment for this booking. Useful when user closes MoMo before redirect/return reaches frontend.
+ *     tags: [Mobile-Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Booking ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               orderId:
+ *                 type: string
+ *                 nullable: true
+ *                 example: "booking-..."
+ *     responses:
+ *       200:
+ *         description: MoMo booking payment synced successfully
+ *       400:
+ *         description: Invalid orderId, payment type, or booking paymentMethod
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Customer role required
+ *       404:
+ *         description: Booking or booking payment not found
+ */
+mobileBookingRouter.post(
+  "/bookings/:id/momo/sync",
+  protect,
+  checkRole("CUSTOMER"),
+  mobileBookingController.syncMomoPayment,
+);
+
+/**
+ * @swagger
  * /api/mobile/provider/deposit/momo/create-payment:
  *   post:
  *     summary: Create provider deposit MoMo payment

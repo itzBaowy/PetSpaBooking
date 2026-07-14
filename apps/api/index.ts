@@ -9,6 +9,7 @@ import { swaggerOptions } from "./src/common/swagger/swagger.config.ts";
 import swaggerJsdoc from "swagger-jsdoc";
 import swaggerUi from "swagger-ui-express";
 import { startBookingAutoCompleteJob } from "./src/jobs/booking-auto-complete.job.ts";
+import { startMomoPaymentSyncJob } from "./src/jobs/momo-payment-sync.job.ts";
 import { socketService } from "./src/services/socket.service.ts";
 
 dotenv.config();
@@ -76,6 +77,12 @@ if (process.env.ENABLE_BOOKING_AUTO_COMPLETE_JOB === "true") {
     startBookingAutoCompleteJob();
 } else {
     console.log("[booking-auto-complete] Disabled. Set ENABLE_BOOKING_AUTO_COMPLETE_JOB=true to enable.");
+}
+
+if (process.env.ENABLE_MOMO_PAYMENT_SYNC_JOB === "true") {
+    startMomoPaymentSyncJob();
+} else {
+    console.log("[momo-payment-sync] Disabled. Set ENABLE_MOMO_PAYMENT_SYNC_JOB=true to enable.");
 }
 
 // Prevent Node from exiting cleanly
