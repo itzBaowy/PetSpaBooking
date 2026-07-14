@@ -11,6 +11,7 @@ import { bookingFinanceService } from "./booking-finance.service.ts";
 import { commissionRecordService } from "./commission-record.service.ts";
 import { notificationService } from "./notification.service.ts";
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
+import { getSystemSettingValue } from "./system-setting.service.ts";
 
 const VALID_DISPUTE_STATUSES = [
   "PENDING",
@@ -28,6 +29,13 @@ const RESOLUTION_STATUSES = [
 type DisputeStatus = (typeof VALID_DISPUTE_STATUSES)[number];
 type ResolutionStatus = (typeof RESOLUTION_STATUSES)[number];
 
+type EvidenceItem = {
+  url: string;
+  type?: string;
+  title?: string;
+  note?: string;
+};
+
 const DISPUTE_INCLUDE = {
   booking: {
     select: {
@@ -40,6 +48,32 @@ const DISPUTE_INCLUDE = {
       completedAt: true,
       cancelledAt: true,
       commissionProcessedAt: true,
+      customer: {
+        select: {
+          id: true,
+          location: true,
+          users: {
+            select: {
+              id: true,
+              email: true,
+              userName: true,
+              fullName: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      provider: {
+        select: {
+          id: true,
+          businessName: true,
+          phone: true,
+          users: { select: { id: true, email: true, userName: true } },
+        },
+      },
+      service: {
+        select: { id: true, name: true },
+      },
     },
   },
 } as const;
@@ -96,6 +130,65 @@ function getOptionalAdminNote(value: unknown): string | null {
   return value.trim();
 }
 
+function getEvidence(value: unknown, fieldName: string): EvidenceItem[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new BadRequestException(`${fieldName} must be an array`);
+  }
+  if (value.length > 10) {
+    throw new BadRequestException(`${fieldName} can contain at most 10 items`);
+  }
+
+  return value.map((item, index) => {
+    if (typeof item === "string") {
+      const url = item.trim();
+      if (!url) {
+        throw new BadRequestException(`${fieldName}[${index}] url is required`);
+      }
+      return { url };
+    }
+
+    if (typeof item !== "object" || item === null) {
+      throw new BadRequestException(
+        `${fieldName}[${index}] must be a string URL or object`,
+      );
+    }
+
+    const raw = item as Record<string, unknown>;
+    if (typeof raw.url !== "string" || !raw.url.trim()) {
+      throw new BadRequestException(`${fieldName}[${index}].url is required`);
+    }
+
+    return {
+      url: raw.url.trim(),
+      type: typeof raw.type === "string" ? raw.type.trim() : undefined,
+      title: typeof raw.title === "string" ? raw.title.trim() : undefined,
+      note: typeof raw.note === "string" ? raw.note.trim() : undefined,
+    };
+  });
+}
+
+function encodeEvidence(evidence: EvidenceItem[]) {
+  return evidence.length > 0 ? JSON.stringify(evidence) : null;
+}
+
+function decodeEvidence(value: string | null | undefined): EvidenceItem[] {
+  if (!value) return [];
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (item): item is EvidenceItem =>
+        typeof item === "object" &&
+        item !== null &&
+        typeof (item as { url?: unknown }).url === "string",
+    );
+  } catch {
+    return [];
+  }
+}
+
 function getBookingResolutionUpdate(status: ResolutionStatus, resolvedAt: Date) {
   if (status === "RESOLVED_CUSTOMER_WIN") {
     return {
@@ -112,6 +205,37 @@ function getBookingResolutionUpdate(status: ResolutionStatus, resolvedAt: Date) 
 
 function shouldProcessCommission(status: ResolutionStatus) {
   return status === "RESOLVED_PROVIDER_WIN" || status === "CANCELLED";
+}
+
+function shouldCreateRefundPending(
+  status: ResolutionStatus,
+  booking: {
+    paymentMethod: string;
+    paymentStatus: string;
+  },
+) {
+  if (status !== "RESOLVED_CUSTOMER_WIN") return false;
+  if (booking.paymentMethod === "CASH") return true;
+
+  return (
+    booking.paymentMethod === "ONLINE" && booking.paymentStatus === "SUCCESS"
+  );
+}
+
+function shouldDebitProviderForCashRefund(
+  status: ResolutionStatus,
+  booking: {
+    paymentMethod: string;
+  },
+) {
+  return status === "RESOLVED_CUSTOMER_WIN" && booking.paymentMethod === "CASH";
+}
+
+function getDepositStatusAfterDeduction(
+  depositBalance: number,
+  minProviderDeposit: number,
+) {
+  return depositBalance >= minProviderDeposit ? "ACTIVE" : "LOW_BALANCE";
 }
 
 function buildCustomerWinBookingUpdate(
@@ -132,10 +256,12 @@ function buildCustomerWinBookingUpdate(
     resolvedAt,
   );
 
-  if (
-    booking.paymentMethod !== "ONLINE" ||
-    booking.paymentStatus !== "SUCCESS"
-  ) {
+  const shouldRefund =
+    booking.paymentMethod === "CASH" ||
+    (booking.paymentMethod === "ONLINE" &&
+      booking.paymentStatus === "SUCCESS");
+
+  if (!shouldRefund) {
     return baseUpdate;
   }
 
@@ -180,20 +306,6 @@ function getResolvedBookingUpdate(
   return getBookingResolutionUpdate(status, resolvedAt);
 }
 
-function shouldCreateRefundPendingNotification(
-  status: ResolutionStatus,
-  booking: {
-    paymentMethod: string;
-    paymentStatus: string;
-  },
-) {
-  return (
-    status === "RESOLVED_CUSTOMER_WIN" &&
-    booking.paymentMethod === "ONLINE" &&
-    booking.paymentStatus === "SUCCESS"
-  );
-}
-
 function mapDispute(dispute: {
   id: string;
   bookingId: string;
@@ -201,10 +313,15 @@ function mapDispute(dispute: {
   providerId: string;
   reason: string;
   description: string | null;
+  evidence?: string | null;
+  providerResponse?: string | null;
+  providerEvidence?: string | null;
+  providerRespondedAt?: Date | null;
   status: string;
   resolvedBy: string | null;
   resolvedAt: Date | null;
   adminNote: string | null;
+  adminEvidence?: string | null;
   createAt: Date;
   updateAt: Date;
   booking?: unknown;
@@ -216,10 +333,15 @@ function mapDispute(dispute: {
     providerId: dispute.providerId,
     reason: dispute.reason,
     description: dispute.description,
+    evidence: decodeEvidence(dispute.evidence),
+    providerResponse: dispute.providerResponse ?? null,
+    providerEvidence: decodeEvidence(dispute.providerEvidence),
+    providerRespondedAt: dispute.providerRespondedAt ?? null,
     status: dispute.status,
     resolvedBy: dispute.resolvedBy,
     resolvedAt: dispute.resolvedAt,
     adminNote: dispute.adminNote,
+    adminEvidence: decodeEvidence(dispute.adminEvidence),
     createdAt: dispute.createAt,
     updatedAt: dispute.updateAt,
     booking: dispute.booking,
@@ -273,6 +395,7 @@ export const adminDisputeService = {
     const id = getRouteParam(req, "id");
     const status = getResolutionStatus(req.body?.status);
     const adminNote = getOptionalAdminNote(req.body?.adminNote);
+    const adminEvidence = getEvidence(req.body?.adminEvidence, "adminEvidence");
     const now = new Date();
 
     const dispute = await prisma.booking_disputes.findUnique({
@@ -292,6 +415,15 @@ export const adminDisputeService = {
       throw new BadRequestException("Booking is not in DISPUTE status");
     }
 
+    const shouldRefund = shouldCreateRefundPending(status, dispute.booking);
+    const shouldDebitCashRefund = shouldDebitProviderForCashRefund(
+      status,
+      dispute.booking,
+    );
+    const minProviderDeposit = shouldDebitCashRefund
+      ? await getSystemSettingValue("minProviderDeposit")
+      : 0;
+
     const resolvedDispute = await prisma.$transaction(async (tx) => {
       const updatedDispute = await tx.booking_disputes.update({
         where: { id: dispute.id },
@@ -300,6 +432,7 @@ export const adminDisputeService = {
           resolvedBy: adminId,
           resolvedAt: now,
           adminNote,
+          adminEvidence: encodeEvidence(adminEvidence),
         },
         include: DISPUTE_INCLUDE,
       });
@@ -314,6 +447,78 @@ export const adminDisputeService = {
           now,
         ),
       });
+
+      if (shouldDebitCashRefund && dispute.booking.totalAmount > 0) {
+        const provider = await tx.providers.findUnique({
+          where: { id: dispute.providerId },
+          select: {
+            id: true,
+            walletBalance: true,
+            depositBalance: true,
+          },
+        });
+
+        if (!provider) {
+          throw new NotFoundException("Provider not found");
+        }
+
+        const refundAmount = dispute.booking.totalAmount;
+        const walletDebit = Math.min(provider.walletBalance, refundAmount);
+        const depositDebit = refundAmount - walletDebit;
+        const nextDepositBalance = provider.depositBalance - depositDebit;
+
+        const updatedProvider = await tx.providers.update({
+          where: { id: provider.id },
+          data: {
+            ...(walletDebit > 0
+              ? { walletBalance: { decrement: walletDebit } }
+              : {}),
+            ...(depositDebit > 0
+              ? {
+                  depositBalance: { decrement: depositDebit },
+                  depositStatus: getDepositStatusAfterDeduction(
+                    nextDepositBalance,
+                    minProviderDeposit,
+                  ),
+                }
+              : {}),
+          },
+          select: {
+            walletBalance: true,
+            depositBalance: true,
+          },
+        });
+
+        if (walletDebit > 0) {
+          await tx.wallet_transactions.create({
+            data: {
+              providerId: provider.id,
+              bookingId: dispute.bookingId,
+              idempotencyKey: `cash-refund:${dispute.bookingId}:WALLET`,
+              type: "CASH_REFUND_DEDUCTION",
+              balanceType: "WALLET",
+              amount: -walletDebit,
+              balanceAfter: updatedProvider.walletBalance,
+              note: "Cash booking refund after customer won dispute",
+            },
+          });
+        }
+
+        if (depositDebit > 0) {
+          await tx.wallet_transactions.create({
+            data: {
+              providerId: provider.id,
+              bookingId: dispute.bookingId,
+              idempotencyKey: `cash-refund:${dispute.bookingId}:DEPOSIT`,
+              type: "CASH_REFUND_DEDUCTION",
+              balanceType: "DEPOSIT",
+              amount: -depositDebit,
+              balanceAfter: updatedProvider.depositBalance,
+              note: "Cash booking refund after customer won dispute",
+            },
+          });
+        }
+      }
 
       return updatedDispute;
     });
@@ -347,11 +552,6 @@ export const adminDisputeService = {
       }),
     ]);
 
-    const shouldRefund = shouldCreateRefundPendingNotification(
-      status,
-      dispute.booking,
-    );
-
     await notificationService.safeCreateMany([
       ...(customer
         ? [
@@ -374,6 +574,10 @@ export const adminDisputeService = {
                       bookingId: dispute.bookingId,
                       disputeId: dispute.id,
                       refundAmount: dispute.booking.totalAmount,
+                      refundSource:
+                        dispute.booking.paymentMethod === "CASH"
+                          ? "PROVIDER_WALLET_DEPOSIT"
+                          : "ONLINE_PAYMENT",
                     },
                   },
                 ]
@@ -407,6 +611,13 @@ export const adminDisputeService = {
           status === "RESOLVED_CUSTOMER_WIN" ? "CANCELLED" : "COMPLETED",
         paymentStatus: shouldRefund ? "REFUND_PENDING" : dispute.booking.paymentStatus,
         refundAmount: shouldRefund ? dispute.booking.totalAmount : null,
+        refundSource:
+          shouldRefund && dispute.booking.paymentMethod === "CASH"
+            ? "PROVIDER_WALLET_DEPOSIT"
+            : shouldRefund
+              ? "ONLINE_PAYMENT"
+              : null,
+        adminEvidence,
       },
     });
 

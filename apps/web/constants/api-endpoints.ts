@@ -44,6 +44,9 @@ export const API_ENDPOINTS = {
     CANCEL: (id: string) => `/bookings/${id}/cancel`,
   },
   MOBILE: {
+    BOOKINGS: {
+      CREATE_DISPUTE: (id: string) => `/mobile/bookings/${id}/disputes`,
+    },
     PUBLIC: {
       PROVIDERS: "/mobile/providers",
       SEARCH: "/mobile/search",
@@ -57,6 +60,9 @@ export const API_ENDPOINTS = {
     PROVIDER: {
       BOOKINGS: "/mobile/provider/bookings",
       BOOKING_DETAIL: (id: string) => `/mobile/provider/bookings/${id}`,
+      DISPUTES: "/mobile/provider/disputes",
+      DISPUTE_DETAIL: (id: string) => `/mobile/provider/disputes/${id}`,
+      DISPUTE_RESPONSE: (id: string) => `/mobile/provider/disputes/${id}/response`,
       CONFIRM_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/confirm`,
       REJECT_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/reject`,
       CANCEL_BOOKING: (id: string) => `/mobile/provider/bookings/${id}/cancel`,

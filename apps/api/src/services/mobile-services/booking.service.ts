@@ -279,6 +279,55 @@ function buildRefundRequestData(
   };
 }
 
+type DisputeEvidenceInput = {
+  url: string;
+  type?: string;
+  title?: string;
+  note?: string;
+};
+
+function getDisputeEvidence(value: unknown): DisputeEvidenceInput[] {
+  if (value === undefined || value === null) return [];
+  if (!Array.isArray(value)) {
+    throw new BadRequestException("evidence must be an array");
+  }
+  if (value.length > 10) {
+    throw new BadRequestException("evidence can contain at most 10 items");
+  }
+
+  return value.map((item, index) => {
+    if (typeof item === "string") {
+      const url = item.trim();
+      if (!url) {
+        throw new BadRequestException(`evidence[${index}] url is required`);
+      }
+      return { url };
+    }
+
+    if (typeof item !== "object" || item === null) {
+      throw new BadRequestException(
+        `evidence[${index}] must be a string URL or object`,
+      );
+    }
+
+    const raw = item as Record<string, unknown>;
+    if (typeof raw.url !== "string" || !raw.url.trim()) {
+      throw new BadRequestException(`evidence[${index}].url is required`);
+    }
+
+    return {
+      url: raw.url.trim(),
+      type: typeof raw.type === "string" ? raw.type.trim() : undefined,
+      title: typeof raw.title === "string" ? raw.title.trim() : undefined,
+      note: typeof raw.note === "string" ? raw.note.trim() : undefined,
+    };
+  });
+}
+
+function encodeDisputeEvidence(evidence: DisputeEvidenceInput[]) {
+  return evidence.length > 0 ? JSON.stringify(evidence) : null;
+}
+
 function emitBookingUpdated(booking: {
   id: string;
   provider: { id: string };
@@ -624,9 +673,10 @@ export const mobileBookingServices = {
   async createDispute(req: Request) {
     const userId = getRequesterId(req);
     const id = getRouteParam(req, "id");
-    const { reason, description } = req.body as {
+    const { reason, description, evidence } = req.body as {
       reason?: unknown;
       description?: unknown;
+      evidence?: unknown;
     };
 
     if (typeof reason !== "string" || !reason.trim()) {
@@ -671,6 +721,8 @@ export const mobileBookingServices = {
       throw new BadRequestException("This booking already has a dispute");
     }
 
+    const parsedEvidence = getDisputeEvidence(evidence);
+
     try {
       const result = await prisma.$transaction(async (tx) => {
         const dispute = await tx.booking_disputes.create({
@@ -681,6 +733,7 @@ export const mobileBookingServices = {
             reason: reason.trim(),
             description:
               typeof description === "string" ? description.trim() : null,
+            evidence: encodeDisputeEvidence(parsedEvidence),
             status: "PENDING",
           },
         });
@@ -695,6 +748,7 @@ export const mobileBookingServices = {
           bookingId: dispute.bookingId,
           reason: dispute.reason,
           description: dispute.description,
+          evidence: parsedEvidence,
           status: dispute.status,
           createdAt: dispute.createAt,
         };

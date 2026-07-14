@@ -527,6 +527,27 @@ mobileBookingRouter.get(
  *                 type: string
  *                 nullable: true
  *                 example: "The service was not completed as agreed."
+ *               evidence:
+ *                 type: array
+ *                 description: Related evidence uploaded by frontend/mobile first, such as Cloudinary image/video/pdf URLs.
+ *                 maxItems: 10
+ *                 items:
+ *                   type: object
+ *                   required:
+ *                     - url
+ *                   properties:
+ *                     url:
+ *                       type: string
+ *                       example: "https://res.cloudinary.com/.../dispute-photo.jpg"
+ *                     type:
+ *                       type: string
+ *                       example: "IMAGE"
+ *                     title:
+ *                       type: string
+ *                       example: "Before checkout photo"
+ *                     note:
+ *                       type: string
+ *                       example: "Pet was not groomed as requested."
  *     responses:
  *       201:
  *         description: Booking dispute created successfully
@@ -556,6 +577,10 @@ mobileBookingRouter.get(
  *                     description:
  *                       type: string
  *                       nullable: true
+ *                     evidence:
+ *                       type: array
+ *                       items:
+ *                         type: object
  *                     status:
  *                       type: string
  *                       example: PENDING

@@ -1,10 +1,12 @@
-import { ProviderNavigationPlaceholder } from "@/components/provider/provider-navigation-placeholder";
+import { ProviderDisputeDetailPage } from "@/apis/provider/disputes/components/provider-dispute-detail-page";
 
-export default async function ProviderDisputeDetailPage() {
+export default async function Page({ params }: { params: Promise<{ disputeId: string }> }) {
+  const { disputeId } = await params;
   return (
-    <ProviderNavigationPlaceholder
-      title="Chi tiet tranh chap"
-      description="Backend hien chua co endpoint provider dispute detail, nen man nay chi hien thi trang thai chua ho tro API."
-    />
+    <main className="p-4 sm:p-6 lg:p-8">
+      <div className="mx-auto max-w-7xl">
+        <ProviderDisputeDetailPage disputeId={disputeId} />
+      </div>
+    </main>
   );
 }

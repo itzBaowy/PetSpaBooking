@@ -349,10 +349,15 @@ model booking_disputes {
   providerId  String    @db.ObjectId
   reason      String
   description String?
+  evidence    String?
+  providerResponse String?
+  providerEvidence String?
+  providerRespondedAt DateTime?
   status      String    @default("PENDING")
   resolvedBy  String?   @db.ObjectId
   resolvedAt  DateTime?
   adminNote   String?
+  adminEvidence String?
 
   createAt DateTime @default(now())
   updateAt DateTime @updatedAt
