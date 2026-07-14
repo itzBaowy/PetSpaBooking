@@ -411,7 +411,6 @@ const providerIconMap: Record<ProviderNavigationItemId, ReactNode> = {
   verification: <IconWarning />,
   availability: <IconCalendar />,
   services: <IconClipboard />,
-  pricing: <IconCoin />,
   bookings: <IconCalendar />,
   customers: <IconGroup />,
   disputes: <IconWarning />,
