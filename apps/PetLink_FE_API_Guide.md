@@ -478,33 +478,43 @@ Chỉ tạo được khi booking đang `CHECKED_OUT` và còn trong hold window.
 POST /api/mobile/bookings/{id}/disputes
 ```
 
-Body hỗ trợ evidence:
+Request dùng `multipart/form-data`:
 
-```json
-{
-  "reason": "Service quality issue",
-  "description": "The service was not completed as agreed.",
-  "evidence": [
-    {
-      "url": "https://res.cloudinary.com/.../dispute-photo.jpg",
-      "type": "IMAGE",
-      "title": "Photo after checkout",
-      "note": "Pet was not groomed as requested."
-    }
-  ]
-}
+```txt
+reason: Service quality issue
+description: The service was not completed as agreed.
+evidenceFiles: <file 1>
+evidenceFiles: <file 2>
 ```
 
-`evidence` optional, tối đa 10 item. FE/mobile upload ảnh/video/pdf lên Cloudinary/storage trước rồi gửi URL vào API này. Backend lưu evidence để admin xem khi giải quyết.
+- `reason`: bắt buộc.
+- `description`: optional.
+- `evidenceFiles`: optional, gửi lặp cùng field name để upload nhiều file.
+- Hỗ trợ JPEG, PNG, WEBP, PDF, MP4 và MOV; tối đa 10 file, mỗi file tối đa 8 MB.
+- Backend nhận file qua Multer, upload lên Cloudinary và trả `evidence` gồm `url`, `type`, `title`, `mimeType`, `originalName`, `size`.
 
-Body:
+React Native phải tạo `FormData`, không tự đặt chuỗi URL vào body:
 
-```json
-{
-  "reason": "Service quality issue",
-  "description": "The service was not completed as agreed."
-}
+```ts
+const formData = new FormData();
+formData.append("reason", reason);
+formData.append("description", description);
+files.forEach((file) => {
+  formData.append("evidenceFiles", {
+    uri: file.uri,
+    name: file.name,
+    type: file.mimeType,
+  } as never);
+});
+
+await fetch(`${API_URL}/api/mobile/bookings/${bookingId}/disputes`, {
+  method: "POST",
+  headers: { Authorization: `Bearer ${accessToken}` },
+  body: formData,
+});
 ```
+
+Không tự set `Content-Type`; React Native/fetch sẽ thêm multipart boundary đúng cách.
 
 Một booking chỉ có 1 dispute.
 
@@ -806,27 +816,22 @@ status
 booking: thông tin booking, customer, service, payment
 ```
 
-Body provider response:
+Provider gửi response bằng `multipart/form-data`:
 
-```json
-{
-  "response": "The service was completed as agreed. Please see attached checkout photos.",
-  "evidence": [
-    {
-      "url": "https://res.cloudinary.com/.../provider-proof.jpg",
-      "type": "IMAGE",
-      "title": "Checkout photo",
-      "note": "Photo taken at checkout."
-    }
-  ]
-}
+```txt
+response: The service was completed as agreed. Please see attached checkout photos.
+evidenceFiles: <file 1>
+evidenceFiles: <file 2>
 ```
+
+FE/mobile dùng `FormData` tương tự customer tạo dispute: append text vào `response`, sau đó append từng file với cùng field name `evidenceFiles`. Không tự set header `Content-Type` để client tự thêm multipart boundary.
 
 Rule:
 
 - Provider chỉ xem/phản hồi dispute thuộc booking của mình.
 - Chỉ phản hồi được dispute `PENDING`.
-- Evidence optional, tối đa 10 item, FE upload file trước rồi gửi URL.
+- `evidenceFiles` optional; hỗ trợ JPEG, PNG, WEBP, PDF, MP4 và MOV, tối đa 10 file và 8 MB mỗi file.
+- Backend nhận file qua Multer, upload Cloudinary rồi trả metadata trong `providerEvidence`; FE không cần tự upload và truyền URL.
 - Sau khi provider phản hồi, customer và admin nhận notification `DISPUTE_PROVIDER_RESPONSE`.
 
 ## 5. Mobile Notifications
@@ -1308,6 +1313,38 @@ PATCH /api/admin/disputes/{id}/resolve
 ```
 
 Admin detail `GET /api/admin/disputes/{id}` trả evidence customer gửi, providerResponse/providerEvidence nếu provider đã phản hồi, adminEvidence nếu đã resolve, và booking kèm customer/provider/service/payment để admin đủ dữ liệu ra quyết định.
+
+Nếu dispute đã được xử `RESOLVED_CUSTOMER_WIN` và booking đang `paymentStatus = REFUND_PENDING`, response có thêm `refundAction` để FE render banner/nút qua màn refund:
+
+```json
+{
+  "refundAction": {
+    "status": "PENDING",
+    "message": "This dispute was resolved in customer favor and is waiting for manual refund.",
+    "bookingId": "bookingId",
+    "refundAmount": 300000,
+    "refundSource": "ONLINE_PAYMENT",
+    "refundRequestedAt": "2026-07-14T10:00:00.000Z",
+    "refundReason": "Customer evidence is valid",
+    "canOpenRefund": true,
+    "refundDetailPath": "/admin/refunds/bookingId",
+    "refundDetailApi": "/api/admin/refunds/bookingId"
+  }
+}
+```
+
+`refundSource` có thể là:
+
+```txt
+ONLINE_PAYMENT
+PROVIDER_WALLET_DEPOSIT
+```
+
+FE gợi ý:
+
+- Nếu `refundAction.status = PENDING`, hiện alert "Tranh chấp này đang chờ hoàn tiền" và nút "Đi tới hoàn tiền".
+- Nút có thể điều hướng bằng `refundDetailPath`; nếu route FE khác thì dùng `bookingId` để build route riêng.
+- Nếu `refundAction.status = COMPLETED`, chỉ hiện trạng thái đã hoàn tiền, không cần CTA.
 
 Resolve body:
 

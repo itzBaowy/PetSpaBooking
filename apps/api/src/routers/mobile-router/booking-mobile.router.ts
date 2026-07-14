@@ -2,6 +2,7 @@ import express from "express";
 import { mobileBookingController } from "../../controllers/mobile-controllers/booking.controller.ts";
 import { protect } from "../../middlewares/protect.middleware.ts";
 import { checkRole } from "../../middlewares/authorization.middleware.ts";
+import { uploadDisputeEvidenceFiles } from "../../common/multer/memory.multer.ts";
 
 const mobileBookingRouter = express.Router();
 
@@ -514,7 +515,7 @@ mobileBookingRouter.get(
  *     requestBody:
  *       required: true
  *       content:
- *         application/json:
+ *         multipart/form-data:
  *           schema:
  *             type: object
  *             required:
@@ -527,27 +528,13 @@ mobileBookingRouter.get(
  *                 type: string
  *                 nullable: true
  *                 example: "The service was not completed as agreed."
- *               evidence:
+ *               evidenceFiles:
  *                 type: array
- *                 description: Related evidence uploaded by frontend/mobile first, such as Cloudinary image/video/pdf URLs.
+ *                 description: Evidence files uploaded directly. Supports JPEG, PNG, WEBP, PDF, MP4, and MOV; maximum 10 files and 8 MB per file.
  *                 maxItems: 10
  *                 items:
- *                   type: object
- *                   required:
- *                     - url
- *                   properties:
- *                     url:
- *                       type: string
- *                       example: "https://res.cloudinary.com/.../dispute-photo.jpg"
- *                     type:
- *                       type: string
- *                       example: "IMAGE"
- *                     title:
- *                       type: string
- *                       example: "Before checkout photo"
- *                     note:
- *                       type: string
- *                       example: "Pet was not groomed as requested."
+ *                   type: string
+ *                   format: binary
  *     responses:
  *       201:
  *         description: Booking dispute created successfully
@@ -600,6 +587,7 @@ mobileBookingRouter.post(
   "/bookings/:id/disputes",
   protect,
   checkRole("CUSTOMER"),
+  uploadDisputeEvidenceFiles,
   mobileBookingController.createDispute,
 );
 
