@@ -18,6 +18,7 @@ import {
   providerDate,
   providerErrorText,
   providerMoney,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import {
   useDeleteProviderService,
@@ -53,7 +54,10 @@ export function ProviderServicesPage() {
   const [editingService, setEditingService] = useState<ProviderServiceApi | null>(null);
   const [detailService, setDetailService] = useState<ProviderServiceApi | null>(null);
   const [draft, setDraft] = useState(emptyServiceDraft);
-  const items = useMemo(() => query.data?.items ?? [], [query.data?.items]);
+  const items = useMemo(
+    () => sortByDateDesc(query.data?.items ?? [], (item) => item.updateAt ?? item.createAt),
+    [query.data?.items],
+  );
 
   const openCreateForm = () => {
     setEditingService(null);

@@ -13,6 +13,7 @@ import {
   providerDate,
   providerMoney,
   providerStatusText,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import {
   useProviderWallet,
@@ -147,7 +148,7 @@ export function ProviderTransactionsPage() {
         <ProviderEmpty text="Chưa có giao dịch." />
       ) : (
         <div className="grid gap-3">
-          {result.items.map((item) => (
+          {sortByDateDesc(result.items, (item) => item.createAt).map((item) => (
             <article
               className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-sm"
               key={item.id}
@@ -214,7 +215,7 @@ export function ProviderWithdrawalsPage() {
         <ProviderEmpty text="Chưa có yêu cầu rút tiền." />
       ) : (
         <div className="grid gap-3">
-          {result.items.map((item) => (
+          {sortByDateDesc(result.items, (item) => item.requestedAt).map((item) => (
             <article
               className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-sm"
               key={item.id}

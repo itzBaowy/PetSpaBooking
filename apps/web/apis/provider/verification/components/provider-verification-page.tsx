@@ -13,6 +13,7 @@ import {
   ProviderPageHeader,
   providerDate,
   providerErrorText,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import {
   providerDocumentTypeLabels,
@@ -143,7 +144,7 @@ export function ProviderVerificationPage() {
         <h2 className="font-extrabold">Tài liệu đã gửi</h2>
         {docs.data?.length ? (
           <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-            {docs.data.map((document) => (
+            {sortByDateDesc(docs.data, (document) => document.createAt).map((document) => (
               <a
                 className="overflow-hidden rounded-2xl border border-border-subtle hover:border-brand"
                 href={document.imageUrl}

@@ -8,6 +8,7 @@ import {
   ProviderLoading,
   providerDate,
   providerMoney,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import { useCustomer } from "../queries";
 
@@ -19,7 +20,7 @@ export function ServiceHistory({ customerId }: { customerId: string }) {
     return <ProviderError error={query.error} retry={() => void query.refetch()} />;
   }
 
-  const bookings = query.data?.bookings ?? [];
+  const bookings = sortByDateDesc(query.data?.bookings ?? [], (booking) => booking.appointmentStart);
   if (bookings.length === 0) return <ProviderEmpty text="Chưa có lịch sử dịch vụ." />;
 
   return (

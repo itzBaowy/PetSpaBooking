@@ -8,6 +8,7 @@ import {
   ProviderPageHeader,
   providerDate,
   providerMoney,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import { useProviderBookings } from "@/apis/provider/bookings/queries";
 
@@ -20,7 +21,10 @@ export function ProviderRevenuePage() {
   }
 
   const bookings = query.data?.items ?? [];
-  const completed = bookings.filter((booking) => booking.status === "COMPLETED");
+  const completed = sortByDateDesc(
+    bookings.filter((booking) => booking.status === "COMPLETED"),
+    (booking) => booking.appointmentStart,
+  );
   const gross = sum(completed.map((booking) => booking.totalAmount));
   const online = sum(completed.filter((booking) => booking.paymentMethod === "ONLINE").map((booking) => booking.totalAmount));
   const cash = gross - online;
