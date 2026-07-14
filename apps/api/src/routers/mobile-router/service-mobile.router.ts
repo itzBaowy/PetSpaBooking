@@ -37,7 +37,6 @@ const mobileServiceRouter = express.Router();
  */
 mobileServiceRouter.get(
   "/services/:providerId",
-  protect,
   mobileServiceController.getAllServiceByProviderId,
 );
 
@@ -67,7 +66,6 @@ mobileServiceRouter.get(
  */
 mobileServiceRouter.get(
   "/services/service-detail/:serviceId",
-  protect,
   mobileServiceController.getServiceDetailById,
 );
 
