@@ -6,16 +6,32 @@ import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { queryKeys } from "@/constants/query-keys";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
-import type { Commission, CommissionConfig, CommissionStatus } from "@/types/commission";
+import type {
+  Commission,
+  CommissionConfig,
+  CommissionDisplayStatus,
+  CommissionStatus,
+} from "@/types/commission";
 import { listSchema } from "@/apis/admin/supported-api";
 import { commissionConfigSchema } from "./schema";
 import type { CommissionConfigData } from "./schema";
 
 export interface CommissionSummary {
+  heldAmount: number;
+  pendingHeldAmount: number;
+  pendingCommissionAmount: number;
+  refundPendingAmount: number;
+  refundPendingCommissionAmount: number;
   reservedAmount: number;
   chargedAmount: number;
+  chargedCommissionAmount: number;
   releasedAmount: number;
+  releasedCommissionAmount: number;
+  refundedCommissionAmount: number;
+  releasedWithoutRefundCommissionAmount: number;
+  cancelledCommissionAmount: number;
   failedAmount: number;
+  failedCommissionAmount: number;
   cashCommissionAmount: number;
   onlineCommissionAmount: number;
 }
@@ -38,10 +54,21 @@ function withDefault<T>(query: UseQueryResult<T, unknown>, fallback: T): Defined
 }
 
 const emptySummary: CommissionSummary = {
+  heldAmount: 0,
+  pendingHeldAmount: 0,
+  pendingCommissionAmount: 0,
+  refundPendingAmount: 0,
+  refundPendingCommissionAmount: 0,
   reservedAmount: 0,
   chargedAmount: 0,
+  chargedCommissionAmount: 0,
   releasedAmount: 0,
+  releasedCommissionAmount: 0,
+  refundedCommissionAmount: 0,
+  releasedWithoutRefundCommissionAmount: 0,
+  cancelledCommissionAmount: 0,
   failedAmount: 0,
+  failedCommissionAmount: 0,
   cashCommissionAmount: 0,
   onlineCommissionAmount: 0,
 };
@@ -54,9 +81,16 @@ function normalizeCommission(item: Record<string, unknown>): Commission {
     providerName: String(item.providerName ?? "Unknown provider"),
     serviceName: String(item.serviceName ?? "Unknown service"),
     bookingAmount: Number(item.bookingAmount ?? 0),
+    heldAmount: Number(item.heldAmount ?? 0),
     commissionAmount: Number(item.commissionAmount ?? 0),
+    providerEarning: Number(item.providerEarning ?? 0),
     rateLabel: String(item.rateLabel ?? ""),
     status: String(item.status ?? "PENDING") as CommissionStatus,
+    displayStatus: String(
+      item.displayStatus ?? item.status ?? "PENDING",
+    ) as CommissionDisplayStatus,
+    fundSource: String(item.fundSource ?? "NONE"),
+    fundStatus: String(item.fundStatus ?? "NOT_HELD"),
     paymentMethod: String(item.paymentMethod ?? "CASH") as Commission["paymentMethod"],
     reservedAt: item.reservedAt ? String(item.reservedAt) : undefined,
     chargedAt: item.chargedAt ? String(item.chargedAt) : undefined,
@@ -70,10 +104,21 @@ function normalizeCommission(item: Record<string, unknown>): Commission {
 
 function normalizeSummary(data: Partial<CommissionSummary> | null | undefined): CommissionSummary {
   return {
+    heldAmount: Number(data?.heldAmount ?? data?.reservedAmount ?? 0),
+    pendingHeldAmount: Number(data?.pendingHeldAmount ?? data?.heldAmount ?? data?.reservedAmount ?? 0),
+    pendingCommissionAmount: Number(data?.pendingCommissionAmount ?? 0),
+    refundPendingAmount: Number(data?.refundPendingAmount ?? 0),
+    refundPendingCommissionAmount: Number(data?.refundPendingCommissionAmount ?? 0),
     reservedAmount: Number(data?.reservedAmount ?? 0),
     chargedAmount: Number(data?.chargedAmount ?? 0),
+    chargedCommissionAmount: Number(data?.chargedCommissionAmount ?? data?.chargedAmount ?? 0),
     releasedAmount: Number(data?.releasedAmount ?? 0),
+    releasedCommissionAmount: Number(data?.releasedCommissionAmount ?? data?.releasedAmount ?? 0),
+    refundedCommissionAmount: Number(data?.refundedCommissionAmount ?? data?.releasedCommissionAmount ?? data?.releasedAmount ?? 0),
+    releasedWithoutRefundCommissionAmount: Number(data?.releasedWithoutRefundCommissionAmount ?? 0),
+    cancelledCommissionAmount: Number(data?.cancelledCommissionAmount ?? data?.releasedWithoutRefundCommissionAmount ?? 0),
     failedAmount: Number(data?.failedAmount ?? 0),
+    failedCommissionAmount: Number(data?.failedCommissionAmount ?? data?.failedAmount ?? 0),
     cashCommissionAmount: Number(data?.cashCommissionAmount ?? 0),
     onlineCommissionAmount: Number(data?.onlineCommissionAmount ?? 0),
   };

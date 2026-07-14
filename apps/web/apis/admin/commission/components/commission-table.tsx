@@ -21,6 +21,24 @@ const statusOptions = [
   })),
 ];
 
+const fundStatusLabels: Record<string, string> = {
+  HELD: "Đang giữ",
+  NOT_HELD: "Không giữ",
+  REFUND_PENDING: "Chờ hoàn",
+  REFUNDED: "Đã hoàn tiền",
+  SETTLED_TO_PROVIDER: "Đã settle",
+};
+
+const fundSourceLabels: Record<string, string> = {
+  CUSTOMER_ONLINE_PAYMENT: "Khách thanh toán online",
+  CUSTOMER_CASH_TO_PROVIDER: "Khách trả tiền mặt cho provider",
+  NONE: "Không có dòng tiền",
+};
+
+function labelFromMap(labels: Record<string, string>, value: string) {
+  return labels[value] ?? value.replaceAll("_", " ");
+}
+
 export function CommissionTable() {
   const { showToast } = useToast();
   const { data: commissions } = useCommissionRecords();
@@ -69,9 +87,24 @@ export function CommissionTable() {
     },
     {
       key: "bookingAmount",
-      header: "Đặt lịch",
+      header: "Tổng",
       align: "right",
       render: (commission) => formatCurrency(commission.bookingAmount),
+    },
+    {
+      key: "heldAmount",
+      header: "Tiền đang giữ",
+      align: "right",
+      render: (commission) => (
+        <div>
+          <p className="font-bold text-warning">
+            {formatCurrency(commission.heldAmount)}
+          </p>
+          <p className="text-xs text-muted">
+            {labelFromMap(fundStatusLabels, commission.fundStatus)}
+          </p>
+        </div>
+      ),
     },
     {
       key: "amount",
@@ -84,20 +117,33 @@ export function CommissionTable() {
       ),
     },
     {
+      key: "providerEarning",
+      header: "Provider thực nhận",
+      align: "right",
+      render: (commission) => formatCurrency(commission.providerEarning),
+    },
+    {
       key: "rate",
       header: "Tỷ lệ",
       render: (commission) => commission.rateLabel,
     },
     {
-      key: "method",
-      header: "Thanh toán",
-      render: (commission) => commission.paymentMethod,
+      key: "fund",
+      header: "Nguồn tiền",
+      render: (commission) => (
+        <div>
+          <p className="font-semibold">{commission.paymentMethod}</p>
+          <p className="text-xs text-muted">
+            {labelFromMap(fundSourceLabels, commission.fundSource)}
+          </p>
+        </div>
+      ),
     },
     {
       key: "status",
-      header: "Trạng thái",
+      header: "Hoa hồng",
       render: (commission) => (
-        <CommissionStatusPill status={commission.status} />
+        <CommissionStatusPill status={commission.displayStatus} />
       ),
     },
     {
@@ -112,7 +158,7 @@ export function CommissionTable() {
               label: "Xem đặt lịch",
               onClick: () =>
                 showToast(
-                  `Chưa có API chi tiết đặt lịch ${commission.bookingId}.`,
+                  `Booking ${commission.bookingId}: giữ ${formatCurrency(commission.heldAmount)}, hoa hồng ${formatCurrency(commission.commissionAmount)}.`,
                   "info",
                 ),
             },
@@ -148,7 +194,7 @@ export function CommissionTable() {
         columns={columns}
         data={filteredCommissions}
         getRowKey={(commission) => commission.id}
-        minWidthClassName="min-w-[1120px]"
+        minWidthClassName="min-w-[1320px]"
       />
     </section>
   );

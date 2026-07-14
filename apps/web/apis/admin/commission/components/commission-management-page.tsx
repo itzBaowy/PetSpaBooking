@@ -9,7 +9,7 @@ export function CommissionManagementPage() {
       <PageHeader
         eyebrow="Quản trị / Tài chính"
         title="Quản lý hoa hồng"
-        description="Theo dõi hoa hồng đang giữ, đã thu, đã hoàn và thất bại trên toàn sàn."
+        description="Theo dõi tiền khách đang giữ, hoa hồng chờ thu, đã thu, đã hoàn và thất bại trên toàn sàn."
       />
       <CommissionSummaryCards />
       <CommissionTable />
