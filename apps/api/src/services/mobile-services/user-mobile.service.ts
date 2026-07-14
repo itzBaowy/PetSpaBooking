@@ -9,4 +9,12 @@ export const userMobileService = {
     });
     return updated;
   },
+  removeDeviceToken: async (userId: string) => {
+    const updated = await prisma.users.update({
+      where: { id: userId },
+      data: { expoPushToken: null },
+      select: { id: true, userName: true, expoPushToken: true },
+    });
+    return updated;
+  },
 };

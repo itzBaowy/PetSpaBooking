@@ -70,4 +70,74 @@ mobileCustomerRouter.patch(
   mobileCustomerController.editMyProfile,
 );
 
+/**
+ * @swagger
+ * /api/mobile/customer/disputes:
+ *   get:
+ *     summary: Get customer disputes
+ *     description: Customer retrieves their own disputes.
+ *     tags: [Mobile-Customer]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: page
+ *         schema:
+ *           type: integer
+ *           default: 1
+ *         description: Page number
+ *       - in: query
+ *         name: limit
+ *         schema:
+ *           type: integer
+ *           default: 10
+ *         description: Items per page
+ *     responses:
+ *       200:
+ *         description: Customer disputes retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Customer role required
+ */
+mobileCustomerRouter.get(
+  "/customer/disputes",
+  protect,
+  checkRole("CUSTOMER"),
+  mobileCustomerController.getDisputes,
+);
+
+/**
+ * @swagger
+ * /api/mobile/customer/disputes/{id}:
+ *   get:
+ *     summary: Get customer dispute detail
+ *     description: Customer retrieves a dispute detail, including provider and admin responses.
+ *     tags: [Mobile-Customer]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Dispute ID
+ *     responses:
+ *       200:
+ *         description: Customer dispute retrieved successfully
+ *       401:
+ *         description: Unauthorized
+ *       403:
+ *         description: Customer role required
+ *       404:
+ *         description: Dispute not found
+ */
+mobileCustomerRouter.get(
+  "/customer/disputes/:id",
+  protect,
+  checkRole("CUSTOMER"),
+  mobileCustomerController.getDisputeById,
+);
+
 export default mobileCustomerRouter;

@@ -507,6 +507,14 @@ export const adminDisputeService = {
       : 0;
 
     const resolvedDispute = await prisma.$transaction(async (tx) => {
+      const currentDispute = await tx.booking_disputes.findUnique({
+        where: { id: dispute.id },
+        select: { status: true },
+      });
+      if (currentDispute?.status !== "PENDING") {
+        throw new BadRequestException("Dispute has already been resolved");
+      }
+
       const updatedDispute = await tx.booking_disputes.update({
         where: { id: dispute.id },
         data: {
