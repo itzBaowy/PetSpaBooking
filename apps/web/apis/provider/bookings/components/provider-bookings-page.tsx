@@ -14,6 +14,7 @@ import {
   providerErrorText,
   providerMoney,
   providerStatusText,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import type { ProviderBookingApi } from "@/types/provider-api";
 import { useProviderBookingAction, useProviderBookings } from "../queries";
@@ -51,7 +52,7 @@ export function ProviderBookingsPage() {
     );
   };
 
-  const items = query.data?.items ?? [];
+  const items = sortByDateDesc(query.data?.items ?? [], (booking) => booking.appointmentStart);
 
   return (
     <div className="space-y-5">

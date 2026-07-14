@@ -7,6 +7,7 @@ import { FormEvent, useState } from "react";
 import { useLogin, useProfile } from "@/apis/auth/queries";
 import { Button, Input, PasswordInput } from "@/components/ui";
 import { useAuthStore } from "@/stores/auth-store";
+import { useToast } from "@/hooks/use-toast";
 import { getProviderRouteAccess } from "@/lib/provider-access";
 import { loginSchema } from "../schema";
 
@@ -21,6 +22,7 @@ export function LoginForm() {
   const profileQuery = useProfile();
   const setTokens = useAuthStore((state) => state.setTokens);
   const clearTokens = useAuthStore((state) => state.clearTokens);
+  const { showToast } = useToast();
   const [formError, setFormError] = useState("");
   const providerRegistered = searchParams.get("providerRegistered") === "1";
   const accountStatusError = searchParams.get("authError") === "account_status";
@@ -45,6 +47,7 @@ export function LoginForm() {
     try {
       const tokens = await loginMutation.mutateAsync(parsed.data);
       setTokens(tokens);
+      showToast("Đăng nhập thành công. Chào mừng bạn quay trở lại!", "success");
 
       const profile = await profileQuery.refetch();
       const nextPath = getSafeNextPath(searchParams.get("next"));

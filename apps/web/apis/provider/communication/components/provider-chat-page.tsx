@@ -12,6 +12,7 @@ import {
   ProviderPageHeader,
   providerDate,
   providerErrorText,
+  sortByDateDesc,
 } from "@/apis/provider/_shared/provider-ui";
 import type { ProviderChatMessageApi, ProviderChatThreadApi } from "@/types/provider-api";
 import {
@@ -27,10 +28,21 @@ export function ProviderChatPage() {
   const [selectedThreadId, setSelectedThreadId] = useState<string | undefined>();
   const send = useSendProviderChatMessage();
   const markRead = useMarkProviderChatRead();
-  const threads = useMemo(() => threadsQuery.data?.items ?? [], [threadsQuery.data?.items]);
+  const threads = useMemo(
+    () => sortByDateDesc(threadsQuery.data?.items ?? [], (thread) => thread.lastMessageAt),
+    [threadsQuery.data?.items],
+  );
   const activeThreadId = selectedThreadId ?? threads[0]?.id;
   const { typingThreadId } = useProviderChatSocket(activeThreadId);
   const messagesQuery = useProviderChatMessages(activeThreadId);
+  const messages = useMemo(
+    () =>
+      sortByDateDesc(
+        messagesQuery.data?.items ?? [],
+        (message) => message.createdAt ?? message.createAt,
+      ),
+    [messagesQuery.data?.items],
+  );
   const selectedThread = useMemo(
     () => threads.find((thread) => thread.id === activeThreadId),
     [activeThreadId, threads],
@@ -76,7 +88,7 @@ export function ProviderChatPage() {
                 <ProviderError error={messagesQuery.error} retry={() => void messagesQuery.refetch()} />
               ) : (
                 <div className="space-y-3">
-                  {(messagesQuery.data?.items ?? []).map((message) => {
+                  {messages.map((message) => {
                     const isProvider = message.senderRole === "PROVIDER" || message.senderRole === "provider";
                     const senderName = getMessageSenderName(
                       message,

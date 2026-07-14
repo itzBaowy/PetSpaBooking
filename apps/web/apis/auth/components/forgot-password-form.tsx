@@ -4,7 +4,7 @@ export function ForgotPasswordForm() {
   return (
     <form className="space-y-4">
       <div>
-        <label className="block text-sm font-medium mb-1">Email Address</label>
+        <label className="block text-sm font-medium mb-1">Địa chỉ email</label>
         <input
           type="email"
           className="w-full border rounded px-3 py-2"

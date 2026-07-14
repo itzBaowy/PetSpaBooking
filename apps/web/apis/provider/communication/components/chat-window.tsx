@@ -4,7 +4,7 @@ export function ChatWindow() {
   return (
     <div className="bg-white rounded-lg shadow h-[600px] flex flex-col">
       <div className="flex-1 p-4 overflow-y-auto">
-        <p className="text-center text-gray-500">No messages yet</p>
+        <p className="text-center text-gray-500">Chưa có tin nhắn</p>
       </div>
       <div className="border-t p-4">
         <form className="flex gap-2">
