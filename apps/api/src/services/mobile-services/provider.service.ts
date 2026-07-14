@@ -66,7 +66,7 @@ export const mobileProviderServices = {
     }
 
     const providerWhere: Record<string, unknown> = {
-      providerStatus: "VERIFIED",
+      status: "VERIFIED",
       OR: [
         {
           businessName: {
