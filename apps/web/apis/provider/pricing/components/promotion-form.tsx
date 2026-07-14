@@ -4,7 +4,7 @@ export function PromotionForm() {
   return (
     <form className="bg-white p-6 rounded-lg shadow space-y-4">
       <div>
-        <label className="block text-sm font-medium mb-1">Promotion Name</label>
+        <label className="block text-sm font-medium mb-1">Tên khuyến mãi</label>
         <input type="text" className="w-full border rounded px-3 py-2" />
       </div>
       <div>
@@ -12,7 +12,7 @@ export function PromotionForm() {
         <input type="number" className="w-full border rounded px-3 py-2" />
       </div>
       <div>
-        <label className="block text-sm font-medium mb-1">Valid Until</label>
+        <label className="block text-sm font-medium mb-1">Có hiệu lực đến</label>
         <input type="date" className="w-full border rounded px-3 py-2" />
       </div>
       <button
