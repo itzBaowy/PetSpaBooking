@@ -37,16 +37,16 @@ export const bookingStatusOverrideSchema = z.object({
 export type AdminBookingStatus = z.infer<typeof adminBookingStatusSchema>;
 
 export const ADMIN_BOOKING_STATUS_LABELS: Record<AdminBookingStatus, string> = {
-  PENDING: "Cho xac nhan",
-  CONFIRMED: "Da xac nhan",
-  CHECKED_IN: "Da check-in",
-  CHECKED_OUT: "Da check-out",
-  COMPLETED: "Hoan tat",
-  CANCELLED: "Khach huy",
-  REJECTED: "Provider tu choi",
-  DISPUTE: "Dang khieu nai",
-  NO_ARRIVAL: "Khach khong den",
-  NONE_ARRIVAL: "Khach khong den",
+  PENDING: "Chờ xác nhận",
+  CONFIRMED: "Đã xác nhận",
+  CHECKED_IN: "Đã check-in",
+  CHECKED_OUT: "Đã check-out",
+  COMPLETED: "Hoàn tất",
+  CANCELLED: "Khách hủy",
+  REJECTED: "Provider từ chối",
+  DISPUTE: "Đang khiếu nại",
+  NO_ARRIVAL: "Khách không đến",
+  NONE_ARRIVAL: "Khách không đến",
 };
 
 export type DisputeResolutionData = z.infer<typeof disputeResolutionSchema>;
