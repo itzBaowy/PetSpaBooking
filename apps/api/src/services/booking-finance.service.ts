@@ -2,6 +2,7 @@ import prisma from "../../connect.prisma.ts";
 import { notificationService } from "./notification.service.ts";
 import { commissionRecordService } from "./commission-record.service.ts";
 import { getSystemSettingValue } from "./system-setting.service.ts";
+import { emailService } from "./email.service.ts";
 
 const MAX_COMMISSION_PROCESSING_RETRIES = 5;
 
@@ -39,6 +40,12 @@ function isTransactionWriteConflict(error: unknown) {
 function wait(ms: number) {
   return new Promise((resolve) => {
     setTimeout(resolve, ms);
+  });
+}
+
+function runEmailSideEffect(promise: Promise<unknown>) {
+  promise.catch((error) => {
+    console.error("[email] Booking finance email side effect failed:", error);
   });
 }
 
@@ -289,8 +296,19 @@ export const bookingFinanceService = {
       const completedBooking = await prisma.bookings.findUnique({
         where: { id: bookingId },
         include: {
-          customer: { select: { userId: true } },
+          customer: {
+            select: {
+              userId: true,
+              users: {
+                select: {
+                  email: true,
+                  fullName: true,
+                },
+              },
+            },
+          },
           provider: { select: { userId: true, businessName: true } },
+          service: { select: { name: true } },
         },
       });
 
@@ -311,6 +329,24 @@ export const bookingFinanceService = {
             data: { bookingId },
           },
         ]);
+
+        runEmailSideEffect(
+          emailService.safeSendBookingCompletedToCustomer({
+            bookingId: completedBooking.id,
+            customer: {
+              email: completedBooking.customer.users.email,
+              name: completedBooking.customer.users.fullName,
+            },
+            provider: {
+              name: completedBooking.provider.businessName,
+            },
+            serviceName: completedBooking.service.name,
+            appointmentStart: completedBooking.appointmentStart,
+            appointmentEnd: completedBooking.appointmentEnd,
+            totalAmount: completedBooking.totalAmount,
+            paymentMethod: completedBooking.paymentMethod,
+          }),
+        );
       }
     }
 
