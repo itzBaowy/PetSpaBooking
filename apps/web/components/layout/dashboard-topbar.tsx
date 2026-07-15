@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/apis/auth/queries";
 import type { AdminEntity } from "@/apis/admin/supported-api";
 import { Avatar, getAvatarInitials } from "@/components/ui/avatar";
@@ -22,6 +23,7 @@ const roleLabels: Record<string, string> = {
 
 export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [openMenu, setOpenMenu] = useState<"notifications" | "profile" | null>(null);
   const [selectedNotification, setSelectedNotification] = useState<AdminEntity | null>(null);
   const [sendOpen, setSendOpen] = useState(false);
@@ -46,9 +48,12 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
   const closeSoon = (menu: "profile") =>
     window.setTimeout(() => setOpenMenu((prev) => (prev === menu ? null : prev)), 150);
 
-  function handleLogout() {
+  async function handleLogout() {
+    await queryClient.cancelQueries();
     clearTokens();
+    queryClient.clear();
     router.replace("/login");
+    router.refresh();
   }
 
   return (
