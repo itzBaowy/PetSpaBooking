@@ -6,7 +6,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
-import { Button, CustomSelect, Input, Textarea, useToast } from "@/components/ui";
+import { Button, CustomSelect, Textarea, useToast } from "@/components/ui";
+import { MoneyInput } from "@/components/ui/money-input";
 import { entitySchema } from "@/apis/admin/supported-api";
 import {
   LoadState,
@@ -24,7 +25,7 @@ export function AdminProviderWalletPage({ id }: { id: string }) {
   const { showToast } = useToast();
   const [isAdjustDialogOpen, setIsAdjustDialogOpen] = useState(false);
   const [balanceType, setBalanceType] = useState("WALLET");
-  const [amountText, setAmountText] = useState("");
+  const [amount, setAmount] = useState(0);
   const [reason, setReason] = useState("");
   const [formError, setFormError] = useState("");
 
@@ -46,7 +47,7 @@ export function AdminProviderWalletPage({ id }: { id: string }) {
 
   const resetAdjustDialog = () => {
     setBalanceType("WALLET");
-    setAmountText("");
+    setAmount(0);
     setReason("");
     setFormError("");
   };
@@ -57,7 +58,6 @@ export function AdminProviderWalletPage({ id }: { id: string }) {
   };
 
   const submitAdjust = () => {
-    const amount = Number(amountText);
     if (!Number.isFinite(amount) || amount === 0) {
       setFormError("Số tiền điều chỉnh không hợp lệ.");
       return;
@@ -182,13 +182,12 @@ export function AdminProviderWalletPage({ id }: { id: string }) {
 
               <label className="block">
                 <span className="text-sm font-semibold text-foreground">Số tiền</span>
-                <Input
+                <MoneyInput
                   className="mt-2"
-                  type="number"
-                  inputMode="decimal"
-                  value={amountText}
-                  placeholder="Ví dụ: 100000 hoặc -50000"
-                  onChange={(event) => setAmountText(event.target.value)}
+                  value={amount}
+                  placeholder="Ví dụ: 100.000 hoặc -50.000"
+                  allowNegative
+                  onValueChange={setAmount}
                   autoFocus
                 />
               </label>

@@ -18,7 +18,7 @@ export type ProviderBookingApi = {
 export type ProviderServiceApi = {
   id: string; name: string; description?: string | null; price: number;
   duration: number; isActive: boolean; isHiddenByAdmin: boolean;
-  category?: { name?: string } | null; updateAt?: string; createAt?: string;
+  category?: { name?: string } | null; imageUrls?: string[]; updateAt?: string; createAt?: string;
 };
 export type ProviderServicePage = { page: number; pageSize: number; totalItem: number; totalPage: number; items: ProviderServiceApi[] };
 

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProfile } from "@/apis/auth/queries";
-import type { AdminEntity } from "@/apis/admin/supported-api";
+import { textValue, type AdminEntity } from "@/apis/admin/supported-api";
 import { Avatar, getAvatarInitials } from "@/components/ui/avatar";
 import { useTopbarNotifications } from "@/hooks/use-topbar-notifications";
 import { useAuthStore } from "@/stores/auth-store";
@@ -56,6 +56,25 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
     router.refresh();
   }
 
+  function handleNotificationSelect(notification: AdminEntity) {
+    setOpenMenu(null);
+
+    if (role === "provider" && textValue(notification.type, "") === "CHAT_MESSAGE_NEW") {
+      const data =
+        notification.data && typeof notification.data === "object"
+          ? (notification.data as Record<string, unknown>)
+          : null;
+      const threadId = textValue(data?.threadId, "");
+      const chatUrl = threadId
+        ? `/provider/communication/chat?threadId=${encodeURIComponent(threadId)}`
+        : "/provider/communication/chat";
+      router.push(chatUrl);
+      return;
+    }
+
+    setSelectedNotification(notification);
+  }
+
   return (
     <header className="sticky top-0 z-[70] flex h-16 shrink-0 items-center justify-end border-b border-shell-border bg-shell-strong px-5 shadow-sm backdrop-blur dark:bg-shell-strong">
       <div className="relative">
@@ -88,10 +107,7 @@ export function DashboardTopbar({ role }: { role: DashboardTopbarRole }) {
             isLoading={notificationQuery.isLoading}
             groups={groupedNotifications}
             totalNotifications={totalNotifications}
-            onSelect={(notification) => {
-              setSelectedNotification(notification);
-              setOpenMenu(null);
-            }}
+            onSelect={handleNotificationSelect}
           />
         )}
       </div>

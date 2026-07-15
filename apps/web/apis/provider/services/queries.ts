@@ -67,6 +67,40 @@ export function useSaveProviderService() {
   });
 }
 
+function getUploadedImageUrls(payload: unknown): string[] {
+  if (Array.isArray(payload)) {
+    return payload.flatMap((item) =>
+      typeof item === "string"
+        ? [item]
+        : item && typeof item === "object" && "url" in item && typeof item.url === "string"
+          ? [item.url]
+          : [],
+    );
+  }
+  if (!payload || typeof payload !== "object") return [];
+  const record = payload as Record<string, unknown>;
+  for (const key of ["imageUrls", "urls", "images", "data"]) {
+    const urls = getUploadedImageUrls(record[key]);
+    if (urls.length) return urls;
+  }
+  return [];
+}
+
+export function useUploadProviderServiceImages() {
+  return useMutation({
+    mutationFn: async (files: File[]) => {
+      const formData = new FormData();
+      files.forEach((file) => formData.append("images", file));
+      const response = await api.post(API_ENDPOINTS.SERVICES.UPLOAD_IMAGES, formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      const urls = getUploadedImageUrls(response.data);
+      if (!urls.length) throw new Error("API upload ảnh không trả về URL.");
+      return urls;
+    },
+  });
+}
+
 export function useToggleProviderService() {
   const queryClient = useQueryClient();
   return useMutation({

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { CustomSelect } from "@/components/ui/custom-select";
+import { MoneyInput } from "@/components/ui/money-input";
 import { useToast } from "@/components/ui/feedback-provider";
 import { balanceAdjustmentSchema } from "../schema";
 import { useAdjustProviderBalance, useProviderBalances } from "../queries";
@@ -18,7 +19,7 @@ export function BalanceAdjustmentForm({
     defaultProviderId ?? providers[0]?.providerId ?? "",
   );
   const [direction, setDirection] = useState<"CREDIT" | "DEBIT">("CREDIT");
-  const [amount, setAmount] = useState("300000");
+  const [amount, setAmount] = useState(300000);
   const [reason, setReason] = useState("");
   const [error, setError] = useState("");
 
@@ -26,7 +27,7 @@ export function BalanceAdjustmentForm({
     const result = balanceAdjustmentSchema.safeParse({
       providerId,
       direction,
-      amount: Number(amount),
+      amount,
       ledgerType: "ADMIN_ADJUSTMENT",
       reason,
     });
@@ -84,11 +85,10 @@ export function BalanceAdjustmentForm({
         </label>
         <label className="space-y-2">
           <span className="text-sm font-semibold text-muted">Số tiền</span>
-          <input
+          <MoneyInput
             value={amount}
-            onChange={(event) => setAmount(event.target.value)}
+            onValueChange={setAmount}
             className="h-11 w-full rounded-xl border border-border-subtle bg-surface px-4 text-sm font-semibold text-foreground shadow-sm outline-none focus:ring-4 focus:ring-brand-soft"
-            inputMode="numeric"
           />
         </label>
         <label className="space-y-2 lg:col-span-2">
