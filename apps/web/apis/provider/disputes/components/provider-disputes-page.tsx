@@ -9,6 +9,7 @@ import {
   ProviderEmpty,
   ProviderError,
   ProviderLoading,
+  ProviderPagination,
   ProviderPageHeader,
   providerDate,
   providerMoney,
@@ -18,7 +19,9 @@ import { useProviderDisputes } from "@/apis/provider/disputes/queries";
 export function ProviderDisputesPage() {
   const router = useRouter();
   const [status, setStatus] = useState("");
-  const query = useProviderDisputes({ page: 1, pageSize: 200, status: status || undefined });
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const query = useProviderDisputes({ page, pageSize, status: status || undefined });
 
   if (query.isLoading) return <ProviderLoading />;
   if (query.isError) {
@@ -46,7 +49,10 @@ export function ProviderDisputesPage() {
               { value: "RESOLVED_CUSTOMER_WIN", label: "Khách hàng thắng" },
               { value: "CANCELLED", label: "Đã hủy" },
             ]}
-            onValueChange={setStatus}
+            onValueChange={(value) => {
+              setStatus(value);
+              setPage(1);
+            }}
           />
           <span className="w-full text-sm font-medium text-muted sm:ml-auto sm:w-auto">
             {query.isFetching ? "Đang tải..." : `${query.data?.pagination.totalItems ?? 0} tranh chấp`}
@@ -105,6 +111,16 @@ export function ProviderDisputesPage() {
           </table>
         </div>
       )}
+
+      {query.data?.pagination ? (
+        <ProviderPagination
+          page={query.data.pagination.page}
+          pageSize={query.data.pagination.pageSize}
+          totalItems={query.data.pagination.totalItems}
+          totalPages={query.data.pagination.totalPages}
+          onPageChange={setPage}
+        />
+      ) : null}
     </div>
   );
 }

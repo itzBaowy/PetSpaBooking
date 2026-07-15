@@ -121,22 +121,48 @@ export function ProviderPageHeader({
   description?: string;
   action?: ReactNode;
 }) {
+  const icon = getProviderPageIcon(title);
+
   return (
-    <header className="flex flex-col justify-between gap-4 rounded-2xl border border-border-subtle bg-surface p-5 shadow-sm sm:p-6 lg:flex-row lg:items-center">
-      <div>
-        <h1 className="text-2xl font-black text-foreground sm:text-3xl">{title}</h1>
-        {description ? <p className="mt-2 text-sm leading-6 text-muted">{description}</p> : null}
+    <header className="relative flex flex-col justify-between gap-5 overflow-hidden rounded-[28px] border border-emerald-100 bg-gradient-to-r from-white via-emerald-50 to-teal-50 p-5 shadow-sm sm:p-7 lg:flex-row lg:items-center">
+      <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+        <span className="absolute -right-10 -top-14 h-44 w-44 rounded-full bg-emerald-200/25" />
+        <span className="absolute right-8 top-2 rotate-12 text-6xl opacity-[0.07]">🐾</span>
+        <span className="absolute bottom-0 right-48 -rotate-12 text-4xl opacity-[0.07]">🐾</span>
       </div>
-      {action ? <div className="flex flex-wrap gap-2">{action}</div> : null}
+      <div className="relative z-10 flex items-center gap-4">
+        <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-emerald-600 text-2xl shadow-lg shadow-emerald-200" aria-hidden="true">
+          {icon}
+        </span>
+        <div>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-emerald-600">Trung tâm nhà cung cấp</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
+          {description ? <p className="mt-1.5 max-w-2xl text-sm leading-6 text-slate-600">{description}</p> : null}
+        </div>
+      </div>
+      {action ? <div className="relative z-10 flex flex-wrap gap-2">{action}</div> : null}
     </header>
   );
+}
+
+function getProviderPageIcon(title: string) {
+  const normalized = title.toLocaleLowerCase("vi-VN");
+  if (normalized.includes("lịch") || normalized.includes("đặt")) return "📅";
+  if (normalized.includes("dịch vụ")) return "✂️";
+  if (normalized.includes("ví") || normalized.includes("giao dịch")) return "💳";
+  if (normalized.includes("doanh thu") || normalized.includes("rút")) return "💰";
+  if (normalized.includes("tranh chấp")) return "🛡️";
+  if (normalized.includes("đánh giá")) return "⭐";
+  if (normalized.includes("xác minh")) return "✅";
+  if (normalized.includes("khách")) return "🐾";
+  return "🐶";
 }
 
 export function ProviderLoading() {
   return (
     <div className="grid gap-3" aria-label="Đang tải">
-      <div className="h-24 animate-pulse rounded-2xl bg-surface-muted" />
-      <div className="h-52 animate-pulse rounded-2xl bg-surface-muted" />
+      <div className="h-28 animate-pulse rounded-[28px] border border-emerald-100 bg-emerald-50" />
+      <div className="h-52 animate-pulse rounded-2xl border border-slate-100 bg-white" />
     </div>
   );
 }
@@ -165,16 +191,128 @@ export function ProviderError({
 
 export function ProviderEmpty({ text }: { text: string }) {
   return (
-    <div className="rounded-2xl border border-dashed border-border-muted bg-surface p-12 text-center text-sm text-muted">
-      {text}
+    <div className="rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/50 p-12 text-center text-sm text-slate-500">
+      <span className="mb-3 block text-4xl opacity-60" aria-hidden="true">🐾</span>
+      <span className="font-medium">{text}</span>
     </div>
   );
 }
 
-export function ProviderBadge({ value }: { value?: string | null }) {
+export function ProviderPagination({
+  page,
+  totalPages,
+  totalItems,
+  pageSize,
+  onPageChange,
+}: {
+  page: number;
+  totalPages: number;
+  totalItems?: number;
+  pageSize?: number;
+  onPageChange: (page: number) => void;
+}) {
+  if (totalPages <= 1) return null;
+
+  const visiblePages = getVisiblePages(page, totalPages);
+  const firstItem = pageSize && totalItems ? (page - 1) * pageSize + 1 : null;
+  const lastItem = firstItem && pageSize && totalItems ? Math.min(firstItem + pageSize - 1, totalItems) : null;
+
   return (
-    <span className="inline-flex rounded-full bg-brand-soft px-2.5 py-1 text-xs font-extrabold text-brand">
+    <nav className="flex flex-col items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm sm:flex-row" aria-label="Phân trang">
+      <p className="text-xs font-medium text-slate-500">
+        {firstItem && lastItem && totalItems
+          ? `Hiển thị ${firstItem}–${lastItem} trong ${totalItems} kết quả`
+          : `Trang ${page} / ${totalPages}`}
+      </p>
+      <div className="flex items-center gap-1.5">
+        <PaginationButton disabled={page <= 1} label="Trang trước" onClick={() => onPageChange(page - 1)}>
+          ←
+        </PaginationButton>
+        {visiblePages.map((item, index) =>
+          item === "ellipsis" ? (
+            <span className="grid h-9 w-7 place-items-center text-sm text-slate-400" key={`ellipsis-${index}`}>…</span>
+          ) : (
+            <PaginationButton active={item === page} key={item} label={`Trang ${item}`} onClick={() => onPageChange(item)}>
+              {item}
+            </PaginationButton>
+          ),
+        )}
+        <PaginationButton disabled={page >= totalPages} label="Trang sau" onClick={() => onPageChange(page + 1)}>
+          →
+        </PaginationButton>
+      </div>
+    </nav>
+  );
+}
+
+function PaginationButton({
+  active = false,
+  disabled = false,
+  label,
+  onClick,
+  children,
+}: {
+  active?: boolean;
+  disabled?: boolean;
+  label: string;
+  onClick: () => void;
+  children: ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      aria-label={label}
+      aria-current={active ? "page" : undefined}
+      disabled={disabled}
+      onClick={onClick}
+      className={`grid h-9 min-w-9 place-items-center rounded-lg px-2 text-sm font-bold transition disabled:cursor-not-allowed disabled:opacity-35 ${
+        active
+          ? "bg-emerald-600 text-white shadow-sm"
+          : "border border-slate-200 bg-white text-slate-600 hover:border-emerald-300 hover:bg-emerald-50 hover:text-emerald-700"
+      }`}
+    >
+      {children}
+    </button>
+  );
+}
+
+function getVisiblePages(page: number, totalPages: number): Array<number | "ellipsis"> {
+  if (totalPages <= 7) return Array.from({ length: totalPages }, (_, index) => index + 1);
+  if (page <= 4) return [1, 2, 3, 4, 5, "ellipsis", totalPages];
+  if (page >= totalPages - 3) return [1, "ellipsis", totalPages - 4, totalPages - 3, totalPages - 2, totalPages - 1, totalPages];
+  return [1, "ellipsis", page - 1, page, page + 1, "ellipsis", totalPages];
+}
+
+export function ProviderBadge({ value }: { value?: string | null }) {
+  const normalized = value?.trim().toUpperCase() ?? "UNKNOWN";
+  const tone = getProviderBadgeTone(normalized);
+
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border px-2.5 py-1 text-[11px] font-bold leading-none shadow-sm ${tone.badge}`}
+    >
+      <span className={`h-1.5 w-1.5 rounded-full ${tone.dot}`} aria-hidden="true" />
       {providerStatusText(value)}
     </span>
   );
+}
+
+function getProviderBadgeTone(value: string) {
+  if (["COMPLETED", "VERIFIED", "APPROVED", "SUCCESS", "PAID", "DEPOSITED"].includes(value)) {
+    return { badge: "border-emerald-200 bg-emerald-50 text-emerald-700", dot: "bg-emerald-500" };
+  }
+
+  if (["REJECTED", "CANCELLED", "CANCELED", "FAILED", "BANNED"].includes(value)) {
+    return { badge: "border-red-200 bg-red-50 text-red-700", dot: "bg-red-500" };
+  }
+
+  if (["PENDING", "PENDING_VERIFICATION", "PROCESSING", "UNPAID", "NOT_PAID"].includes(value)) {
+    return { badge: "border-amber-200 bg-amber-50 text-amber-700", dot: "bg-amber-500" };
+  }
+
+  if (["CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "ACTIVE"].includes(value)) {
+    return { badge: "border-sky-200 bg-sky-50 text-sky-700", dot: "bg-sky-500" };
+  }
+
+  return { badge: "border-slate-200 bg-slate-50 text-slate-600", dot: "bg-slate-400" };
 }

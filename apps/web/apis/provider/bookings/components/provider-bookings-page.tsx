@@ -9,6 +9,7 @@ import {
   ProviderEmpty,
   ProviderError,
   ProviderLoading,
+  ProviderPagination,
   ProviderPageHeader,
   providerDate,
   providerErrorText,
@@ -20,10 +21,22 @@ import type { ProviderBookingApi } from "@/types/provider-api";
 import { useProviderBookingAction, useProviderBookings } from "../queries";
 import { ProviderBookingReasonDialog, ProviderQrDialog } from "./provider-booking-dialogs";
 
-const statuses = ["PENDING", "CONFIRMED", "CHECKED_IN", "CHECKED_OUT", "COMPLETED", "CANCELLED", "REJECTED", "NO_ARRIVAL"];
+const statuses = [
+  "PENDING",
+  "CONFIRMED",
+  "CHECKED_IN",
+  "CHECKED_OUT",
+  "COMPLETED",
+  "CANCELLED",
+  "REJECTED",
+  "DISPUTE",
+  "NO_ARRIVAL",
+];
 
 export function ProviderBookingsPage() {
   const [status, setStatus] = useState("");
+  const [page, setPage] = useState(1);
+  const pageSize = 10;
   const [qrDialog, setQrDialog] = useState<{
     booking: ProviderBookingApi;
     action: "check-in" | "check-out";
@@ -32,7 +45,7 @@ export function ProviderBookingsPage() {
     booking: ProviderBookingApi;
     action: "reject" | "cancel";
   } | null>(null);
-  const query = useProviderBookings({ page: 1, pageSize: 50, status: status || undefined });
+  const query = useProviderBookings({ page, pageSize, status: status || undefined });
   const action = useProviderBookingAction();
   const { showToast } = useToast();
 
@@ -64,7 +77,10 @@ export function ProviderBookingsPage() {
       <select
         className="h-11 rounded-xl border border-border-muted bg-surface px-4 text-sm font-semibold"
         value={status}
-        onChange={(event) => setStatus(event.target.value)}
+        onChange={(event) => {
+          setStatus(event.target.value);
+          setPage(1);
+        }}
       >
         <option value="">Tất cả trạng thái</option>
         {statuses.map((value) => (
@@ -132,6 +148,16 @@ export function ProviderBookingsPage() {
           ))}
         </div>
       )}
+
+      {query.data?.pagination ? (
+        <ProviderPagination
+          page={query.data.pagination.page}
+          pageSize={query.data.pagination.pageSize}
+          totalItems={query.data.pagination.totalItems}
+          totalPages={query.data.pagination.totalPages}
+          onPageChange={setPage}
+        />
+      ) : null}
 
       {qrDialog ? (
         <ProviderQrDialog

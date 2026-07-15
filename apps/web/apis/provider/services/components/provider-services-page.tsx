@@ -14,6 +14,7 @@ import {
   ProviderEmpty,
   ProviderError,
   ProviderLoading,
+  ProviderPagination,
   ProviderPageHeader,
   providerDate,
   providerErrorText,
@@ -45,7 +46,9 @@ const emptyServiceDraft = {
 };
 
 export function ProviderServicesPage() {
-  const query = useProviderServices();
+  const [page, setPage] = useState(1);
+  const pageSize = 20;
+  const query = useProviderServices({ page, pageSize });
   const toggle = useToggleProviderService();
   const remove = useDeleteProviderService();
   const save = useSaveProviderService();
@@ -174,6 +177,16 @@ export function ProviderServicesPage() {
           </table>
         </div>
       )}
+
+      {query.data ? (
+        <ProviderPagination
+          page={query.data.page}
+          pageSize={query.data.pageSize}
+          totalItems={query.data.totalItem}
+          totalPages={query.data.totalPage}
+          onPageChange={setPage}
+        />
+      ) : null}
 
       {formOpen ? (
         <Dialog
