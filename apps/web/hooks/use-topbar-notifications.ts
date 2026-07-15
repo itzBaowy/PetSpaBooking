@@ -9,20 +9,6 @@ import { useNotificationSocket } from "@/hooks/use-notification-socket";
 import { useAuthStore } from "@/stores/auth-store";
 import type { DashboardTopbarRole, GroupedNotification, TopbarNotificationList } from "@/components/layout/topbar/types";
 
-function groupNotifications(items: AdminEntity[] = []): GroupedNotification[] {
-  const map = new Map<string, GroupedNotification>();
-  for (const item of items) {
-    const key = [textValue(item.type), textValue(item.title), textValue(item.message)].join("::");
-    const current = map.get(key);
-    if (current) {
-      current.count += 1;
-    } else {
-      map.set(key, { key, sample: item, count: 1 });
-    }
-  }
-  return Array.from(map.values());
-}
-
 function singleNotifications(items: AdminEntity[] = []): GroupedNotification[] {
   return items.map((item, index) => ({
     key: textValue(item.id, `${index}`),
@@ -70,18 +56,11 @@ export function useTopbarNotifications({
   });
 
   const scopedNotificationItems = query.data?.items ?? [];
-  const groupedNotifications =
-    role === "admin"
-      ? groupNotifications(scopedNotificationItems)
-      : singleNotifications(scopedNotificationItems);
-  const totalNotifications =
-    role === "admin"
-      ? groupedNotifications.length
-      : scopedNotificationItems.length;
+  const groupedNotifications = singleNotifications(scopedNotificationItems);
+  const totalNotifications = scopedNotificationItems.length;
   const unreadCount =
-    role === "admin"
-      ? totalNotifications
-      : scopedNotificationItems.filter((item) => !item.readAt).length;
+    query.data?.unreadCount ??
+    scopedNotificationItems.filter((item) => !item.readAt && item.isRead !== true).length;
 
   return {
     query,
