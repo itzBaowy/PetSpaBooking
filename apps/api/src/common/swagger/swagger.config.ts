@@ -550,6 +550,10 @@ export const swaggerOptions = {
               nullable: true,
               example: "Full bath, blow-dry, and nail trim",
             },
+            longDescription: {
+              type: "string",
+              example: "Detailed grooming package for small and medium pets",
+            },
             price: {
               type: "number",
               example: 150000,
@@ -576,6 +580,16 @@ export const swaggerOptions = {
               type: "array",
               items: { type: "string" },
               example: ["https://res.cloudinary.com/.../img1.jpg"],
+            },
+            targetPets: {
+              type: "array",
+              items: { type: "string" },
+              example: ["DOG", "CAT"],
+            },
+            benefits: {
+              type: "array",
+              items: { type: "string" },
+              example: ["Bath", "Dry", "Nail trim"],
             },
             isActive: {
               type: "boolean",
@@ -1129,12 +1143,16 @@ export const swaggerOptions = {
 
         CreateServiceRequest: {
           type: "object",
-          required: ["name", "price", "duration"],
+          required: ["name", "price", "duration", "imageUrls"],
           properties: {
             name: { type: "string", example: "Dog Grooming Basic" },
             description: {
               type: "string",
               example: "Full bath, blow-dry, and nail trim",
+            },
+            longDescription: {
+              type: "string",
+              example: "Detailed grooming package for small and medium pets",
             },
             price: {
               type: "number",
@@ -1165,7 +1183,20 @@ export const swaggerOptions = {
               type: "array",
               items: { type: "string" },
               example: ["https://res.cloudinary.com/.../img1.jpg"],
-              description: "Cloudinary URLs uploaded by frontend",
+              description:
+                "Required Cloudinary URLs. Upload files first via POST /api/services/images.",
+            },
+            targetPets: {
+              type: "array",
+              items: { type: "string" },
+              example: ["DOG", "CAT"],
+              description: "Target pet types for this service.",
+            },
+            benefits: {
+              type: "array",
+              items: { type: "string" },
+              example: ["Bath", "Dry", "Nail trim"],
+              description: "Short service benefits shown in service detail.",
             },
           },
         },
@@ -1177,6 +1208,10 @@ export const swaggerOptions = {
           properties: {
             name: { type: "string", example: "Dog Grooming Premium" },
             description: { type: "string", example: "Updated description" },
+            longDescription: {
+              type: "string",
+              example: "Updated detailed service description",
+            },
             price: { type: "number", minimum: 0, example: 200000 },
             duration: { type: "integer", minimum: 1, example: 90 },
             category: {
@@ -1195,6 +1230,18 @@ export const swaggerOptions = {
               type: "array",
               items: { type: "string" },
               example: ["https://res.cloudinary.com/.../new.jpg"],
+              description:
+                "Optional replacement list for service image URLs.",
+            },
+            targetPets: {
+              type: "array",
+              items: { type: "string" },
+              example: ["DOG"],
+            },
+            benefits: {
+              type: "array",
+              items: { type: "string" },
+              example: ["Premium shampoo", "Ear cleaning"],
             },
           },
         },

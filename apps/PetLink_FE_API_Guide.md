@@ -1045,6 +1045,103 @@ Rule:
 - `content` không được rỗng và tối đa 2000 ký tự.
 - REST/DB là nguồn sự thật; socket chỉ dùng realtime.
 
+## 5. Provider Service Management
+
+Provider token required. Provider phải `VERIFIED`, deposit `ACTIVE` và đủ số dư ký quỹ tối thiểu trước khi quản lý service.
+
+### 5.1 Upload ảnh service lấy URL
+
+```http
+POST /api/services/images
+Authorization: Bearer <provider_accessToken>
+Content-Type: multipart/form-data
+```
+
+FormData:
+
+```txt
+images=<file1>
+images=<file2>
+```
+
+Rule:
+
+- `images` là field upload riêng, tối đa 5 file/lần.
+- Chỉ hỗ trợ `image/jpeg`, `image/png`, `image/webp`.
+- Mỗi file tối đa 8 MB.
+- API trả `data.imageUrls`, FE dùng mảng URL này gắn vào payload tạo/cập nhật service.
+
+Response:
+
+```json
+{
+  "imageUrls": ["https://res.cloudinary.com/.../service-1.jpg"],
+  "images": [
+    {
+      "url": "https://res.cloudinary.com/.../service-1.jpg",
+      "publicId": "petlink/services/service-1"
+    }
+  ]
+}
+```
+
+Fetch mẫu upload:
+
+```ts
+const formData = new FormData();
+selectedFiles.forEach((file) => formData.append("images", file));
+
+const uploaded = await fetch(`${API_BASE_URL}/services/images`, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${providerToken}`,
+  },
+  body: formData,
+});
+```
+
+Không set `Content-Type` thủ công khi gửi `FormData`; để browser tự thêm boundary.
+
+### 5.2 Tạo service bằng `imageUrls`
+
+```http
+POST /api/services
+Authorization: Bearer <provider_accessToken>
+Content-Type: application/json
+```
+
+Body:
+
+```json
+{
+  "name": "Dog Grooming Basic",
+  "description": "Full bath, blow-dry, and nail trim",
+  "longDescription": "Detailed grooming package for small and medium pets",
+  "price": 150000,
+  "duration": 60,
+  "category": "GROOMING",
+  "targetPets": ["DOG", "CAT"],
+  "benefits": ["Bath", "Dry", "Nail trim"],
+  "imageUrls": ["https://res.cloudinary.com/.../service-1.jpg"]
+}
+```
+
+Rule:
+
+- `imageUrls` bắt buộc khi tạo service và không được rỗng.
+- FE vẫn render theo `imageUrls` như hiện tại.
+- Ảnh nên lấy từ `POST /api/services/images` để đảm bảo là URL Cloudinary của PetLink.
+
+### 5.3 Cập nhật service
+
+```http
+PUT /api/services/{id}
+Authorization: Bearer <provider_accessToken>
+Content-Type: application/json
+```
+
+Tất cả field đều optional. Nếu gửi `imageUrls`, backend sẽ replace danh sách ảnh hiện tại bằng danh sách mới. Muốn thêm ảnh thì FE upload ảnh mới qua `/api/services/images`, rồi tự merge với `imageUrls` cũ trước khi gọi update.
+
 ## 6. Admin APIs
 
 Admin token required.

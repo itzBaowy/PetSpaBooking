@@ -3,6 +3,14 @@ import { responseSuccess } from "../common/helpers/function.helper.ts";
 import { serviceService } from "../services/service.service.ts";
 
 export const serviceController = {
+    async uploadImages(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const result = await serviceService.uploadImages(req);
+            const response = responseSuccess(result, "Service images uploaded successfully", 201);
+            res.status(response.statusCode).json(response);
+        } catch (error) { next(error); }
+    },
+
     async create(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const result = await serviceService.create(req);

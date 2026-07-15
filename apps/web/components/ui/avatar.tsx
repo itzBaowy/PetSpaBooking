@@ -39,17 +39,24 @@ export function Avatar({
 }) {
   const getFullSrc = (url?: string | null) => {
     if (!url) return undefined;
+    const normalizedUrl = url.trim();
     if (
-      url.startsWith("http://") ||
-      url.startsWith("https://") ||
-      url.startsWith("data:") ||
-      url.startsWith("blob:")
+      !normalizedUrl ||
+      /(?:^|\/)default[-_]?avatar(?:\.[a-z0-9]+)?(?:\?.*)?$/i.test(normalizedUrl)
     ) {
-      return url;
+      return undefined;
+    }
+    if (
+      normalizedUrl.startsWith("http://") ||
+      normalizedUrl.startsWith("https://") ||
+      normalizedUrl.startsWith("data:") ||
+      normalizedUrl.startsWith("blob:")
+    ) {
+      return normalizedUrl;
     }
     const baseUrl = process.env.NEXT_PUBLIC_CLOUDINARY_URL || "";
     const cleanBase = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
-    const cleanPath = url.startsWith("/") ? url : `/${url}`;
+    const cleanPath = normalizedUrl.startsWith("/") ? normalizedUrl : `/${normalizedUrl}`;
     return `${cleanBase}${cleanPath}`;
   };
 
@@ -63,12 +70,16 @@ export function Avatar({
         className,
       )}
     >
+      {fallback}
       {fullSrc ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={fullSrc} alt={alt} className="h-full w-full rounded-[inherit] object-cover" />
-      ) : (
-        fallback
-      )}
+        <img
+          src={fullSrc}
+          alt={alt}
+          className="absolute inset-0 h-full w-full rounded-[inherit] object-cover"
+          onError={(event) => event.currentTarget.remove()}
+        />
+      ) : null}
 
       {editable && (
         <button

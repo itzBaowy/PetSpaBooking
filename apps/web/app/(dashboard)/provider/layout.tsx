@@ -7,7 +7,11 @@ export default function ProviderLayout({
 }) {
   return (
     <DashboardRoleGuard role="provider">
-      <ProviderAccessGuard>{children}</ProviderAccessGuard>
+      <ProviderAccessGuard>
+        <div className="min-h-full bg-gradient-to-b from-emerald-50/50 via-slate-50 to-white">
+          {children}
+        </div>
+      </ProviderAccessGuard>
     </DashboardRoleGuard>
   );
 }

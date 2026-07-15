@@ -10,6 +10,7 @@ import { buildQueryPrisma } from "../common/helpers/build-query-prisma.helper.ts
 import { notificationService } from "./notification.service.ts";
 import { adminAuditLogService } from "./admin-audit-log.service.ts";
 import { getSystemSettingValue } from "./system-setting.service.ts";
+import cloudinary from "../common/cloudinary/init.cloudinary.ts";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 const VALID_CATEGORIES = [
@@ -22,6 +23,10 @@ const VALID_CATEGORIES = [
 ] as const;
 
 type Category = (typeof VALID_CATEGORIES)[number];
+type ServiceImageUpload = {
+  publicId: string;
+  secureUrl: string;
+};
 
 // ─── Select ───────────────────────────────────────────────────────────────────
 const SERVICE_SELECT = {
@@ -29,10 +34,13 @@ const SERVICE_SELECT = {
   providerId: true,
   name: true,
   description: true,
+  longDescription: true,
   price: true,
   duration: true,
   category: true,
   imageUrls: true,
+  targetPets: true,
+  benefits: true,
   isActive: true,
   isHiddenByAdmin: true,
   createAt: true,
@@ -78,6 +86,143 @@ function getOptionalReason(value: unknown): string | null {
   return value.trim();
 }
 
+function parseOptionalString(value: unknown, fieldName: string) {
+  if (value === undefined || value === null) return undefined;
+  if (typeof value !== "string") {
+    throw new BadRequestException(`${fieldName} must be a string`);
+  }
+
+  return value.trim();
+}
+
+function parseRequiredString(value: unknown, fieldName: string) {
+  const parsed = parseOptionalString(value, fieldName);
+  if (!parsed) throw new BadRequestException(`${fieldName} is required`);
+  return parsed;
+}
+
+function parseOptionalNumber(value: unknown, fieldName: string) {
+  if (value === undefined || value === null || value === "") return undefined;
+  const numberValue = typeof value === "number" ? value : Number(value);
+
+  if (!Number.isFinite(numberValue)) {
+    throw new BadRequestException(`${fieldName} must be a valid number`);
+  }
+
+  return numberValue;
+}
+
+function parseStringArray(value: unknown, fieldName: string): string[] {
+  if (value === undefined || value === null || value === "") return [];
+
+  if (Array.isArray(value)) {
+    if (value.some((item) => typeof item !== "string")) {
+      throw new BadRequestException(`${fieldName} must be an array of strings`);
+    }
+
+    return value.map((item) => item.trim()).filter(Boolean);
+  }
+
+  if (typeof value !== "string") {
+    throw new BadRequestException(`${fieldName} must be an array of strings`);
+  }
+
+  const trimmed = value.trim();
+  if (!trimmed) return [];
+
+  try {
+    const parsed = JSON.parse(trimmed) as unknown;
+    if (Array.isArray(parsed)) {
+      if (parsed.some((item) => typeof item !== "string")) {
+        throw new BadRequestException(
+          `${fieldName} must be an array of strings`,
+        );
+      }
+
+      return parsed.map((item) => item.trim()).filter(Boolean);
+    }
+  } catch {
+    // Fallback below allows multipart forms to send comma-separated values.
+  }
+
+  return trimmed
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function assertImageUrls(imageUrls: string[]) {
+  if (imageUrls.length === 0) {
+    throw new BadRequestException(
+      "imageUrls must contain at least one uploaded service image URL",
+    );
+  }
+
+  for (const imageUrl of imageUrls) {
+    try {
+      const parsed = new URL(imageUrl);
+      if (!["http:", "https:"].includes(parsed.protocol)) {
+        throw new Error("Invalid protocol");
+      }
+    } catch {
+      throw new BadRequestException("imageUrls must contain valid URL strings");
+    }
+  }
+}
+
+function getServiceImageFiles(req: Request) {
+  return (Array.isArray(req.files) ? req.files : []) as Express.Multer.File[];
+}
+
+async function uploadServiceImageFiles(files: Express.Multer.File[]) {
+  const uploaded: ServiceImageUpload[] = [];
+
+  try {
+    for (const file of files) {
+      const result = await new Promise<ServiceImageUpload>(
+        (resolve, reject) => {
+          cloudinary.uploader
+            .upload_stream(
+              {
+                folder: "petlink/services",
+                resource_type: "image",
+                use_filename: true,
+                unique_filename: true,
+              },
+              (error, result) => {
+                if (error || !result) {
+                  reject(error ?? new Error("Cloudinary upload failed"));
+                  return;
+                }
+
+                resolve({
+                  publicId: result.public_id,
+                  secureUrl: result.secure_url,
+                });
+              },
+            )
+            .end(file.buffer);
+        },
+      );
+
+      uploaded.push(result);
+    }
+
+    return uploaded;
+  } catch (error) {
+    await deleteUploadedServiceImages(uploaded);
+    throw error;
+  }
+}
+
+async function deleteUploadedServiceImages(images: ServiceImageUpload[]) {
+  await Promise.allSettled(
+    images.map((image) =>
+      cloudinary.uploader.destroy(image.publicId, { resource_type: "image" }),
+    ),
+  );
+}
+
 async function getVerifiedProviderId(userId: string): Promise<string> {
   const minProviderDeposit = await getSystemSettingValue("minProviderDeposit");
   const provider = await prisma.providers.findUnique({
@@ -116,30 +261,55 @@ async function getVerifiedProviderId(userId: string): Promise<string> {
 
 // ─── Service ──────────────────────────────────────────────────────────────────
 export const serviceService = {
+  async uploadImages(req: Request) {
+    const userId = getRequesterId(req);
+    await getVerifiedProviderId(userId);
+
+    const files = getServiceImageFiles(req);
+    if (files.length === 0) {
+      throw new BadRequestException(
+        "At least one image is required. Use multipart field images.",
+      );
+    }
+
+    const uploadedImages = await uploadServiceImageFiles(files);
+
+    return {
+      imageUrls: uploadedImages.map((image) => image.secureUrl),
+      images: uploadedImages.map((image) => ({
+        url: image.secureUrl,
+        publicId: image.publicId,
+      })),
+    };
+  },
+
   // ── Provider tạo service mới ──────────────────────────────────────────────
   async create(req: Request) {
     const userId = getRequesterId(req);
     const providerId = await getVerifiedProviderId(userId);
 
-    const { name, description, price, duration, category, imageUrls } =
-      req.body as {
-        name: string;
-        description?: string;
-        price: number;
-        duration: number;
-        category?: string;
-        imageUrls?: string[];
-      };
+    const name = parseRequiredString(req.body?.name, "name");
+    const description = parseOptionalString(req.body?.description, "description");
+    const longDescription = parseOptionalString(
+      req.body?.longDescription,
+      "longDescription",
+    );
+    const price = parseOptionalNumber(req.body?.price, "price");
+    const duration = parseOptionalNumber(req.body?.duration, "duration");
+    const category = parseOptionalString(req.body?.category, "category");
+    const targetPets = parseStringArray(req.body?.targetPets, "targetPets");
+    const benefits = parseStringArray(req.body?.benefits, "benefits");
+    const existingImageUrls = parseStringArray(req.body?.imageUrls, "imageUrls");
 
-    if (!name) throw new BadRequestException("name is required");
-    if (price === undefined || price === null)
-      throw new BadRequestException("price is required");
-    if (!duration) throw new BadRequestException("duration is required");
+    if (price === undefined) throw new BadRequestException("price is required");
+    if (duration === undefined) {
+      throw new BadRequestException("duration is required");
+    }
 
-    if (typeof price !== "number" || price < 0) {
+    if (price < 0) {
       throw new BadRequestException("price must be a non-negative number");
     }
-    if (typeof duration !== "number" || duration <= 0) {
+    if (duration <= 0) {
       throw new BadRequestException(
         "duration must be a positive number (in minutes)",
       );
@@ -152,20 +322,23 @@ export const serviceService = {
       );
     }
 
-    const service = await prisma.services.create({
+    assertImageUrls(existingImageUrls);
+
+    return prisma.services.create({
       data: {
         providerId,
         name,
-        description: description ?? null,
+        description: description || null,
+        longDescription: longDescription || "",
         price,
         duration,
         category: resolvedCategory,
-        imageUrls: imageUrls ?? [],
+        imageUrls: existingImageUrls,
+        targetPets,
+        benefits,
       },
       select: SERVICE_SELECT,
     });
-
-    return service;
   },
 
   // ── Provider xem services của mình ───────────────────────────────────────
@@ -225,30 +398,46 @@ export const serviceService = {
       throw new ForbiddenException("You can only edit your own services");
     }
 
-    const { name, description, price, duration, category, imageUrls } =
-      req.body as {
-        name?: string;
-        description?: string;
-        price?: number;
-        duration?: number;
-        category?: string;
-        imageUrls?: string[];
-      };
+    const name = parseOptionalString(req.body?.name, "name");
+    const description = parseOptionalString(req.body?.description, "description");
+    const longDescription = parseOptionalString(
+      req.body?.longDescription,
+      "longDescription",
+    );
+    const price = parseOptionalNumber(req.body?.price, "price");
+    const duration = parseOptionalNumber(req.body?.duration, "duration");
+    const category = parseOptionalString(req.body?.category, "category");
+    const targetPets =
+      req.body?.targetPets === undefined
+        ? undefined
+        : parseStringArray(req.body?.targetPets, "targetPets");
+    const benefits =
+      req.body?.benefits === undefined
+        ? undefined
+        : parseStringArray(req.body?.benefits, "benefits");
+    const existingImageUrls =
+      req.body?.imageUrls === undefined
+        ? undefined
+        : parseStringArray(req.body?.imageUrls, "imageUrls");
 
     const updateData: Record<string, unknown> = {};
     if (name !== undefined) updateData.name = name;
     if (description !== undefined) updateData.description = description;
-    if (imageUrls !== undefined) updateData.imageUrls = imageUrls;
+    if (longDescription !== undefined) {
+      updateData.longDescription = longDescription;
+    }
+    if (targetPets !== undefined) updateData.targetPets = targetPets;
+    if (benefits !== undefined) updateData.benefits = benefits;
 
     if (price !== undefined) {
-      if (typeof price !== "number" || price < 0) {
+      if (price < 0) {
         throw new BadRequestException("price must be a non-negative number");
       }
       updateData.price = price;
     }
 
     if (duration !== undefined) {
-      if (typeof duration !== "number" || duration <= 0) {
+      if (duration <= 0) {
         throw new BadRequestException("duration must be a positive number");
       }
       updateData.duration = duration;
@@ -261,6 +450,11 @@ export const serviceService = {
         );
       }
       updateData.category = category;
+    }
+
+    if (existingImageUrls !== undefined) {
+      assertImageUrls(existingImageUrls);
+      updateData.imageUrls = existingImageUrls;
     }
 
     const updated = await prisma.services.update({
