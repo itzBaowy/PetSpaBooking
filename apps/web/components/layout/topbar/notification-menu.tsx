@@ -18,7 +18,9 @@ export function NotificationMenu({
   totalNotifications: number;
   onSelect: (notification: AdminEntity) => void;
 }) {
-  const [providerTab, setProviderTab] = useState<"chat" | "platform">("chat");
+  const [activeTab, setActiveTab] = useState<"chat" | "platform">(
+    role === "admin" ? "platform" : "chat",
+  );
   const chatGroups = groups.filter(
     (group) => textValue(group.sample.type, "") === "CHAT_MESSAGE_NEW",
   );
@@ -30,32 +32,32 @@ export function NotificationMenu({
     <div className="absolute right-3 top-12 z-[90] w-80 overflow-hidden rounded-xl border border-border-subtle bg-surface text-foreground shadow-xl">
       <div className="border-b border-border-subtle px-4 py-3">
         <p className="text-sm font-bold">Thông báo</p>
-        <p className="text-xs text-muted">{role === "admin" ? `${totalNotifications} thông báo đã gom nhóm` : `${totalNotifications} thông báo của bạn`}</p>
+        <p className="text-xs text-muted">{totalNotifications} thông báo của bạn</p>
       </div>
       <div className="max-h-80 overflow-y-auto p-1.5">
         {isLoading ? (
           <p className="p-4 text-sm text-muted">Đang tải thông báo...</p>
         ) : groups.length === 0 ? (
           <p className="p-4 text-sm text-muted">Chưa có thông báo.</p>
-        ) : role === "provider" ? (
+        ) : (
           <div>
             <div className="sticky top-0 z-10 mb-1 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1">
               <NotificationTab
-                active={providerTab === "chat"}
+                active={activeTab === "chat"}
                 count={chatGroups.length}
                 icon="💬"
                 label="Tin nhắn"
-                onClick={() => setProviderTab("chat")}
+                onClick={() => setActiveTab("chat")}
               />
               <NotificationTab
-                active={providerTab === "platform"}
+                active={activeTab === "platform"}
                 count={platformGroups.length}
                 icon="🔔"
                 label="Nền tảng"
-                onClick={() => setProviderTab("platform")}
+                onClick={() => setActiveTab("platform")}
               />
             </div>
-            {providerTab === "chat" ? (
+            {activeTab === "chat" ? (
               chatGroups.length > 0 ? (
                 <NotificationItems groups={chatGroups} onSelect={onSelect} />
               ) : (
@@ -67,8 +69,6 @@ export function NotificationMenu({
               <NotificationTabEmpty icon="🔔" text="Chưa có thông báo nền tảng." />
             )}
           </div>
-        ) : (
-          <NotificationItems groups={groups} onSelect={onSelect} />
         )}
       </div>
     </div>
