@@ -18,6 +18,111 @@ function idempotencyKey(suffix: string) {
   return `seed-${suffix}-${Date.now()}`;
 }
 
+const demoProviderBusinessNames = [
+  "Happy Paws Pet Spa",
+  "Momo Pet Grooming",
+  "Pawfect Care Studio",
+  "Little Tails Spa",
+  "Pet House Saigon",
+  "Fluffy Friends Care",
+  "Moonlight Pet Spa",
+  "Sunny Paws Grooming",
+  "Royal Pet Wellness",
+  "Coco Pet Beauty",
+  "Meow & Woof Spa",
+  "Bông Xù Pet Care",
+  "Sen Và Boss Spa",
+  "Poodle House Grooming",
+  "Golden Paws Center",
+  "Pet Garden Wellness",
+  "Lovely Tails Studio",
+  "Happy Boss Pet Spa",
+  "Milo Pet Care",
+  "Luna Grooming House",
+  "Tiny Paws Clinic",
+  "Pet Home District 1",
+  "Four Paws Wellness",
+  "Buddy Pet Grooming",
+  "Nắng Pet Spa",
+  "Cloudy Paws Care",
+  "The Pet Corner",
+  "Paws & Relax Saigon",
+  "Gentle Pet Studio",
+  "Pet Haven Wellness",
+] as const;
+
+const demoProviderImages = [
+  {
+    avatar: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    avatar: "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    avatar: "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    avatar: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1525253013412-55c1a69a5738?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    avatar: "https://images.unsplash.com/photo-1574158622682-e40e69881006?auto=format&fit=crop&w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1518791841217-8f162f1e1131?auto=format&fit=crop&w=1400&q=80",
+  },
+  {
+    avatar: "https://images.unsplash.com/photo-1495360010541-f48722b34f7d?auto=format&fit=crop&w=500&q=80",
+    cover: "https://images.unsplash.com/photo-1533743983669-94fa5c4338ec?auto=format&fit=crop&w=1400&q=80",
+  },
+] as const;
+
+const demoDistricts = [
+  "Quận 1",
+  "Quận 3",
+  "Quận 5",
+  "Quận 7",
+  "Quận 10",
+  "Quận Bình Thạnh",
+  "Quận Phú Nhuận",
+  "Thành phố Thủ Đức",
+] as const;
+
+const demoProviders = demoProviderBusinessNames.map((businessName, index) => {
+  const number = index + 1;
+  const serial = String(number).padStart(2, "0");
+  const image = demoProviderImages[index % demoProviderImages.length];
+  const district = demoDistricts[index % demoDistricts.length];
+
+  return {
+    userName: `provider_demo_${serial}`,
+    email: `provider.demo.${serial}@petlink.local`,
+    phone: `091100${String(number).padStart(4, "0")}`,
+    fullName: `Chủ spa ${businessName}`,
+    businessName,
+    slug: `petlink-demo-spa-${serial}`,
+    description: `${businessName} cung cấp dịch vụ chăm sóc, làm đẹp và tư vấn sức khỏe thú cưng tại ${district}.`,
+    avatarUrl: image.avatar,
+    coverImageUrl: image.cover,
+    address: `${20 + number} Nguyễn Văn Pet, ${district}, TP. Hồ Chí Minh`,
+    ward: `Phường ${((number - 1) % 15) + 1}`,
+    district,
+    province: "TP. Hồ Chí Minh",
+    lat: 10.73 + (index % 6) * 0.018,
+    lng: 106.63 + (index % 8) * 0.016,
+    taxCode: `0319${String(number).padStart(6, "0")}`,
+    identityNumber: `079206${String(number).padStart(6, "0")}`,
+    bankAccountNumber: `012345${String(number).padStart(4, "0")}`,
+    providerStatus: "VERIFIED",
+    depositStatus: "ACTIVE",
+    depositBalance: 300000 + (index % 5) * 100000,
+    walletBalance: 200000 + (index % 8) * 150000,
+    adminNote: null,
+    serviceImageUrls: [image.cover, image.avatar],
+  } as const;
+});
+
 // ─── Users ──────────────────────────────────────────────────────────────────
 
 const testUsers = [
@@ -29,6 +134,14 @@ const testUsers = [
   { userName: "customer_test",     email: "customer.test@petlink.local",        phone: "0900000003", fullName: "Customer Test",        role: "CUSTOMER", status: "ACTIVE" },
   { userName: "customer_johndoe",  email: "johndoe@gmail.com",                  phone: "0909999876", fullName: "John Doe",             role: "CUSTOMER", status: "ACTIVE" },
   { userName: "customer_banned",   email: "customer.banned@petlink.local",      phone: "0900000007", fullName: "Banned Customer",      role: "CUSTOMER", status: "BANNED" },
+  ...demoProviders.map((provider) => ({
+    userName: provider.userName,
+    email: provider.email,
+    phone: provider.phone,
+    fullName: provider.fullName,
+    role: "PROVIDER" as const,
+    status: "ACTIVE" as const,
+  })),
 ] as const;
 
 // ─── Provider definitions ────────────────────────────────────────────────────
@@ -74,6 +187,7 @@ const providerCases = [
     walletBalance: 0,
     adminNote: "Tài khoản nhà cung cấp đang tạm khóa để kiểm tra vi phạm.",
   },
+  ...demoProviders,
 ] as const;
 
 const systemSettings = [
@@ -178,12 +292,46 @@ async function main() {
 
   for (const pc of providerCases) {
     const user = usersByName.get(pc.userName)!;
+    const description = "description" in pc
+      ? pc.description
+      : "Hồ sơ dữ liệu mẫu dùng để kiểm tra luồng đăng nhập và hiển thị dịch vụ thật.";
+    const avatarUrl = "avatarUrl" in pc ? pc.avatarUrl : "/brand/petlink-logo.png";
+    const coverImageUrl = "coverImageUrl" in pc ? pc.coverImageUrl : "/brand/petlink-logo.png";
+    const phone = "phone" in pc ? pc.phone : "0901234567";
+    const email = "email" in pc ? pc.email : `${pc.slug}@petlink.local`;
+    const address = "address" in pc
+      ? pc.address
+      : "123 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh";
+    const ward = "ward" in pc ? pc.ward : "Phường Bến Nghé";
+    const district = "district" in pc ? pc.district : "Quận 1";
+    const province = "province" in pc ? pc.province : "TP. Hồ Chí Minh";
+    const lat = "lat" in pc ? pc.lat : 10.7769;
+    const lng = "lng" in pc ? pc.lng : 106.7009;
+    const taxCode = "taxCode" in pc ? pc.taxCode : "0312345678";
+    const identityNumber = "identityNumber" in pc ? pc.identityNumber : "079203001234";
+    const bankAccountNumber = "bankAccountNumber" in pc
+      ? pc.bankAccountNumber
+      : "0123456789";
+    const serviceImageUrls = "serviceImageUrls" in pc
+      ? [...pc.serviceImageUrls]
+      : ["/brand/petlink-logo.png"];
 
     const provider = await prisma.providers.upsert({
       where: { userId: user.id },
       update: {
         businessName: pc.businessName,
         slug: pc.slug,
+        description,
+        avatarUrl,
+        coverImageUrl,
+        phone,
+        email,
+        address,
+        ward,
+        district,
+        province,
+        lat,
+        lng,
         providerStatus: pc.providerStatus,
         depositStatus: pc.depositStatus,
         depositBalance: pc.depositBalance,
@@ -194,23 +342,23 @@ async function main() {
         userId: user.id,
         businessName: pc.businessName,
         slug: pc.slug,
-        description: "Hồ sơ dữ liệu mẫu dùng để kiểm tra luồng đăng nhập và hiển thị dịch vụ thật.",
-        avatarUrl: "/brand/petlink-logo.png",
-        coverImageUrl: "/brand/petlink-logo.png",
-        phone: "0901234567",
-        email: `${pc.slug}@petlink.local`,
-        address: "123 Nguyễn Trãi, Quận 1, TP. Hồ Chí Minh",
-        ward: "Phường Bến Nghé",
-        district: "Quận 1",
-        province: "TP. Hồ Chí Minh",
-        taxCode: "0312345678",
-        identityNumber: "079203001234",
+        description,
+        avatarUrl,
+        coverImageUrl,
+        phone,
+        email,
+        address,
+        ward,
+        district,
+        province,
+        taxCode,
+        identityNumber,
         identityFullName: pc.businessName,
         bankCode: "VCB",
-        bankAccountNumber: "0123456789",
+        bankAccountNumber,
         bankAccountName: pc.businessName.toUpperCase(),
-        lat: 10.7769,
-        lng: 106.7009,
+        lat,
+        lng,
         providerStatus: pc.providerStatus,
         depositStatus: pc.depositStatus,
         depositBalance: pc.depositBalance,
@@ -227,8 +375,8 @@ async function main() {
       : pc.providerStatus === "REJECTED" ? "REJECTED" : "PENDING";
     await prisma.provider_documents.createMany({
       data: [
-        { providerId: provider.id, documentType: "business_license", imageUrl: "/brand/petlink-logo.png", status: docStatus, adminNote: pc.adminNote },
-        { providerId: provider.id, documentType: "id_card_front",    imageUrl: "/brand/petlink-logo.png", status: docStatus, adminNote: pc.adminNote },
+        { providerId: provider.id, documentType: "business_license", imageUrl: coverImageUrl, status: docStatus, adminNote: pc.adminNote },
+        { providerId: provider.id, documentType: "id_card_front",    imageUrl: avatarUrl, status: docStatus, adminNote: pc.adminNote },
       ],
     });
 
@@ -244,7 +392,7 @@ async function main() {
           price: 250000,
           duration: 60,
           category: "GROOMING",
-          imageUrls: ["/brand/petlink-logo.png"],
+          imageUrls: serviceImageUrls,
           targetPets: ["DOG", "CAT"],
           benefits: ["Lông mượt thơm tho", "Sạch ve rận", "Tạo kiểu chuẩn spa"],
           isActive: true,
@@ -258,7 +406,7 @@ async function main() {
           price: 180000,
           duration: 45,
           category: "VETERINARY",
-          imageUrls: ["/brand/petlink-logo.png"],
+          imageUrls: [...serviceImageUrls].reverse(),
           targetPets: ["DOG", "CAT"],
           benefits: ["Tăng cường hệ miễn dịch", "Phòng bệnh truyền nhiễm", "Tư vấn miễn phí"],
           isActive: pc.providerStatus === "VERIFIED",
