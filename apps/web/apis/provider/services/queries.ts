@@ -11,7 +11,7 @@ const unwrap = <T,>(response: { data: ApiEnvelope<T> }) => response.data.data;
 
 export const serviceKeys = {
   all: ["provider", "services"] as const,
-  list: () => [...serviceKeys.all, "list"] as const,
+  list: (params?: object) => [...serviceKeys.all, "list", params] as const,
 };
 
 export type ProviderServicePayload = {
@@ -23,16 +23,16 @@ export type ProviderServicePayload = {
   imageUrls?: string[];
 };
 
-export function useProviderServices() {
+export function useProviderServices(params: { page: number; pageSize: number } = { page: 1, pageSize: 100 }) {
   return useQuery({
-    queryKey: serviceKeys.list(),
+    queryKey: serviceKeys.list(params),
     queryFn: async () => {
       type RawServicePage = Omit<ProviderServicePage, "items"> & {
         items: Array<Omit<ProviderServiceApi, "category"> & { category?: string | null }>;
       };
       const page = unwrap<RawServicePage>(
         await api.get(API_ENDPOINTS.SERVICES.MY, {
-          params: { page: 1, pageSize: 100 },
+          params,
         }),
       );
       return {

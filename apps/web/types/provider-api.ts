@@ -74,7 +74,7 @@ export type ProviderChatThreadApi = {
     service?: { name?: string };
     pet?: { name?: string };
   };
-  lastMessage?: ProviderChatMessageApi | null;
+  lastMessage?: string | ProviderChatMessageApi | null;
   messages?: ProviderChatMessageApi[];
 };
 export type ProviderChatMessageApi = {
