@@ -2,6 +2,7 @@ import express from "express";
 import { serviceController } from "../controllers/service.controller.ts";
 import { protect } from "../middlewares/protect.middleware.ts";
 import { checkRole } from "../middlewares/authorization.middleware.ts";
+import { uploadServiceImages } from "../common/multer/memory.multer.ts";
 
 const serviceRouter = express.Router();
 
@@ -95,7 +96,70 @@ serviceRouter.get("/public/:slug", serviceController.getByProviderSlug);
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-serviceRouter.post("/", protect, checkRole("PROVIDER"), serviceController.create);
+serviceRouter.post(
+  "/",
+  protect,
+  checkRole("PROVIDER"),
+  serviceController.create,
+);
+
+/**
+ * @swagger
+ * /api/services/images:
+ *   post:
+ *     summary: Upload service images to Cloudinary (Provider only)
+ *     tags: [Services]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - images
+ *             properties:
+ *               images:
+ *                 type: array
+ *                 items:
+ *                   type: string
+ *                   format: binary
+ *                 description: Upload 1-5 images. Allowed JPEG, PNG, WEBP. Max 8 MB/file.
+ *     responses:
+ *       201:
+ *         description: Uploaded image URLs
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         imageUrls:
+ *                           type: array
+ *                           items:
+ *                             type: string
+ *                         images:
+ *                           type: array
+ *                           items:
+ *                             type: object
+ *                             properties:
+ *                               url:
+ *                                 type: string
+ *                               publicId:
+ *                                 type: string
+ */
+serviceRouter.post(
+  "/images",
+  protect,
+  checkRole("PROVIDER"),
+  uploadServiceImages,
+  serviceController.uploadImages,
+);
 
 /**
  * @swagger
@@ -186,7 +250,12 @@ serviceRouter.get("/my", protect, checkRole("PROVIDER"), serviceController.getMy
  *             schema:
  *               $ref: '#/components/schemas/ErrorResponse'
  */
-serviceRouter.put("/:id", protect, checkRole("PROVIDER"), serviceController.update);
+serviceRouter.put(
+  "/:id",
+  protect,
+  checkRole("PROVIDER"),
+  serviceController.update,
+);
 
 /**
  * @swagger
