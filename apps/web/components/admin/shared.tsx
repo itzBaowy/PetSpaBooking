@@ -7,7 +7,6 @@ import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
-import { PageHeader } from "@/components/ui/page-header";
 import { DataTable, type DataTableColumn } from "@/components/ui/data-table";
 import { FinanceStatusPill } from "@/apis/admin/finance/components/status-pill";
 import { CustomSelect, type CustomSelectOption } from "@/components/ui/custom-select";
@@ -204,21 +203,43 @@ export function errorMessage(error: unknown) {
 
 export function LoadState({ error, retry }: { error: unknown; retry: () => void }) {
   return (
-    <div className="rounded-2xl border border-red-200 bg-red-50 p-6">
-      <p className="font-semibold text-red-800">{errorMessage(error)}</p>
-      <Button type="button" onClick={retry} className="mt-3 bg-red-700 hover:bg-red-800">Thử lại</Button>
+    <div className="mx-auto mt-10 max-w-2xl rounded-3xl border border-red-200 bg-gradient-to-br from-white to-red-50 p-8 text-center shadow-sm">
+      <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-red-100 text-xl font-black text-red-600">!</div>
+      <p className="mt-4 font-semibold leading-6 text-red-800">{errorMessage(error)}</p>
+      <Button type="button" onClick={retry} className="mt-5 bg-red-700 hover:bg-red-800">Thử lại</Button>
     </div>
   );
 }
 
 export function PageTitle({ title, description, actions }: { title: string; description: string; actions?: ReactNode }) {
-  return <PageHeader eyebrow="Quản trị PetLink" title={title} description={description} actions={actions} />;
+  return (
+    <header className="relative overflow-hidden rounded-[28px] border border-emerald-200/70 bg-gradient-to-br from-emerald-950 via-emerald-800 to-emerald-500 px-5 py-6 text-white shadow-[0_18px_45px_-28px_rgba(5,150,105,0.75)] sm:px-7 sm:py-7">
+      <div className="pointer-events-none absolute -right-10 -top-16 h-52 w-52 rounded-full border-[34px] border-white/10" />
+      <div className="pointer-events-none absolute bottom-4 right-40 text-5xl text-white/10">✦</div>
+      <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+        <div className="flex min-w-0 items-start gap-4">
+          <div className="mt-0.5 grid h-12 w-12 shrink-0 place-items-center rounded-2xl border border-white/25 bg-white/15 shadow-lg backdrop-blur">
+            <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" aria-hidden="true">
+              <path d="M12 3 4.5 6.2v5.2c0 4.5 3 7.8 7.5 9.6 4.5-1.8 7.5-5.1 7.5-9.6V6.2L12 3Z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-extrabold uppercase tracking-[0.22em] text-emerald-100">Trung tâm quản trị PetLink</p>
+            <h1 className="mt-2 break-words text-2xl font-black tracking-tight sm:text-3xl">{title}</h1>
+            <p className="mt-2 max-w-3xl text-sm leading-6 text-emerald-50/85">{description}</p>
+          </div>
+        </div>
+        {actions ? <div className="flex w-full flex-wrap gap-2 lg:w-auto [&_button]:shadow-lg">{actions}</div> : null}
+      </div>
+    </header>
+  );
 }
 
 export function Pager({ data, setPage, setPageSize }: { data?: AdminList; setPage: (page: number) => void; setPageSize?: (pageSize: number) => void }) {
   if (!data) return null;
   return (
-    <div className="rounded-2xl border border-border-subtle bg-surface px-4 py-3">
+    <div className="rounded-2xl border border-border-subtle bg-surface px-4 py-3 shadow-sm">
       <Pagination
         page={data.pagination.page}
         totalPages={Math.max(data.pagination.totalPages, 1)}
@@ -271,7 +292,7 @@ export function useAdminDetail(key: string, url: string | null) {
 }
 
 export const selectClass = "rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm";
-export const inputClass = "h-11 min-w-0 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm sm:w-auto";
+export const inputClass = "h-11 min-w-0 w-full rounded-xl border border-border-muted bg-surface px-3.5 py-2 text-sm font-medium shadow-sm outline-none transition focus:border-brand focus:ring-4 focus:ring-brand-soft sm:w-auto";
 
 export function FilterSelect({ value, options, onChange, className }: { value: string; options: CustomSelectOption[]; onChange: (value: string) => void; className?: string }) {
   return <CustomSelect className={className} value={value} options={options} onValueChange={onChange} />;
@@ -321,7 +342,7 @@ export function EntityTable({
   actions?: (item: AdminEntity) => ActionMenuItem[];
 }) {
   const router = useRouter();
-  if (loading) return <p className="rounded-2xl border bg-white p-6">Đang tải dữ liệu...</p>;
+  if (loading) return <div className="rounded-3xl border border-border-subtle bg-surface p-8 text-center shadow-sm"><span className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-brand-soft border-t-brand" /><p className="mt-3 text-sm font-semibold text-muted">Đang tải dữ liệu...</p></div>;
 
   const statusKeys = new Set(["status", "providerStatus", "depositStatus", "paymentStatus", "balanceType", "type", "action", "category", "isActive", "isHiddenByAdmin", "isRead"]);
   const tableColumns: Array<DataTableColumn<AdminEntity>> = columns.map((key) => ({

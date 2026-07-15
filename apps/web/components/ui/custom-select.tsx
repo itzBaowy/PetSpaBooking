@@ -108,7 +108,10 @@ export function CustomSelect({
           updateMenuPosition();
           setIsOpen((current) => !current);
         }}
-        className="flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-border-subtle bg-surface px-4 text-left text-sm font-semibold text-foreground shadow-sm transition-colors hover:border-border-muted focus:outline-none focus:ring-4 focus:ring-brand-soft"
+        className={cn(
+          "flex h-11 w-full min-w-0 items-center justify-between gap-3 rounded-xl border bg-surface px-4 text-left text-sm font-semibold text-foreground shadow-sm transition-all hover:border-brand/60 focus:outline-none focus:ring-4 focus:ring-brand-soft",
+          isOpen ? "border-brand bg-brand-soft/35" : "border-border-subtle",
+        )}
       >
         <span className={cn("min-w-0 flex-1 truncate", currentValue ? "text-foreground" : "text-subtle")}>{selectedLabel}</span>
         <svg
@@ -140,7 +143,7 @@ export function CustomSelect({
             width: menuPosition.width,
             maxHeight: menuPosition.maxHeight,
           }}
-          className="fixed z-[90] overflow-auto rounded-xl border border-border-subtle bg-surface p-1.5 shadow-xl shadow-gray-900/10"
+          className="fixed z-[90] overflow-auto rounded-2xl border border-emerald-100 bg-surface p-1.5 shadow-2xl shadow-emerald-950/10"
         >
           {normalizedOptions.map((option) => {
             const isSelected = option.value === currentValue;
@@ -162,13 +165,18 @@ export function CustomSelect({
                   selectOption(option.value);
                 }}
                 className={cn(
-                  "block w-full rounded-lg px-3 py-2.5 text-left text-sm font-semibold transition-colors",
+                  "flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition-colors",
                   isSelected
-                    ? "bg-brand text-brand-foreground"
-                    : "text-muted hover:bg-surface-muted hover:text-foreground",
+                    ? "bg-brand-soft text-brand"
+                    : "text-muted hover:bg-emerald-50 hover:text-emerald-800",
                 )}
               >
-                {option.label}
+                <span className="truncate">{option.label}</span>
+                {isSelected ? (
+                  <svg className="h-4 w-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" aria-hidden="true">
+                    <path d="m5 12 4 4L19 6" />
+                  </svg>
+                ) : null}
               </button>
             );
           })}

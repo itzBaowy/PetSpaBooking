@@ -6,6 +6,7 @@ import { API_ENDPOINTS } from "@/constants/api-endpoints";
 import { api } from "@/lib/axios";
 import type { ApiResponse } from "@/types/api";
 import { useNotificationSocket } from "@/hooks/use-notification-socket";
+import { useAuthStore } from "@/stores/auth-store";
 import type { DashboardTopbarRole, GroupedNotification, TopbarNotificationList } from "@/components/layout/topbar/types";
 
 function groupNotifications(items: AdminEntity[] = []): GroupedNotification[] {
@@ -37,6 +38,7 @@ export function useTopbarNotifications({
   role: DashboardTopbarRole;
   userId?: string;
 }) {
+  const accessToken = useAuthStore((state) => state.accessToken);
   const notificationEndpoint =
     role === "admin"
       ? API_ENDPOINTS.ADMIN.NOTIFICATIONS.LIST
@@ -58,10 +60,11 @@ export function useTopbarNotifications({
         unreadCount: typeof rawData.unreadCount === "number" ? rawData.unreadCount : undefined,
       };
     },
+    enabled: Boolean(accessToken && userId),
   });
 
   useNotificationSocket({
-    enabled: Boolean(userId),
+    enabled: Boolean(accessToken && userId),
     role,
     userId,
   });

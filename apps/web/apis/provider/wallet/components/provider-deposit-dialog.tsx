@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { useToast } from "@/components/ui/feedback-provider";
 import {
   providerErrorText,
@@ -50,13 +50,12 @@ export function ProviderDepositDialog({
 
         <label className="block text-sm font-bold">
           Số tiền nạp
-          <Input
+          <MoneyInput
             className="mt-2"
             min={DEFAULT_DEPOSIT_AMOUNT}
             step={10000}
-            type="number"
             value={amount}
-            onChange={(event) => setAmount(Number(event.target.value))}
+            onValueChange={setAmount}
           />
         </label>
 

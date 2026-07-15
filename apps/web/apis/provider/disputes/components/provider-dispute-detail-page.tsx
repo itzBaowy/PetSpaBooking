@@ -42,7 +42,8 @@ export function ProviderDisputeDetailPage({ disputeId }: { disputeId: string }) 
 
   const dispute = query.data;
   const booking = dispute.booking;
-  const canRespond = dispute.status === "PENDING";
+  const hasResponded = Boolean(dispute.providerResponse?.trim() || dispute.providerRespondedAt);
+  const canRespond = dispute.status === "PENDING" && !hasResponded;
 
   const selectEvidenceFiles = (files: FileList | null) => {
     if (!files) return;
@@ -70,6 +71,8 @@ export function ProviderDisputeDetailPage({ disputeId }: { disputeId: string }) 
   };
 
   const submit = () => {
+    if (!canRespond || respond.isPending) return;
+
     const cleanResponse = response.trim();
 
     if (!cleanResponse) {
@@ -126,33 +129,46 @@ export function ProviderDisputeDetailPage({ disputeId }: { disputeId: string }) 
             <EvidenceList title="Bằng chứng provider đã gửi" items={dispute.providerEvidence} />
           </Panel>
 
-          {canRespond ? (
+          {dispute.status === "PENDING" ? (
             <Panel title="Gửi phản hồi">
-              <label className="block text-sm font-bold">
-                Nội dung phản hồi *
-                <Textarea
-                  className="mt-2 min-h-36"
-                  value={response}
-                  onChange={(event) => {
-                    setResponse(event.target.value);
-                    setFormError("");
-                  }}
-                  placeholder="Giải thích quá trình cung cấp dịch vụ và phản hồi khiếu nại..."
-                />
-              </label>
-              <EvidenceFileEditor
-                files={evidenceFiles}
-                onSelect={selectEvidenceFiles}
-                onRemove={(index) =>
-                  setEvidenceFiles((current) =>
-                    current.filter((_, currentIndex) => currentIndex !== index),
-                  )
-                }
-              />
-              {formError ? <p className="text-sm font-bold text-danger">{formError}</p> : null}
-              <Button disabled={respond.isPending} onClick={submit}>
-                {respond.isPending ? "Đang gửi..." : "Gửi phản hồi"}
-              </Button>
+              {canRespond ? (
+                <>
+                  <label className="block text-sm font-bold">
+                    Nội dung phản hồi *
+                    <Textarea
+                      className="mt-2 min-h-36"
+                      value={response}
+                      onChange={(event) => {
+                        setResponse(event.target.value);
+                        setFormError("");
+                      }}
+                      placeholder="Giải thích quá trình cung cấp dịch vụ và phản hồi khiếu nại..."
+                    />
+                  </label>
+                  <EvidenceFileEditor
+                    files={evidenceFiles}
+                    onSelect={selectEvidenceFiles}
+                    onRemove={(index) =>
+                      setEvidenceFiles((current) =>
+                        current.filter((_, currentIndex) => currentIndex !== index),
+                      )
+                    }
+                  />
+                  {formError ? <p className="text-sm font-bold text-danger">{formError}</p> : null}
+                  <Button disabled={respond.isPending} onClick={submit}>
+                    {respond.isPending ? "Đang gửi..." : "Gửi phản hồi"}
+                  </Button>
+                </>
+              ) : (
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
+                  <p className="text-sm font-bold text-emerald-900">
+                    Phản hồi đã được gửi thành công. Mỗi tranh chấp chỉ được phản hồi một lần.
+                  </p>
+                  <Button className="mt-3" disabled>
+                    Đã gửi phản hồi
+                  </Button>
+                </div>
+              )}
             </Panel>
           ) : null}
         </div>

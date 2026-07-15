@@ -1,5 +1,5 @@
-const DEFAULT_CURRENCY = "USD";
-const DEFAULT_LOCALE = "en-US";
+const DEFAULT_CURRENCY = "VND";
+const DEFAULT_LOCALE = "vi-VN";
 
 export function formatCurrency(
   amount: number,

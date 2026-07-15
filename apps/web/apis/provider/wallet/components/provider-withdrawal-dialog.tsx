@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
 import { useToast } from "@/components/ui/feedback-provider";
 import {
   providerErrorText,
@@ -36,12 +37,11 @@ export function ProviderWithdrawalDialog({
         </div>
         <label className="block text-sm font-bold">
           Số tiền
-          <Input
+          <MoneyInput
             className="mt-2"
-            type="number"
             min={100000}
             value={amount}
-            onChange={(event) => setAmount(Number(event.target.value))}
+            onValueChange={setAmount}
           />
         </label>
         {invalid ? (

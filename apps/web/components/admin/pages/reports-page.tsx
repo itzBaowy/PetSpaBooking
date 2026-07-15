@@ -112,35 +112,35 @@ export function AdminReportsPage() {
     <div className="space-y-6">
       <PageTitle title="Báo cáo hệ thống" description="Theo dõi doanh thu, hiệu suất và đối soát tài chính." />
 
-      <div className="rounded-xl border border-border-subtle bg-surface p-3 shadow-sm">
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1">
-            <span className="shrink-0 text-xs font-semibold text-muted">Từ:</span>
+      <div className="rounded-2xl border border-border-subtle bg-surface p-4 shadow-sm sm:p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end">
+          <label className="min-w-0 flex-1 sm:max-w-xs">
+            <span className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-muted">Từ ngày</span>
             <input
               title="Từ ngày"
               type="datetime-local"
-              className={inputClass}
+              className={`${inputClass} sm:w-full`}
               value={from}
               onChange={(event) => {
                 setFrom(event.target.value);
                 setProviderPage(1);
               }}
             />
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="shrink-0 text-xs font-semibold text-muted">Đến:</span>
+          </label>
+          <label className="min-w-0 flex-1 sm:max-w-xs">
+            <span className="mb-1.5 block text-xs font-extrabold uppercase tracking-wider text-muted">Đến ngày</span>
             <input
               title="Đến ngày"
               type="datetime-local"
-              className={inputClass}
+              className={`${inputClass} sm:w-full`}
               value={to}
               onChange={(event) => {
                 setTo(event.target.value);
                 setProviderPage(1);
               }}
             />
-          </div>
-          <span className="w-full text-sm font-medium text-muted sm:ml-auto sm:w-auto">
+          </label>
+          <span className="rounded-xl bg-emerald-50 px-3 py-2.5 text-sm font-bold text-emerald-700 sm:ml-auto">
             {providersQuery.isFetching || revenueQuery.isFetching || disputeQuery.isFetching ? "Đang tải..." : `${providersQuery.data?.pagination.totalItems ?? 0} nhà cung cấp`}
           </span>
         </div>
