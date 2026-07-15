@@ -75,7 +75,6 @@ export type ProviderChatThreadApi = {
     pet?: { name?: string };
   };
   lastMessage?: ProviderChatMessageApi | null;
-  messages?: ProviderChatMessageApi[];
 };
 export type ProviderChatMessageApi = {
   id: string;
