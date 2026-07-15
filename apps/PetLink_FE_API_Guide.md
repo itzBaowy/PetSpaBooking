@@ -26,6 +26,17 @@ provider_test
 admin_test
 ```
 
+Seed còn tạo thêm 30 provider đã xác minh, có ký quỹ active, avatar, cover và ảnh dịch vụ để FE kiểm tra danh sách/tìm kiếm:
+
+```txt
+provider_demo_01
+provider_demo_02
+...
+provider_demo_30
+```
+
+Các tài khoản demo provider này đều dùng password `Test@123`.
+
 Ghi chú cho dev: từ thời điểm này, mỗi tính năng API mới nên được cập nhật vào file này trong cùng lượt triển khai để FE có thể đọc luồng và fetch đúng contract.
 
 ## 1. Response Và Auth
