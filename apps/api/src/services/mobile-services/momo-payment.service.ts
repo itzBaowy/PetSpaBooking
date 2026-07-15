@@ -12,6 +12,7 @@ import { notificationService } from "../notification.service.ts";
 import { socketService } from "../socket.service.ts";
 import { commissionRecordService } from "../commission-record.service.ts";
 import { getSystemSettingValue } from "../system-setting.service.ts";
+import { emailService } from "../email.service.ts";
 
 const MOMO_PROVIDER = "MOMO";
 const MOMO_PAYMENT_TYPE_BOOKING = "BOOKING";
@@ -115,6 +116,12 @@ function getDepositStatusAfterTopUp(
   minProviderDeposit: number,
 ) {
   return depositBalance >= minProviderDeposit ? "ACTIVE" : "LOW_BALANCE";
+}
+
+function runEmailSideEffect(promise: Promise<unknown>) {
+  promise.catch((error) => {
+    console.error("[email] MoMo payment email side effect failed:", error);
+  });
 }
 
 function hmacSha256(rawSignature: string, secretKey: string) {
@@ -380,6 +387,7 @@ async function applyPaymentResult(
   const isSuccess = resultCode === 0;
   const now = new Date();
   const markNonSuccessFailed = options.markNonSuccessFailed ?? true;
+  let didClaimSuccess = false;
 
   const updatedPayment = await prisma.$transaction(async (tx) => {
     const claimed = await tx.payment_transactions.updateMany({
@@ -405,7 +413,7 @@ async function applyPaymentResult(
       throw new NotFoundException("Payment transaction not found");
     }
 
-    const didClaimSuccess = isSuccess && claimed.count > 0;
+    didClaimSuccess = isSuccess && claimed.count > 0;
 
     if (didClaimSuccess && payment.type === MOMO_PAYMENT_TYPE_BOOKING && payment.bookingId) {
       await tx.bookings.updateMany({
@@ -468,7 +476,11 @@ async function applyPaymentResult(
     return updated;
   });
 
-  if (isSuccess && payment.type === MOMO_PAYMENT_TYPE_BOOKING && payment.bookingId) {
+  if (
+    didClaimSuccess &&
+    payment.type === MOMO_PAYMENT_TYPE_BOOKING &&
+    payment.bookingId
+  ) {
     const booking = await prisma.bookings.findUnique({
       where: { id: payment.bookingId },
       include: {
@@ -526,10 +538,27 @@ async function applyPaymentResult(
           },
         },
       ]);
+
+      runEmailSideEffect(
+        emailService.safeSendBookingPaymentSuccessToCustomer({
+          recipient: {
+            email: booking.customer.users.email,
+            name: booking.customer.users.fullName,
+          },
+          amount: payment.amount,
+          orderId,
+          transId,
+          bookingId: booking.id,
+          providerName: booking.provider.businessName,
+        }),
+      );
     }
   }
 
-  if (isSuccess && payment.type === MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT) {
+  if (
+    didClaimSuccess &&
+    payment.type === MOMO_PAYMENT_TYPE_PROVIDER_DEPOSIT
+  ) {
     const provider = await prisma.providers.findUnique({
       where: { id: payment.providerId },
       select: {
@@ -542,6 +571,13 @@ async function applyPaymentResult(
     });
 
     if (provider) {
+      const providerUser = await prisma.users.findUnique({
+        where: { id: provider.userId },
+        select: {
+          email: true,
+          fullName: true,
+        },
+      });
       const socketPayload = {
         providerId: provider.id,
         paymentStatus: updatedPayment.status,
@@ -567,6 +603,19 @@ async function applyPaymentResult(
           depositStatus: provider.depositStatus,
         },
       });
+
+      runEmailSideEffect(
+        emailService.safeSendProviderDepositPaymentSuccess({
+          recipient: {
+            email: providerUser?.email ?? null,
+            name: provider.businessName ?? providerUser?.fullName ?? null,
+          },
+          amount: payment.amount,
+          orderId,
+          transId,
+          providerName: provider.businessName,
+        }),
+      );
     }
   }
 

@@ -50,6 +50,33 @@ Các customer demo cũng dùng password `Test@123`. Mỗi provider đang `VERIFI
 
 Ghi chú cho dev: từ thời điểm này, mỗi tính năng API mới nên được cập nhật vào file này trong cùng lượt triển khai để FE có thể đọc luồng và fetch đúng contract.
 
+## Email SendGrid
+
+Backend có tích hợp gửi email qua SendGrid bằng package `@sendgrid/mail`. FE không cần gọi API riêng để gửi email; email được gửi như side-effect sau khi nghiệp vụ chính thành công. Nếu SendGrid lỗi, API vẫn trả response thành công cho nghiệp vụ chính và backend chỉ log lỗi.
+
+ENV backend cần có:
+
+```env
+SENDGRID_API_KEY=<sendgrid-api-key>
+SENDGRID_FROM_EMAIL=no-reply@petlink.io.vn
+SENDGRID_FROM_NAME=PetLink
+```
+
+Backend cũng fallback đọc `SENDGIRD_API_KEY` nếu env bị gõ nhầm tên, nhưng nên dùng chuẩn `SENDGRID_API_KEY`.
+
+Email tự động hiện có:
+
+- Customer tạo booking thành công: gửi cho customer, status `PENDING`, kèm provider/service/thời gian/số tiền.
+- Customer tạo booking thành công: gửi cho provider, báo có booking mới cần confirm/reject.
+- Provider confirm booking: gửi cho customer.
+- Provider reject booking: gửi cho customer, kèm lý do nếu có.
+- Customer cancel booking: gửi cho provider, kèm lý do nếu có.
+- Thanh toán MoMo booking thành công: gửi cho customer.
+- Nạp ký quỹ provider qua MoMo thành công: gửi cho provider.
+- Booking auto/manual complete: gửi cho customer, nhắc có thể đánh giá provider.
+
+Lưu ý: Email chỉ nên dùng để thông báo quan trọng. Chat realtime, QR check-in/check-out và các notification tần suất cao vẫn ưu tiên socket/push/in-app notification.
+
 ## 1. Response Và Auth
 
 Response success chuẩn:
