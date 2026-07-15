@@ -480,7 +480,7 @@ export const userService = {
         });
 
         const oldPublicId = getCloudinaryPublicId(currentUser.avatar);
-        if (oldPublicId) {
+        if (oldPublicId && oldPublicId !== "public/images/default_avatar") {
             cloudinary.uploader.destroy(oldPublicId).catch((err: unknown) => {
                 console.error("[avatarCloud] Failed to destroy old Cloudinary asset:", err);
             });
