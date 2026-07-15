@@ -34,3 +34,38 @@ export function useUpdateProviderBusinessProfile() {
     },
   });
 }
+
+export type ProviderProfileImageUploadPayload = {
+  avatar?: File | null;
+  cover?: File | null;
+};
+
+export type ProviderProfileImageUploadResult = {
+  provider: ProviderInfo;
+  avatarUrl: string | null;
+  coverImageUrl: string | null;
+};
+
+export function useUploadProviderProfileImages() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ avatar, cover }: ProviderProfileImageUploadPayload) => {
+      if (!avatar && !cover) {
+        throw new Error("Vui lòng chọn ít nhất một ảnh.");
+      }
+
+      const formData = new FormData();
+      if (avatar) formData.append("avatar", avatar);
+      if (cover) formData.append("cover", cover);
+
+      return unwrap<ProviderProfileImageUploadResult>(
+        await api.post(API_ENDPOINTS.PROVIDERS.PROFILE_IMAGES, formData, {
+          headers: { "Content-Type": "multipart/form-data" },
+        }),
+      );
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(businessProfileKeys.detail(), data.provider);
+    },
+  });
+}
