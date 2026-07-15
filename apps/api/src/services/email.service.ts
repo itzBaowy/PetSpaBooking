@@ -105,7 +105,7 @@ function bookingDetailsHtml(input: BookingEmailInput) {
     <ul>
       <li><strong>Mã booking:</strong> ${escapeHtml(input.bookingId)}</li>
       <li><strong>Nhà cung cấp:</strong> ${escapeHtml(getProviderName(input))}</li>
-      <li><strong>Dịch vụ:</strong> ${escapeHtml(input.serviceName || "ịch vụ PetLink")}</li>
+      <li><strong>Dịch vụ:</strong> ${escapeHtml(input.serviceName || "Dịch vụ PetLink")}</li>
       <li><strong>Thời gian:</strong> ${escapeHtml(formatDateTime(input.appointmentStart))}</li>
       <li><strong>Thành tiền:</strong> ${escapeHtml(formatMoney(input.totalAmount))}</li>
       <li><strong>Thanh toán:</strong> ${escapeHtml(input.paymentMethod || "CASH")}</li>
@@ -117,7 +117,7 @@ function bookingDetailsText(input: BookingEmailInput) {
   return [
     `Mã booking: ${input.bookingId}`,
     `Nhà cung cấp: ${getProviderName(input)}`,
-    `Dịch vụ: ${input.serviceName || "ịch vụ PetLink"}`,
+    `Dịch vụ: ${input.serviceName || "Dịch vụ PetLink"}`,
     `Thời gian: ${formatDateTime(input.appointmentStart)}`,
     `Thành tiền: ${formatMoney(input.totalAmount)}`,
     `Thanh toán: ${input.paymentMethod || "CASH"}`,
