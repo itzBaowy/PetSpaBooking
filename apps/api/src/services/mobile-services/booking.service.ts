@@ -14,6 +14,7 @@ import { assertProviderSlotAvailable } from "./availability.service.ts";
 import { socketService } from "../socket.service.ts";
 import { getSystemSettingValue } from "../system-setting.service.ts";
 import { commissionRecordService } from "../commission-record.service.ts";
+import { emailService } from "../email.service.ts";
 import {
   deleteDisputeEvidenceFiles,
   encodeDisputeEvidence,
@@ -70,6 +71,7 @@ const BOOKING_INCLUDE = {
       district: true,
       province: true,
       phone: true,
+      email: true,
     },
   },
   customer: {
@@ -302,6 +304,72 @@ function emitProviderBookingNew(booking: { provider: { id: string } }) {
   socketService.emitToProvider(booking.provider.id, "booking:new", { booking });
 }
 
+function runEmailSideEffect(promise: Promise<unknown>) {
+  promise.catch((error) => {
+    console.error("[email] Booking email side effect failed:", error);
+  });
+}
+
+async function getProviderEmailRecipient(provider: {
+  userId: string;
+  businessName?: string | null;
+  email?: string | null;
+}) {
+  if (provider.email) {
+    return {
+      email: provider.email,
+      name: provider.businessName ?? null,
+    };
+  }
+
+  const providerUser = await prisma.users.findUnique({
+    where: { id: provider.userId },
+    select: {
+      email: true,
+      fullName: true,
+    },
+  });
+
+  return {
+    email: providerUser?.email ?? null,
+    name: provider.businessName ?? providerUser?.fullName ?? null,
+  };
+}
+
+async function buildBookingEmailInput(booking: {
+  id: string;
+  appointmentStart: Date;
+  appointmentEnd: Date;
+  totalAmount: number;
+  paymentMethod: string;
+  service: { name: string };
+  provider: {
+    userId: string;
+    businessName?: string | null;
+    email?: string | null;
+  };
+  customer: {
+    users: {
+      email: string;
+      fullName?: string | null;
+    };
+  };
+}) {
+  return {
+    bookingId: booking.id,
+    customer: {
+      email: booking.customer.users.email,
+      name: booking.customer.users.fullName,
+    },
+    provider: await getProviderEmailRecipient(booking.provider),
+    serviceName: booking.service.name,
+    appointmentStart: booking.appointmentStart,
+    appointmentEnd: booking.appointmentEnd,
+    totalAmount: booking.totalAmount,
+    paymentMethod: booking.paymentMethod,
+  };
+}
+
 async function getOrCreateCustomer(userId: string, location?: string) {
   const existing = await prisma.customers.findUnique({ where: { userId } });
   if (existing) return existing;
@@ -448,6 +516,15 @@ export const mobileBookingServices = {
     await commissionRecordService.holdForBooking(createdBooking);
     emitBookingUpdated(createdBooking);
     emitProviderBookingNew(createdBooking);
+    runEmailSideEffect(
+      (async () => {
+        const emailInput = await buildBookingEmailInput(createdBooking);
+        await Promise.all([
+          emailService.safeSendBookingCreatedToCustomer(emailInput),
+          emailService.safeSendNewBookingToProvider(emailInput),
+        ]);
+      })(),
+    );
 
     return createdBooking;
   },
@@ -623,6 +700,15 @@ export const mobileBookingServices = {
     }
 
     emitBookingUpdated(updatedBooking);
+    runEmailSideEffect(
+      (async () => {
+        const emailInput = await buildBookingEmailInput(updatedBooking);
+        await emailService.safeSendBookingCancelledToProvider({
+          ...emailInput,
+          reason: reason ?? null,
+        });
+      })(),
+    );
     return updatedBooking;
   },
 
@@ -913,6 +999,12 @@ export const mobileBookingServices = {
     });
 
     emitBookingUpdated(updatedBooking);
+    runEmailSideEffect(
+      (async () => {
+        const emailInput = await buildBookingEmailInput(updatedBooking);
+        await emailService.safeSendBookingConfirmedToCustomer(emailInput);
+      })(),
+    );
     return updatedBooking;
   },
 
@@ -954,6 +1046,15 @@ export const mobileBookingServices = {
     });
 
     emitBookingUpdated(updatedBooking);
+    runEmailSideEffect(
+      (async () => {
+        const emailInput = await buildBookingEmailInput(updatedBooking);
+        await emailService.safeSendBookingRejectedToCustomer({
+          ...emailInput,
+          reason: reason ?? null,
+        });
+      })(),
+    );
     return updatedBooking;
   },
 
