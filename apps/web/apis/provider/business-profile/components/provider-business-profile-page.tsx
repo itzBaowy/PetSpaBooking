@@ -1,9 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ImageCropDialog } from "@/components/ui";
 import { Input, Textarea } from "@/components/ui/input";
 import { useToast } from "@/components/ui/feedback-provider";
+import { useImageCropper } from "@/hooks/use-image-cropper";
+import type { ProviderInfo } from "@/apis/provider/verification/schema";
 import {
   ProviderError,
   ProviderLoading,
@@ -12,8 +15,12 @@ import {
 import {
   useProviderBusinessProfile,
   useUpdateProviderBusinessProfile,
+  useUploadProviderProfileImages,
 } from "../queries";
 import { ProviderLocationMap } from "./provider-location-map";
+
+const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const MAX_IMAGE_SIZE = 8 * 1024 * 1024;
 
 type BusinessProfileForm = {
   businessName: string;
@@ -28,6 +35,8 @@ type BusinessProfileForm = {
 export function ProviderBusinessProfilePage() {
   const query = useProviderBusinessProfile();
   const update = useUpdateProviderBusinessProfile();
+  const uploadImages = useUploadProviderProfileImages();
+  const cropper = useImageCropper();
   const { showToast } = useToast();
   const [draft, setDraft] = useState<BusinessProfileForm | null>(null);
 
@@ -54,8 +63,47 @@ export function ProviderBusinessProfilePage() {
     (form.lat !== "" && latValue === null) ||
     (form.lng !== "" && lngValue === null);
 
+  const uploadProfileImage = async (kind: "avatar" | "cover", file?: File) => {
+    if (!file) return;
+    if (!IMAGE_TYPES.includes(file.type)) {
+      showToast("Ảnh chỉ hỗ trợ JPG, PNG hoặc WEBP.", "error");
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE) {
+      showToast("Mỗi ảnh không được lớn hơn 8 MB.", "error");
+      return;
+    }
+
+    const croppedFile = await cropper.cropFile(file, kind === "avatar" ? 1 : 16 / 9);
+    if (!croppedFile) return;
+
+    uploadImages.mutate(
+      { [kind]: croppedFile },
+      {
+        onSuccess: () => {
+          showToast(
+            kind === "avatar"
+              ? "Đã cập nhật avatar doanh nghiệp."
+              : "Đã cập nhật ảnh bìa doanh nghiệp.",
+            "success",
+          );
+        },
+        onError: (error) => showToast(providerErrorText(error), "error"),
+      },
+    );
+  };
+
   return (
     <div className="space-y-6">
+      {cropper.pending ? (
+        <ImageCropDialog
+          sourceUrl={cropper.pending.sourceUrl}
+          aspectRatio={cropper.pending.aspectRatio}
+          onCancel={cropper.cancel}
+          onConfirm={cropper.confirm}
+        />
+      ) : null}
+
       <section className="relative overflow-hidden rounded-[28px] border border-emerald-100 bg-gradient-to-r from-white via-emerald-50 to-teal-50 px-6 py-7 shadow-sm sm:px-8">
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           <span className="absolute -right-8 -top-10 h-40 w-40 rounded-full bg-emerald-200/30" />
@@ -73,6 +121,12 @@ export function ProviderBusinessProfilePage() {
           </div>
         </div>
       </section>
+
+      <ProviderProfileImagesPanel
+        profile={profile}
+        uploading={uploadImages.isLoading}
+        onUpload={uploadProfileImage}
+      />
 
       <section className="grid gap-6 rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm sm:p-7 lg:grid-cols-[minmax(0,1fr)_minmax(360px,0.85fr)]">
         <div className="space-y-6">
@@ -172,6 +226,105 @@ export function ProviderBusinessProfilePage() {
         </aside>
       </section>
     </div>
+  );
+}
+
+function ProviderProfileImagesPanel({
+  profile,
+  uploading,
+  onUpload,
+}: {
+  profile: Pick<ProviderInfo, "businessName" | "avatarUrl" | "coverImageUrl">;
+  uploading: boolean;
+  onUpload: (kind: "avatar" | "cover", file?: File) => void | Promise<void>;
+}) {
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const initial = profile.businessName.trim().charAt(0).toUpperCase() || "P";
+
+  return (
+    <section className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-sm">
+      <div className="relative h-44 bg-slate-100 sm:h-56">
+        {profile.coverImageUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={profile.coverImageUrl}
+            alt={`Ảnh bìa ${profile.businessName}`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="h-full w-full bg-[linear-gradient(135deg,#ecfdf5,#dbeafe_55%,#f8fafc)]" />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/35 via-transparent to-transparent" />
+        <Button
+          variant="outline"
+          className="absolute right-4 top-4 border-white/70 bg-white/90 px-4 text-slate-900 shadow-sm hover:bg-white"
+          disabled={uploading}
+          onClick={() => coverInputRef.current?.click()}
+        >
+          {uploading ? "Đang tải..." : "Đổi ảnh bìa"}
+        </Button>
+      </div>
+
+      <div className="flex flex-col gap-4 px-5 pb-5 sm:flex-row sm:items-end sm:justify-between sm:px-7 sm:pb-7">
+        <div className="-mt-12 flex min-w-0 items-end gap-4">
+          <div className="relative grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-2xl border-4 border-white bg-emerald-600 text-4xl font-black text-white shadow-lg sm:h-28 sm:w-28">
+            {profile.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={profile.avatarUrl}
+                alt={`Avatar ${profile.businessName}`}
+                className="h-full w-full object-cover"
+              />
+            ) : (
+              initial
+            )}
+          </div>
+          <div className="min-w-0 pb-1">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-emerald-600">
+              Hình ảnh hiển thị công khai
+            </p>
+            <h2 className="truncate text-xl font-black text-slate-950 sm:text-2xl">
+              {profile.businessName}
+            </h2>
+            <p className="mt-1 text-sm text-slate-500">
+              Avatar và ảnh bìa sẽ dùng trong hồ sơ provider, danh sách tìm kiếm và màn chi tiết.
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          className="w-full border-emerald-200 text-emerald-700 hover:bg-emerald-50 sm:w-auto"
+          disabled={uploading}
+          onClick={() => avatarInputRef.current?.click()}
+        >
+          {uploading ? "Đang tải..." : "Đổi avatar"}
+        </Button>
+      </div>
+
+      <input
+        ref={avatarInputRef}
+        className="sr-only"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        disabled={uploading}
+        onChange={(event) => {
+          void onUpload("avatar", event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+      <input
+        ref={coverInputRef}
+        className="sr-only"
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        disabled={uploading}
+        onChange={(event) => {
+          void onUpload("cover", event.target.files?.[0]);
+          event.target.value = "";
+        }}
+      />
+    </section>
   );
 }
 

@@ -1049,6 +1049,63 @@ Rule:
 
 Provider token required. Provider phải `VERIFIED`, deposit `ACTIVE` và đủ số dư ký quỹ tối thiểu trước khi quản lý service.
 
+### 5.0 Hồ sơ doanh nghiệp: avatar và ảnh bìa
+
+Provider token required. API này upload ảnh lên Cloudinary và cập nhật trực tiếp `avatarUrl` / `coverImageUrl` của provider profile.
+
+```http
+POST /api/providers/me/images
+Authorization: Bearer <provider_accessToken>
+Content-Type: multipart/form-data
+```
+
+FormData:
+
+```txt
+avatar=<avatarFile>
+cover=<coverFile>
+```
+
+Rule:
+
+- Có thể gửi `avatar`, `cover`, hoặc cả hai trong cùng request.
+- Chỉ hỗ trợ `image/jpeg`, `image/png`, `image/webp`.
+- Mỗi file tối đa 8 MB.
+- Response trả `provider`, `avatarUrl`, `coverImageUrl`.
+
+Response mẫu:
+
+```json
+{
+  "provider": {
+    "id": "<providerId>",
+    "businessName": "PetLink Verified Spa",
+    "avatarUrl": "https://res.cloudinary.com/.../avatar.jpg",
+    "coverImageUrl": "https://res.cloudinary.com/.../cover.jpg"
+  },
+  "avatarUrl": "https://res.cloudinary.com/.../avatar.jpg",
+  "coverImageUrl": "https://res.cloudinary.com/.../cover.jpg"
+}
+```
+
+Fetch mẫu:
+
+```ts
+const formData = new FormData();
+if (avatarFile) formData.append("avatar", avatarFile);
+if (coverFile) formData.append("cover", coverFile);
+
+await fetch(`${API_BASE_URL}/providers/me/images`, {
+  method: "POST",
+  headers: {
+    Authorization: `Bearer ${providerToken}`,
+  },
+  body: formData,
+});
+```
+
+Không set `Content-Type` thủ công khi gửi `FormData`; để browser tự thêm boundary.
+
 ### 5.1 Upload ảnh service lấy URL
 
 ```http

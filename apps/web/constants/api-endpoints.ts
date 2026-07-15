@@ -11,6 +11,7 @@ export const API_ENDPOINTS = {
   },
   PROVIDERS: {
     ME: "/providers/me",
+    PROFILE_IMAGES: "/providers/me/images",
     REGISTER: "/providers/register",
     MY_DOCUMENTS: "/providers/me/documents",
     LIST: "/providers",

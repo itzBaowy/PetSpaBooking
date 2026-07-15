@@ -3,7 +3,10 @@ import { providerController } from "../controllers/provider.controller.ts";
 import { mobileProviderController } from "../controllers/mobile-controllers/provider.controller.ts";
 import { protect } from "../middlewares/protect.middleware.ts";
 import { checkRole } from "../middlewares/authorization.middleware.ts";
-import { uploadMemory } from "../common/multer/memory.multer.ts";
+import {
+  uploadMemory,
+  uploadProviderProfileImages,
+} from "../common/multer/memory.multer.ts";
 
 const providerRouter = express.Router();
 
@@ -123,6 +126,65 @@ providerRouter.get("/me", protect, providerController.getMe);
  *               $ref: '#/components/schemas/ErrorResponse'
  */
 providerRouter.put("/me", protect, providerController.updateMe);
+
+/**
+ * @swagger
+ * /api/providers/me/images:
+ *   post:
+ *     summary: Upload provider business avatar and/or cover image
+ *     description: Uploads avatar/cover images to Cloudinary and updates provider avatarUrl/coverImageUrl.
+ *     tags: [Providers]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatar:
+ *                 type: string
+ *                 format: binary
+ *                 description: Business avatar image. Allowed JPEG, PNG, WEBP. Max 8 MB.
+ *               cover:
+ *                 type: string
+ *                 format: binary
+ *                 description: Business cover image. Allowed JPEG, PNG, WEBP. Max 8 MB.
+ *     responses:
+ *       201:
+ *         description: Provider profile images uploaded and profile updated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               allOf:
+ *                 - $ref: '#/components/schemas/SuccessResponse'
+ *                 - type: object
+ *                   properties:
+ *                     data:
+ *                       type: object
+ *                       properties:
+ *                         provider:
+ *                           $ref: '#/components/schemas/ProviderObject'
+ *                         avatarUrl:
+ *                           type: string
+ *                           nullable: true
+ *                         coverImageUrl:
+ *                           type: string
+ *                           nullable: true
+ *       400:
+ *         description: Missing file or invalid file type
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/ErrorResponse'
+ */
+providerRouter.post(
+  "/me/images",
+  protect,
+  uploadProviderProfileImages,
+  providerController.uploadProfileImages,
+);
 
 /**
  * @swagger
