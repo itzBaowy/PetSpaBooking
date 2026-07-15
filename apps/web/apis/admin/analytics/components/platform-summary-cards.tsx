@@ -49,7 +49,7 @@ export function PlatformSummaryCards() {
         const displayValue =
           card.type === "revenue"
             ? formatCurrency(card.value as number, "VND")
-            : (card.value as number).toLocaleString("en-US");
+            : (card.value as number).toLocaleString("vi-VN");
 
         return (
           <StatisticCard

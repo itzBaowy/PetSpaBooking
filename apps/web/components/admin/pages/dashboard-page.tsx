@@ -25,7 +25,7 @@ export function AdminDashboardPage() {
 
   const isLoading = query.isLoading || revenueQuery.isLoading || dailyRevenueQuery.isLoading || providersQuery.isLoading || disputeReportQuery.isLoading;
   const failedQuery = [query, revenueQuery, dailyRevenueQuery, providersQuery, disputeReportQuery].find((item) => item.isError);
-  if (isLoading) return <p>Đang tải tổng quan...</p>;
+  if (isLoading) return <div className="grid min-h-[55vh] place-items-center"><div className="text-center"><span className="inline-block h-10 w-10 animate-spin rounded-full border-4 border-brand-soft border-t-brand" /><p className="mt-3 text-sm font-semibold text-muted">Đang tải tổng quan quản trị...</p></div></div>;
   if (failedQuery?.isError) {
     return (
       <LoadState
@@ -100,22 +100,35 @@ export function AdminDashboardPage() {
         </StatisticCardGrid>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
-        <div className="lg:col-span-7">
+      <div className="grid items-start gap-6 xl:grid-cols-12">
+        <section className="min-w-0 xl:col-span-8">
           {dailyRevenueQuery.data && <PlatformRevenueChart data={dailyRevenueQuery.data} />}
-        </div>
-        <div className="lg:col-span-5">
-          {providersQuery.data && <TopProvidersTable providers={providersQuery.data.items} />}
-        </div>
+        </section>
+
+        {disputeReportQuery.data && (
+          <section className="min-w-0 xl:col-span-4">
+            <div className="mb-3">
+              <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand">Cần theo dõi</p>
+              <h2 className="mt-1 text-lg font-black text-foreground">Trạng thái vận hành</h2>
+            </div>
+            <StatisticCardGrid columns={2}>
+              <StatisticCard title="Tranh chấp chờ xử lý" value={disputeReportQuery.data.pending} tone="amber" />
+              <StatisticCard title="Nhà cung cấp thắng" value={disputeReportQuery.data.resolvedProviderWin} tone="green" />
+              <StatisticCard title="Khách hàng thắng" value={disputeReportQuery.data.resolvedCustomerWin} tone="blue" />
+              <StatisticCard title="Đã hủy khiếu nại" value={disputeReportQuery.data.cancelled} tone="red" />
+            </StatisticCardGrid>
+          </section>
+        )}
       </div>
 
-      {disputeReportQuery.data && (
-        <StatisticCardGrid columns={4}>
-          <StatisticCard title="Tranh chấp chờ xử lý" value={disputeReportQuery.data.pending} tone="amber" />
-          <StatisticCard title="Nhà cung cấp thắng" value={disputeReportQuery.data.resolvedProviderWin} tone="green" />
-          <StatisticCard title="Khách hàng thắng" value={disputeReportQuery.data.resolvedCustomerWin} tone="blue" />
-          <StatisticCard title="Đã hủy khiếu nại" value={disputeReportQuery.data.cancelled} tone="red" />
-        </StatisticCardGrid>
+      {providersQuery.data && (
+        <section className="min-w-0 space-y-3">
+          <div>
+            <p className="text-xs font-extrabold uppercase tracking-[0.16em] text-brand">Hiệu suất nổi bật</p>
+            <h2 className="mt-1 text-lg font-black text-foreground">Nhà cung cấp hàng đầu</h2>
+          </div>
+          <TopProvidersTable providers={providersQuery.data.items} />
+        </section>
       )}
     </div>
   );

@@ -30,7 +30,7 @@ export function DataTable<T>({
 }: DataTableProps<T>) {
   if (data.length === 0 && emptyState) {
     return (
-      <div className="w-full overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
+      <div className="w-full overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-sm">
         {emptyState}
       </div>
     );
@@ -40,10 +40,10 @@ export function DataTable<T>({
   const contentColumns = columns.filter((column) => !column.isAction);
 
   return (
-    <div className="w-full overflow-hidden rounded-xl border border-border-subtle bg-surface shadow-sm">
+    <div className="w-full overflow-hidden rounded-2xl border border-border-subtle bg-surface shadow-sm">
       <div className="divide-y divide-border-subtle md:hidden">
         {data.map((row) => (
-          <div key={getRowKey(row)} className="space-y-3 p-4">
+          <div key={getRowKey(row)} className="space-y-3 p-4 transition hover:bg-emerald-50/35">
             <div className="space-y-3">
               {contentColumns.map((column) => (
                 <div
@@ -73,12 +73,12 @@ export function DataTable<T>({
       <div className="hidden w-full overflow-x-auto md:block">
         <table className={cn("w-full table-fixed text-left", minWidthClassName)}>
           <thead>
-            <tr className="border-b border-border-subtle bg-surface-muted">
+            <tr className="border-b border-emerald-100 bg-emerald-50/70">
               {columns.map((column) => (
                 <th
                   key={column.key}
                   className={cn(
-                    "px-6 py-3 text-xs font-semibold uppercase tracking-wider text-muted",
+                    "px-5 py-3.5 text-[11px] font-extrabold uppercase tracking-[0.08em] text-emerald-800",
                     column.align === "right" && "text-right",
                     column.align === "center" && "text-center",
                     column.widthClassName,
@@ -93,12 +93,12 @@ export function DataTable<T>({
           </thead>
           <tbody className="divide-y divide-border-subtle">
             {data.map((row) => (
-              <tr key={getRowKey(row)} className="transition-colors hover:bg-surface-muted">
+              <tr key={getRowKey(row)} className="transition-colors hover:bg-emerald-50/40">
                 {columns.map((column) => (
                   <td
                     key={column.key}
                     className={cn(
-                      "px-6 py-4 align-middle text-sm text-foreground",
+                      "px-5 py-4 align-middle text-sm text-foreground",
                       column.align === "right" && "text-right",
                       column.align === "center" && "text-center",
                       column.isAction && "whitespace-nowrap",

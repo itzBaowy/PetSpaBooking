@@ -1,10 +1,13 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { Avatar, ImageCropDialog } from "@/components/ui";
 import { useToast } from "@/components/ui/feedback-provider";
 import { useImageCropper } from "@/hooks/use-image-cropper";
-import { useUploadProfileAvatar } from "../queries";
+import { profileKeys, useUploadProfileAvatar } from "../queries";
+import { queryKeys } from "@/constants/query-keys";
+import type { Profile } from "../schema";
 
 export function AvatarUploader({
   avatar,
@@ -16,18 +19,12 @@ export function AvatarUploader({
   initials: string;
 }) {
   const mutation = useUploadProfileAvatar();
+  const queryClient = useQueryClient();
   const cropper = useImageCropper();
   const { showToast } = useToast();
   const inputRef = useRef<HTMLInputElement>(null);
   const objectUrlRef = useRef<string | null>(null);
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-
-  useEffect(
-    () => () => {
-      if (objectUrlRef.current) URL.revokeObjectURL(objectUrlRef.current);
-    },
-    [],
-  );
 
   async function selectAvatar(file?: File) {
     if (!file) return;
@@ -48,9 +45,14 @@ export function AvatarUploader({
     setPreviewUrl(objectUrlRef.current);
 
     try {
-      await mutation.mutateAsync(croppedFile);
+      const updatedProfile = await mutation.mutateAsync(croppedFile);
+      const localAvatarUrl = objectUrlRef.current;
+      if (localAvatarUrl) {
+        const profileWithPreview: Profile = { ...updatedProfile, avatar: localAvatarUrl };
+        queryClient.setQueryData(profileKeys.me(), profileWithPreview);
+        queryClient.setQueryData(queryKeys.auth.me(), profileWithPreview);
+      }
       showToast("Đã cập nhật ảnh đại diện.", "success");
-      setPreviewUrl(null);
     } catch {
       showToast("Không thể cập nhật ảnh đại diện.", "error");
     } finally {

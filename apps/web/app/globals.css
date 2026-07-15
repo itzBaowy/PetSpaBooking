@@ -146,6 +146,45 @@ body {
   color: var(--brand);
 }
 
+/* Admin pages that use the generic page header inherit a consistent control-center surface. */
+.admin-workspace [data-page-header] {
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  border: 1px solid color-mix(in srgb, var(--color-brand) 20%, transparent);
+  border-radius: 1.75rem;
+  background:
+    radial-gradient(circle at 92% 15%, color-mix(in srgb, var(--color-brand) 13%, transparent) 0 5rem, transparent 5.1rem),
+    linear-gradient(135deg, var(--color-surface), color-mix(in srgb, var(--color-brand-soft) 45%, var(--color-surface)));
+  box-shadow: 0 18px 45px -34px color-mix(in srgb, var(--color-brand) 65%, transparent);
+}
+
+.admin-workspace [data-page-header] h1 {
+  font-weight: 900;
+}
+
+.admin-workspace [data-page-header] nav {
+  color: var(--color-brand);
+  font-weight: 800;
+}
+
+.admin-workspace select,
+.admin-workspace input[type="date"],
+.admin-workspace input[type="datetime-local"] {
+  accent-color: var(--color-brand);
+}
+
+.admin-workspace select:focus {
+  border-color: var(--color-brand);
+  outline: none;
+  box-shadow: 0 0 0 4px var(--color-brand-soft);
+}
+
+.admin-workspace select option:checked {
+  background: var(--color-brand-soft);
+  color: var(--color-brand);
+}
+
 @keyframes toast-enter {
   from {
     opacity: 0;

@@ -79,17 +79,18 @@ export function StatisticCard({
   return (
     <div
       className={cn(
-        "min-w-0 rounded-xl border bg-surface p-4 shadow-sm transition-colors sm:p-5",
+        "group relative min-w-0 overflow-hidden rounded-2xl border bg-gradient-to-br from-surface to-surface-muted/35 p-4 shadow-sm transition duration-200 hover:-translate-y-0.5 hover:shadow-lg sm:p-5",
         styles.border,
         className,
       )}
     >
+      <div className={cn("absolute inset-x-0 top-0 h-1", styles.icon)} />
       <div className="flex min-w-0 items-start justify-between gap-3">
         <p className="min-w-0 break-words text-sm font-medium text-muted">{title}</p>
         {icon && (
           <div
             className={cn(
-              "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
               styles.icon,
             )}
           >
