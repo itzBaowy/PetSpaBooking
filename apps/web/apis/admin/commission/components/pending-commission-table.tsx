@@ -15,33 +15,50 @@ const fundStatusLabels: Record<string, string> = {
   SETTLED_TO_PROVIDER: "Đã settle",
 };
 
+function formatReservedAt(value?: string | null) {
+  if (!value) return "Chưa giữ";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export function PendingCommissionTable() {
   const { data: commissions } = usePendingCommissions();
   const columns: Array<DataTableColumn<Commission>> = [
     {
       key: "booking",
       header: "Đặt lịch",
+      widthClassName: "w-[15%]",
       render: (commission) => (
-        <div>
-          <p className="font-bold text-foreground">{commission.bookingId}</p>
-          <p className="text-xs text-muted">{commission.serviceName}</p>
+        <div className="min-w-0" title={commission.bookingId}>
+          <p className="font-bold text-brand">#{commission.bookingId.slice(-8)}</p>
+          <p className="mt-1 break-words text-xs leading-4 text-muted">{commission.serviceName}</p>
         </div>
       ),
     },
     {
       key: "provider",
       header: "Nhà cung cấp",
-      render: (commission) => commission.providerName,
+      widthClassName: "w-[15%]",
+      render: (commission) => <span className="block break-words font-semibold leading-5">{commission.providerName}</span>,
     },
     {
       key: "reserved",
       header: "Giữ lúc",
-      render: (commission) => commission.reservedAt ?? "Chưa giữ",
+      widthClassName: "w-[17%]",
+      render: (commission) => <span className="block text-sm leading-5 text-muted">{formatReservedAt(commission.reservedAt)}</span>,
     },
     {
       key: "held",
       header: "Tiền khách đang giữ",
       align: "right",
+      widthClassName: "w-[16%]",
       render: (commission) => (
         <div>
           <p className="font-bold text-warning">
@@ -57,17 +74,20 @@ export function PendingCommissionTable() {
       key: "commission",
       header: "Hoa hồng dự kiến",
       align: "right",
+      widthClassName: "w-[13%]",
       render: (commission) => formatCurrency(commission.commissionAmount),
     },
     {
       key: "net",
       header: "Provider thực nhận",
       align: "right",
+      widthClassName: "w-[13%]",
       render: (commission) => formatCurrency(commission.providerEarning),
     },
     {
       key: "status",
       header: "Trạng thái",
+      widthClassName: "w-[11%]",
       render: (commission) => (
         <CommissionStatusPill status={commission.displayStatus} />
       ),
@@ -88,7 +108,7 @@ export function PendingCommissionTable() {
         columns={columns}
         data={commissions}
         getRowKey={(commission) => commission.id}
-        minWidthClassName="min-w-[1040px]"
+        minWidthClassName="min-w-[1120px]"
       />
     </section>
   );

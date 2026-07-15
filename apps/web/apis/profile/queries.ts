@@ -44,8 +44,6 @@ export function useUploadProfileAvatar() {
     onSuccess: (profile) => {
       queryClient.setQueryData(profileKeys.me(), profile);
       queryClient.setQueryData(queryKeys.auth.me(), profile);
-      void queryClient.invalidateQueries({ queryKey: profileKeys.all });
-      void queryClient.invalidateQueries({ queryKey: queryKeys.auth.all });
     },
   });
 }

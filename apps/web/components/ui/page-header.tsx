@@ -23,6 +23,7 @@ export function PageHeader({
 }: PageHeaderProps) {
   return (
     <div
+      data-page-header
       className={cn(
         "mb-2 flex flex-col gap-4 px-5 pb-3 pt-5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:px-8",
         className,

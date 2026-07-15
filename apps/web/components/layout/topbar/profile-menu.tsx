@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { Avatar } from "@/components/ui/avatar";
-import { ThemeMenuItem } from "@/components/ui/theme-menu-item";
 import { TopbarIcon } from "./topbar-icons";
 import type { DashboardTopbarRole } from "./types";
 
@@ -44,14 +43,6 @@ export function ProfileMenu({
         >
           <TopbarIcon type="user" /> Hồ sơ
         </Link>
-        <button
-          type="button"
-          onMouseDown={(event) => event.preventDefault()}
-          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm font-semibold text-foreground transition hover:bg-brand-soft hover:text-brand"
-        >
-          <TopbarIcon type="activity" /> Nhật ký hoạt động
-        </button>
-        <ThemeMenuItem />
         <div className="my-1 border-t border-border-subtle" />
         <button
           type="button"
