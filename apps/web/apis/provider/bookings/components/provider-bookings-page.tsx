@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { CustomSelect } from "@/components/ui/custom-select";
 import { useToast } from "@/components/ui/feedback-provider";
 import {
   ProviderBadge,
@@ -74,21 +75,21 @@ export function ProviderBookingsPage() {
         description="Danh sách và thao tác vòng đời lịch đặt dùng API provider."
       />
 
-      <select
-        className="h-11 rounded-xl border border-border-muted bg-surface px-4 text-sm font-semibold"
+      <CustomSelect
+        className="w-full sm:w-64"
         value={status}
-        onChange={(event) => {
-          setStatus(event.target.value);
+        options={[
+          { label: "Tất cả trạng thái", value: "" },
+          ...statuses.map((value) => ({
+            label: providerStatusText(value),
+            value,
+          })),
+        ]}
+        onValueChange={(value) => {
+          setStatus(value);
           setPage(1);
         }}
-      >
-        <option value="">Tất cả trạng thái</option>
-        {statuses.map((value) => (
-          <option key={value} value={value}>
-            {providerStatusText(value)}
-          </option>
-        ))}
-      </select>
+      />
 
       {items.length === 0 ? (
         <ProviderEmpty text="Không có lịch đặt phù hợp." />
