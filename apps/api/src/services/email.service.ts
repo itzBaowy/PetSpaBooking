@@ -77,9 +77,9 @@ function formatMoney(amount?: number | null) {
 }
 
 function formatDateTime(value?: Date | string | null) {
-  if (!value) return "Chua co thoi gian";
+  if (!value) return "Chưa có thời gian";
   const date = value instanceof Date ? value : new Date(value);
-  if (Number.isNaN(date.getTime())) return "Chua co thoi gian";
+  if (Number.isNaN(date.getTime())) return "Chưa có thời gian";
 
   return new Intl.DateTimeFormat("vi-VN", {
     timeZone: "Asia/Bangkok",
@@ -97,30 +97,30 @@ function getProviderName(input: BookingEmailInput) {
 }
 
 function getCustomerName(input: BookingEmailInput) {
-  return input.customer?.name?.trim() || "khach hang";
+  return input.customer?.name?.trim() || "khách hàng";
 }
 
 function bookingDetailsHtml(input: BookingEmailInput) {
   return `
     <ul>
-      <li><strong>Ma booking:</strong> ${escapeHtml(input.bookingId)}</li>
-      <li><strong>Nha cung cap:</strong> ${escapeHtml(getProviderName(input))}</li>
-      <li><strong>Dich vu:</strong> ${escapeHtml(input.serviceName || "Dich vu PetLink")}</li>
-      <li><strong>Thoi gian:</strong> ${escapeHtml(formatDateTime(input.appointmentStart))}</li>
-      <li><strong>Thanh tien:</strong> ${escapeHtml(formatMoney(input.totalAmount))}</li>
-      <li><strong>Thanh toan:</strong> ${escapeHtml(input.paymentMethod || "CASH")}</li>
+      <li><strong>Mã booking:</strong> ${escapeHtml(input.bookingId)}</li>
+      <li><strong>Nhà cung cấp:</strong> ${escapeHtml(getProviderName(input))}</li>
+      <li><strong>Dịch vụ:</strong> ${escapeHtml(input.serviceName || "Dịch vụ PetLink")}</li>
+      <li><strong>Thời gian:</strong> ${escapeHtml(formatDateTime(input.appointmentStart))}</li>
+      <li><strong>Thành tiền:</strong> ${escapeHtml(formatMoney(input.totalAmount))}</li>
+      <li><strong>Thanh toán:</strong> ${escapeHtml(input.paymentMethod || "CASH")}</li>
     </ul>
   `;
 }
 
 function bookingDetailsText(input: BookingEmailInput) {
   return [
-    `Ma booking: ${input.bookingId}`,
-    `Nha cung cap: ${getProviderName(input)}`,
-    `Dich vu: ${input.serviceName || "Dich vu PetLink"}`,
-    `Thoi gian: ${formatDateTime(input.appointmentStart)}`,
-    `Thanh tien: ${formatMoney(input.totalAmount)}`,
-    `Thanh toan: ${input.paymentMethod || "CASH"}`,
+    `Mã booking: ${input.bookingId}`,
+    `Nhà cung cấp: ${getProviderName(input)}`,
+    `Dịch vụ: ${input.serviceName || "Dịch vụ PetLink"}`,
+    `Thời gian: ${formatDateTime(input.appointmentStart)}`,
+    `Thành tiền: ${formatMoney(input.totalAmount)}`,
+    `Thanh toán: ${input.paymentMethod || "CASH"}`,
   ].join("\n");
 }
 
@@ -130,7 +130,7 @@ function wrapHtml(title: string, body: string) {
       <h2 style="margin:0 0 12px">${escapeHtml(title)}</h2>
       ${body}
       <p style="margin-top:24px;color:#6b7280;font-size:13px">
-        Email nay duoc gui tu PetLink.
+        Email này được gửi từ PetLink.
       </p>
     </div>
   `;
@@ -183,8 +183,8 @@ async function safeSendBuiltMessage(input: {
 
 export const emailService = {
   async safeSendBookingCreatedToCustomer(input: BookingEmailInput) {
-    const subject = "PetLink da nhan booking cua ban";
-    const greeting = `Xin chao ${getName(input.customer)}, booking cua ban da duoc tao va dang cho provider xac nhan.`;
+    const subject = "PetLink đã nhận booking của bạn và đang chờ provider xác nhận";
+    const greeting = `Xin chào ${getName(input.customer)}, booking của bạn đã được tạo và đang chờ provider xác nhận.`;
 
     return safeSendBuiltMessage({
       to: input.customer,
@@ -198,8 +198,8 @@ export const emailService = {
   },
 
   async safeSendNewBookingToProvider(input: BookingEmailInput) {
-    const subject = "PetLink co booking moi can xac nhan";
-    const greeting = `Xin chao ${getProviderName(input)}, ${getCustomerName(input)} vua dat lich moi. Vui long xac nhan hoac tu choi booking.`;
+    const subject = "PetLink có booking mới từ khách hàng";
+    const greeting = `Xin chào ${getProviderName(input)}, ${getCustomerName(input)} vừa đặt lịch mới. Vui lòng xác nhận hoặc từ chối booking.`;
 
     return safeSendBuiltMessage({
       to: input.provider,
@@ -213,8 +213,8 @@ export const emailService = {
   },
 
   async safeSendBookingConfirmedToCustomer(input: BookingEmailInput) {
-    const subject = "Booking cua ban da duoc xac nhan";
-    const greeting = `${getProviderName(input)} da xac nhan booking cua ban.`;
+    const subject = "Booking của bạn đã được xác nhận";
+    const greeting = `${getProviderName(input)} đã xác nhận booking của bạn.`;
 
     return safeSendBuiltMessage({
       to: input.customer,
@@ -228,9 +228,9 @@ export const emailService = {
   },
 
   async safeSendBookingRejectedToCustomer(input: BookingEmailInput) {
-    const subject = "Booking cua ban da bi tu choi";
-    const reason = input.reason ? `Ly do: ${input.reason}` : "Provider chua cung cap ly do.";
-    const greeting = `${getProviderName(input)} da tu choi booking cua ban. ${reason}`;
+    const subject = "Booking của bạn đã bị từ chối";
+    const reason = input.reason ? `Lý do: ${input.reason}` : "Provider chưa cung cấp lý do.";
+    const greeting = `${getProviderName(input)} đã từ chối booking của bạn. ${reason}`;
 
     return safeSendBuiltMessage({
       to: input.customer,
@@ -244,9 +244,9 @@ export const emailService = {
   },
 
   async safeSendBookingCancelledToProvider(input: BookingEmailInput) {
-    const subject = "Customer da huy booking";
-    const reason = input.reason ? `Ly do: ${input.reason}` : "Customer chua cung cap ly do.";
-    const greeting = `${getCustomerName(input)} da huy booking. ${reason}`;
+    const subject = "Customer đã hủy booking";
+    const reason = input.reason ? `Lý do: ${input.reason}` : "Customer chưa cung cấp lý do.";
+    const greeting = `${getCustomerName(input)} đã hủy booking. ${reason}`;
 
     return safeSendBuiltMessage({
       to: input.provider,
@@ -260,12 +260,12 @@ export const emailService = {
   },
 
   async safeSendBookingPaymentSuccessToCustomer(input: PaymentEmailInput) {
-    const subject = "Thanh toan booking thanh cong";
+    const subject = "Thanh toán booking thành công";
     const text = [
-      `Xin chao ${getName(input.recipient)}, thanh toan booking cua ban da thanh cong.`,
-      `Ma booking: ${input.bookingId ?? "N/A"}`,
-      `So tien: ${formatMoney(input.amount)}`,
-      `Ma giao dich: ${input.transId ?? input.orderId ?? "N/A"}`,
+      `Xin chào ${getName(input.recipient)}, thanh toán booking của bạn đã thành công.`,
+      `Mã booking: ${input.bookingId ?? "N/A"}`,
+      `Số tiền: ${formatMoney(input.amount)}`,
+      `Mã giao dịch: ${input.transId ?? input.orderId ?? "N/A"}`,
     ].join("\n");
 
     return safeSendBuiltMessage({
@@ -275,11 +275,11 @@ export const emailService = {
       html: wrapHtml(
         subject,
         `
-          <p>Xin chao ${escapeHtml(getName(input.recipient))}, thanh toan booking cua ban da thanh cong.</p>
+          <p>Xin chào ${escapeHtml(getName(input.recipient))}, thanh toán booking của bạn đã thành công.</p>
           <ul>
-            <li><strong>Ma booking:</strong> ${escapeHtml(input.bookingId ?? "N/A")}</li>
-            <li><strong>So tien:</strong> ${escapeHtml(formatMoney(input.amount))}</li>
-            <li><strong>Ma giao dich:</strong> ${escapeHtml(input.transId ?? input.orderId ?? "N/A")}</li>
+            <li><strong>Mã booking:</strong> ${escapeHtml(input.bookingId ?? "N/A")}</li>
+            <li><strong>Số tiền:</strong> ${escapeHtml(formatMoney(input.amount))}</li>
+            <li><strong>Mã giao dịch:</strong> ${escapeHtml(input.transId ?? input.orderId ?? "N/A")}</li>
           </ul>
         `,
       ),
@@ -287,12 +287,12 @@ export const emailService = {
   },
 
   async safeSendProviderDepositPaymentSuccess(input: PaymentEmailInput) {
-    const subject = "Nap ky quy thanh cong";
+    const subject = "Nạp ký quỹ thành công";
     const text = [
-      `Xin chao ${getName(input.recipient)}, giao dich nap ky quy cua ban da thanh cong.`,
+      `Xin chào ${getName(input.recipient)}, giao dịch nạp ký quỹ của bạn đã thành công.`,
       `Provider: ${input.providerName ?? "Provider PetLink"}`,
-      `So tien: ${formatMoney(input.amount)}`,
-      `Ma giao dich: ${input.transId ?? input.orderId ?? "N/A"}`,
+      `Số tiền: ${formatMoney(input.amount)}`,
+      `Mã giao dịch: ${input.transId ?? input.orderId ?? "N/A"}`,
     ].join("\n");
 
     return safeSendBuiltMessage({
@@ -302,11 +302,11 @@ export const emailService = {
       html: wrapHtml(
         subject,
         `
-          <p>Xin chao ${escapeHtml(getName(input.recipient))}, giao dich nap ky quy cua ban da thanh cong.</p>
+          <p>Xin chào ${escapeHtml(getName(input.recipient))}, giao dịch nạp ký quỹ của bạn đã thành công.</p>
           <ul>
             <li><strong>Provider:</strong> ${escapeHtml(input.providerName ?? "Provider PetLink")}</li>
-            <li><strong>So tien:</strong> ${escapeHtml(formatMoney(input.amount))}</li>
-            <li><strong>Ma giao dich:</strong> ${escapeHtml(input.transId ?? input.orderId ?? "N/A")}</li>
+            <li><strong>Số tiền:</strong> ${escapeHtml(formatMoney(input.amount))}</li>
+            <li><strong>Mã giao dịch:</strong> ${escapeHtml(input.transId ?? input.orderId ?? "N/A")}</li>
           </ul>
         `,
       ),
@@ -314,8 +314,8 @@ export const emailService = {
   },
 
   async safeSendBookingCompletedToCustomer(input: BookingEmailInput) {
-    const subject = "Booking da hoan tat";
-    const greeting = `Booking cua ban tai ${getProviderName(input)} da hoan tat. Ban co the danh gia provider tren ung dung PetLink.`;
+    const subject = "Booking đã hoàn tất";
+    const greeting = `Booking của bạn tại ${getProviderName(input)} đã hoàn tất. Bạn có thể đánh giá provider trên ứng dụng PetLink.`;
 
     return safeSendBuiltMessage({
       to: input.customer,
