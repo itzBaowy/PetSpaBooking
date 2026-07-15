@@ -3,6 +3,7 @@ import { notificationService } from "./notification.service.ts";
 import { commissionRecordService } from "./commission-record.service.ts";
 import { getSystemSettingValue } from "./system-setting.service.ts";
 import { emailService } from "./email.service.ts";
+import { socketService } from "./socket.service.ts";
 
 const MAX_COMMISSION_PROCESSING_RETRIES = 5;
 
@@ -307,7 +308,7 @@ export const bookingFinanceService = {
               },
             },
           },
-          provider: { select: { userId: true, businessName: true } },
+          provider: { select: { id: true, userId: true, businessName: true } },
           service: { select: { name: true } },
         },
       });
@@ -329,6 +330,22 @@ export const bookingFinanceService = {
             data: { bookingId },
           },
         ]);
+
+        socketService.emitToUser(
+          completedBooking.customer.userId,
+          "booking:updated",
+          { booking: completedBooking },
+        );
+        socketService.emitToProvider(
+          completedBooking.provider.id,
+          "booking:updated",
+          { booking: completedBooking },
+        );
+        socketService.emitToBooking(
+          completedBooking.id,
+          "booking:updated",
+          { booking: completedBooking },
+        );
 
         runEmailSideEffect(
           emailService.safeSendBookingCompletedToCustomer({
