@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/dialog";
 import { useToast } from "@/components/ui/feedback-provider";
 import { Input, Textarea } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { ServiceImageUpload } from "./service-image-upload";
 import {
   ProviderBadge,
   ProviderEmpty,
@@ -43,6 +45,7 @@ const emptyServiceDraft = {
   price: 0,
   duration: 30,
   category: "GROOMING",
+  imageUrls: [] as string[],
 };
 
 export function ProviderServicesPage() {
@@ -54,6 +57,7 @@ export function ProviderServicesPage() {
   const save = useSaveProviderService();
   const { showToast } = useToast();
   const [formOpen, setFormOpen] = useState(false);
+  const [imageUploading, setImageUploading] = useState(false);
   const [editingService, setEditingService] = useState<ProviderServiceApi | null>(null);
   const [detailService, setDetailService] = useState<ProviderServiceApi | null>(null);
   const [draft, setDraft] = useState(emptyServiceDraft);
@@ -76,6 +80,7 @@ export function ProviderServicesPage() {
       price: service.price,
       duration: service.duration,
       category: service.category?.name ?? "GROOMING",
+      imageUrls: service.imageUrls ?? [],
     });
     setFormOpen(true);
   };
@@ -84,6 +89,7 @@ export function ProviderServicesPage() {
     setFormOpen(false);
     setEditingService(null);
     setDraft(emptyServiceDraft);
+    setImageUploading(false);
   };
 
   const toggleService = (service: ProviderServiceApi) => {
@@ -137,10 +143,22 @@ export function ProviderServicesPage() {
               {items.map((item) => (
                 <tr key={item.id} className="hover:bg-surface-muted/50">
                   <td className="px-4 py-4">
-                    <strong className="block">{item.name}</strong>
-                    <span className="mt-1 block text-xs text-muted">
-                      {serviceCategoryLabels[item.category?.name ?? ""] ?? item.category?.name ?? "Chưa phân loại"}
-                    </span>
+                    <div className="flex items-center gap-3">
+                      <div className="h-12 w-12 shrink-0 overflow-hidden rounded-xl bg-brand-soft">
+                        {item.imageUrls?.[0] ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img className="h-full w-full object-cover" src={item.imageUrls[0]} alt="" />
+                        ) : (
+                          <span className="grid h-full w-full place-items-center text-xl">✂</span>
+                        )}
+                      </div>
+                      <div>
+                        <strong className="block">{item.name}</strong>
+                        <span className="mt-1 block text-xs text-muted">
+                          {serviceCategoryLabels[item.category?.name ?? ""] ?? item.category?.name ?? "Chưa phân loại"}
+                        </span>
+                      </div>
+                    </div>
                   </td>
                   <td className="px-4 py-4 font-bold">{providerMoney.format(item.price)}</td>
                   <td className="px-4 py-4 text-sm">{item.duration} phút</td>
@@ -218,12 +236,11 @@ export function ProviderServicesPage() {
             </label>
             <label className="text-sm font-bold">
               Giá (VND) *
-              <Input
+              <MoneyInput
                 className="mt-2"
-                type="number"
                 min={0}
                 value={draft.price}
-                onChange={(event) => setDraft({ ...draft, price: Number(event.target.value) })}
+                onValueChange={(price) => setDraft({ ...draft, price })}
               />
             </label>
             <label className="text-sm font-bold">
@@ -244,12 +261,19 @@ export function ProviderServicesPage() {
                 onChange={(event) => setDraft({ ...draft, description: event.target.value })}
               />
             </label>
+            <div className="md:col-span-2">
+              <ServiceImageUpload
+                imageUrls={draft.imageUrls}
+                onChange={(imageUrls) => setDraft({ ...draft, imageUrls })}
+                onUploadingChange={setImageUploading}
+              />
+            </div>
             <div className="flex justify-end gap-2 md:col-span-2">
               <Button variant="outline" onClick={closeForm}>
                 Hủy
               </Button>
               <Button
-                disabled={!draft.name.trim() || draft.price < 0 || draft.duration <= 0 || save.isLoading}
+                disabled={!draft.name.trim() || draft.price < 0 || draft.duration <= 0 || save.isLoading || imageUploading}
                 onClick={() =>
                   save.mutate(
                     {
@@ -260,6 +284,7 @@ export function ProviderServicesPage() {
                         price: draft.price,
                         duration: draft.duration,
                         category: draft.category,
+                        imageUrls: draft.imageUrls,
                       },
                     },
                     {
@@ -275,7 +300,9 @@ export function ProviderServicesPage() {
                   )
                 }
               >
-                {save.isLoading
+                {imageUploading
+                  ? "Đang tải ảnh..."
+                  : save.isLoading
                   ? "Đang lưu..."
                   : editingService
                     ? "Cập nhật dịch vụ"
@@ -302,6 +329,20 @@ export function ProviderServicesPage() {
                 <ProviderBadge value={serviceStatusLabel(detailService)} />
               </div>
             </div>
+
+            {detailService.imageUrls?.length ? (
+              <div>
+                <p className="mb-3 text-xs font-extrabold uppercase text-subtle">Hình ảnh dịch vụ</p>
+                <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                  {detailService.imageUrls.map((url, index) => (
+                    <a className="aspect-[4/3] overflow-hidden rounded-2xl bg-surface-muted" href={url} target="_blank" rel="noreferrer" key={`${url}-${index}`}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img className="h-full w-full object-cover transition hover:scale-105" src={url} alt={`Ảnh dịch vụ ${index + 1}`} />
+                    </a>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             <dl className="grid gap-3 md:grid-cols-2">
               <ServiceDetail label="Giá" value={providerMoney.format(detailService.price)} />

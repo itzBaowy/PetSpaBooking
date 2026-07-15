@@ -22,16 +22,16 @@ import {
 } from "../queries";
 import { useProviderChatSocket } from "../use-provider-chat-socket";
 
-export function ProviderChatPage() {
+export function ProviderChatPage({ requestedThreadId }: { requestedThreadId?: string }) {
   const threadsQuery = useProviderChatThreads({ page: 1, pageSize: 50 });
-  const [selectedThreadId, setSelectedThreadId] = useState<string | undefined>();
+  const [selectedThreadId, setSelectedThreadId] = useState<string | undefined>(requestedThreadId);
   const send = useSendProviderChatMessage();
   const markRead = useMarkProviderChatRead();
   const threads = useMemo(
     () => sortByDateDesc(threadsQuery.data?.items ?? [], (thread) => thread.lastMessageAt),
     [threadsQuery.data?.items],
   );
-  const activeThreadId = selectedThreadId ?? threads[0]?.id;
+  const activeThreadId = selectedThreadId ?? requestedThreadId ?? threads[0]?.id;
   const { typingThreadId } = useProviderChatSocket(activeThreadId);
   const messagesQuery = useProviderChatMessages(activeThreadId);
   const messages = useMemo(
@@ -52,6 +52,10 @@ export function ProviderChatPage() {
     () => threads.find((thread) => thread.id === activeThreadId),
     [activeThreadId, threads],
   );
+
+  useEffect(() => {
+    if (requestedThreadId) setSelectedThreadId(requestedThreadId);
+  }, [requestedThreadId]);
 
   useEffect(() => {
     if (activeThreadId) markRead.mutate(activeThreadId);

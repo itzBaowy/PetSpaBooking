@@ -146,6 +146,39 @@ body {
   color: var(--brand);
 }
 
+@keyframes toast-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(24px, -8px, 0) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@keyframes toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+.toast-enter {
+  animation: toast-enter 220ms ease-out both;
+}
+
+.toast-progress {
+  animation-name: toast-progress;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast-enter,
+  .toast-progress {
+    animation: none;
+  }
+}
+
 /* Compatibility layer for legacy utility classes while screens migrate to tokens. */
 .dark
   :where(

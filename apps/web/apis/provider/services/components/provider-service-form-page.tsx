@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input, Textarea } from "@/components/ui/input";
+import { MoneyInput } from "@/components/ui/money-input";
+import { ServiceImageUpload } from "./service-image-upload";
 import { useToast } from "@/components/ui/feedback-provider";
 import {
   ProviderError,
@@ -18,6 +20,7 @@ const categories = ["GROOMING", "SPA", "BOARDING", "TRAINING", "VETERINARY", "OT
 export function ProviderServiceFormPage({ serviceId }: { serviceId?: string }) {
   const services = useProviderServices();
   const save = useSaveProviderService();
+  const [imageUploading, setImageUploading] = useState(false);
   const { showToast } = useToast();
   const existing = useMemo(
     () => services.data?.items.find((item) => item.id === serviceId),
@@ -29,6 +32,7 @@ export function ProviderServiceFormPage({ serviceId }: { serviceId?: string }) {
     price: number;
     duration: number;
     category: string;
+    imageUrls: string[];
   } | null>(null);
 
   if (services.isLoading) return <ProviderLoading />;
@@ -50,12 +54,14 @@ export function ProviderServiceFormPage({ serviceId }: { serviceId?: string }) {
     price: number;
     duration: number;
     category: string;
+    imageUrls: string[];
   } = draft ?? {
     name: existing?.name ?? "",
     description: existing?.description ?? "",
     price: existing?.price ?? 0,
     duration: existing?.duration ?? 30,
     category: existing?.category?.name ?? "OTHER",
+    imageUrls: existing?.imageUrls ?? [],
   };
   const update = (patch: Partial<typeof form>) => setDraft({ ...form, ...patch });
   const invalid = !form.name.trim() || form.price < 0 || form.duration <= 0;
@@ -87,12 +93,11 @@ export function ProviderServiceFormPage({ serviceId }: { serviceId?: string }) {
         </label>
         <label className="text-sm font-bold">
           Giá (VND) *
-          <Input
+          <MoneyInput
             className="mt-2"
-            type="number"
             min={0}
             value={form.price}
-            onChange={(event) => update({ price: Number(event.target.value) })}
+            onValueChange={(price) => update({ price })}
           />
         </label>
         <label className="text-sm font-bold">
@@ -113,9 +118,16 @@ export function ProviderServiceFormPage({ serviceId }: { serviceId?: string }) {
             onChange={(event) => update({ description: event.target.value })}
           />
         </label>
+        <div className="md:col-span-2">
+          <ServiceImageUpload
+            imageUrls={form.imageUrls}
+            onChange={(imageUrls) => update({ imageUrls })}
+            onUploadingChange={setImageUploading}
+          />
+        </div>
         <div className="flex flex-wrap gap-3 md:col-span-2">
           <Button
-            disabled={invalid || save.isLoading}
+            disabled={invalid || save.isLoading || imageUploading}
             onClick={() =>
               save.mutate(
                 {
@@ -126,6 +138,7 @@ export function ProviderServiceFormPage({ serviceId }: { serviceId?: string }) {
                     price: form.price,
                     duration: form.duration,
                     category: form.category,
+                    imageUrls: form.imageUrls,
                   },
                 },
                 {
@@ -136,7 +149,7 @@ export function ProviderServiceFormPage({ serviceId }: { serviceId?: string }) {
               )
             }
           >
-            {save.isLoading ? "Đang lưu..." : "Lưu dịch vụ"}
+            {imageUploading ? "Đang tải ảnh..." : save.isLoading ? "Đang lưu..." : "Lưu dịch vụ"}
           </Button>
           <Link
             className="inline-flex min-h-11 items-center rounded-xl border border-border-muted px-5 text-sm font-bold hover:bg-surface-muted"

@@ -3,7 +3,7 @@
 import { textValue, type AdminEntity } from "@/apis/admin/supported-api";
 import { displayValue } from "@/components/admin/shared";
 import { Dialog } from "@/components/ui/dialog";
-import { formatNotificationType, formatScreen } from "./notification-labels";
+import { formatNotificationTitle, formatNotificationType, formatScreen } from "./notification-labels";
 import type { DashboardTopbarRole } from "./types";
 
 function getNotificationData(notification: AdminEntity) {
@@ -31,7 +31,9 @@ export function NotificationDetailModal({
       <div className="space-y-4">
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-muted">{formatNotificationType(notification.type)}</p>
-          <h3 className="mt-1 text-xl font-extrabold">{textValue(notification.title, "Không có tiêu đề")}</h3>
+          <h3 className="mt-1 text-xl font-extrabold">
+            {formatNotificationTitle(notification.type, notification.title)}
+          </h3>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-muted">{textValue(notification.message, "Không có nội dung")}</p>
         </div>
 

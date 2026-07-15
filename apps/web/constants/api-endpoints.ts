@@ -32,6 +32,7 @@ export const API_ENDPOINTS = {
   SERVICES: {
     LIST: "/services",
     CREATE: "/services",
+    UPLOAD_IMAGES: "/services/images",
     UPDATE: (id: string) => `/services/${id}`,
     DELETE: (id: string) => `/services/${id}`,
     MY: "/services/my",
