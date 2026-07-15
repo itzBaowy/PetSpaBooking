@@ -42,8 +42,9 @@ export function ProviderVerificationForm() {
 
   // Admin hoặc Provider đã VERIFIED thì báo đã có quyền
   if (
-    role === "ADMIN" ||
-    (role === "PROVIDER" && providerStatus === "VERIFIED")
+    accessToken &&
+    (role === "ADMIN" ||
+      (role === "PROVIDER" && providerStatus === "VERIFIED"))
   ) {
     return (
       <ProviderAlreadyPrivilegedState
