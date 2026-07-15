@@ -37,6 +37,17 @@ provider_demo_30
 
 Các tài khoản demo provider này đều dùng password `Test@123`.
 
+Seed còn có 12 customer demo đầy đủ họ tên, email, số điện thoại, avatar và location:
+
+```txt
+customer_demo_01
+customer_demo_02
+...
+customer_demo_12
+```
+
+Các customer demo cũng dùng password `Test@123`. Mỗi provider đang `VERIFIED` có 4 dịch vụ lấy từ catalog đa dạng và ít nhất 5 review từ 5 customer demo khác nhau; mỗi review gắn với một booking `COMPLETED` thật. `provider_test` cũng có avatar, cover, ảnh dịch vụ và các review bổ sung để FE kiểm tra provider detail.
+
 Ghi chú cho dev: từ thời điểm này, mỗi tính năng API mới nên được cập nhật vào file này trong cùng lượt triển khai để FE có thể đọc luồng và fetch đúng contract.
 
 ## 1. Response Và Auth

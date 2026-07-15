@@ -1,4 +1,6 @@
 import bcrypt from "bcrypt";
+import { ObjectId } from "mongodb";
+import type { Prisma } from "../generated/prisma/client.ts";
 import prisma from "../connect.prisma.ts";
 
 const TEST_PASSWORD = "Test@123";
@@ -89,6 +91,164 @@ const demoDistricts = [
   "Thành phố Thủ Đức",
 ] as const;
 
+const demoServiceCatalog = [
+  {
+    name: "Tắm thơm và sấy tạo kiểu",
+    description: "Tắm bằng sản phẩm dịu nhẹ, sấy khô và chải tạo kiểu theo giống.",
+    longDescription: "Quy trình gồm kiểm tra da lông, tắm hai bước, vệ sinh tai, sấy khô và chải hoàn thiện.",
+    price: 180000,
+    duration: 60,
+    category: "GROOMING",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Làm sạch da lông", "Khử mùi dịu nhẹ", "Lông khô và mềm"],
+    imageUrl: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Cắt tỉa lông theo giống",
+    description: "Tư vấn kiểu lông và cắt tỉa phù hợp với giống, thể trạng thú cưng.",
+    longDescription: "Groomer trao đổi kiểu mong muốn, xử lý lông rối, cắt tạo hình và hoàn thiện vùng mặt, chân, đuôi.",
+    price: 320000,
+    duration: 90,
+    category: "GROOMING",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Kiểu lông cân đối", "Giảm lông rối", "Dễ chăm sóc tại nhà"],
+    imageUrl: "https://images.unsplash.com/photo-1516734212186-a967f81ad0d7?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Spa thảo mộc thư giãn",
+    description: "Liệu trình ngâm thảo mộc, massage và dưỡng lông cho thú cưng.",
+    longDescription: "Liệu trình spa sử dụng sản phẩm phù hợp da nhạy cảm, kết hợp massage nhẹ và dưỡng ẩm bộ lông.",
+    price: 390000,
+    duration: 100,
+    category: "SPA",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Thư giãn", "Dưỡng ẩm da", "Lông bóng mượt"],
+    imageUrl: "https://images.unsplash.com/photo-1596492784531-6e6eb5ea9993?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Vệ sinh tai, móng và tuyến hôi",
+    description: "Gói chăm sóc vệ sinh cơ bản dành cho chó mèo.",
+    longDescription: "Nhân viên kiểm tra và vệ sinh tai, cắt mài móng, tỉa lông bàn chân và xử lý tuyến hôi an toàn.",
+    price: 120000,
+    duration: 35,
+    category: "SPA",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Móng gọn sạch", "Tai được vệ sinh", "Giảm mùi khó chịu"],
+    imageUrl: "https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Khách sạn thú cưng trong ngày",
+    description: "Chăm sóc và lưu trú ban ngày trong khu vực sạch, có giám sát.",
+    longDescription: "Thú cưng được bố trí khu riêng, theo dõi ăn uống, vận động và cập nhật hình ảnh cho chủ nuôi.",
+    price: 280000,
+    duration: 480,
+    category: "BOARDING",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Có người giám sát", "Cập nhật tình trạng", "Không gian vệ sinh"],
+    imageUrl: "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Lưu trú qua đêm",
+    description: "Phòng lưu trú qua đêm có theo dõi và lịch sinh hoạt riêng.",
+    longDescription: "Bao gồm chỗ ngủ riêng, cho ăn theo hướng dẫn, vệ sinh, vận động và báo cáo tình trạng mỗi ngày.",
+    price: 450000,
+    duration: 720,
+    category: "BOARDING",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Theo dõi qua đêm", "Chăm sóc theo lịch", "Báo cáo hằng ngày"],
+    imageUrl: "https://images.unsplash.com/photo-1525253013412-55c1a69a5738?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Huấn luyện vâng lời cơ bản",
+    description: "Hướng dẫn các lệnh ngồi, chờ, đi cạnh và gọi quay lại.",
+    longDescription: "Buổi học một kèm một sử dụng phương pháp củng cố tích cực và hướng dẫn chủ nuôi luyện tập tại nhà.",
+    price: 350000,
+    duration: 75,
+    category: "TRAINING",
+    targetPets: ["DOG"],
+    benefits: ["Tăng khả năng tập trung", "Cải thiện giao tiếp", "Có bài tập tại nhà"],
+    imageUrl: "https://images.unsplash.com/photo-1558788353-f76d92427f16?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Điều chỉnh hành vi chó con",
+    description: "Đánh giá và xây dựng thói quen sinh hoạt phù hợp cho chó con.",
+    longDescription: "Chuyên viên hướng dẫn đi vệ sinh đúng chỗ, kiểm soát cắn phá và làm quen môi trường xã hội.",
+    price: 420000,
+    duration: 90,
+    category: "TRAINING",
+    targetPets: ["DOG"],
+    benefits: ["Nề nếp sinh hoạt", "Giảm cắn phá", "Tự tin hơn"],
+    imageUrl: "https://images.unsplash.com/photo-1537151608828-ea2b11777ee8?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Khám sức khỏe tổng quát",
+    description: "Khám lâm sàng và tư vấn dinh dưỡng, tiêm phòng định kỳ.",
+    longDescription: "Bác sĩ kiểm tra thể trạng, da lông, tai mắt, tim phổi và đưa ra khuyến nghị chăm sóc phù hợp.",
+    price: 220000,
+    duration: 45,
+    category: "VETERINARY",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Phát hiện sớm bất thường", "Tư vấn dinh dưỡng", "Theo dõi sức khỏe"],
+    imageUrl: "https://images.unsplash.com/photo-1576201836106-db1758fd1c97?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Tiêm phòng định kỳ",
+    description: "Kiểm tra trước tiêm và thực hiện vaccine theo lịch chó mèo.",
+    longDescription: "Bác sĩ rà soát lịch sử vaccine, khám sàng lọc, tiêm và hướng dẫn theo dõi phản ứng sau tiêm.",
+    price: 260000,
+    duration: 40,
+    category: "VETERINARY",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Đúng lịch vaccine", "Khám sàng lọc", "Hướng dẫn sau tiêm"],
+    imageUrl: "https://images.unsplash.com/photo-1628009368231-7bb7cfcb0def?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Chăm sóc răng miệng",
+    description: "Vệ sinh răng miệng cơ bản và hướng dẫn chăm sóc tại nhà.",
+    longDescription: "Kiểm tra khoang miệng, làm sạch mảng bám nhẹ và tư vấn sản phẩm vệ sinh phù hợp.",
+    price: 240000,
+    duration: 50,
+    category: "OTHER",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Giảm mùi miệng", "Hạn chế mảng bám", "Có hướng dẫn tại nhà"],
+    imageUrl: "https://images.unsplash.com/photo-1601758124510-52d02ddb7cbd?auto=format&fit=crop&w=1000&q=80",
+  },
+  {
+    name: "Đưa đón thú cưng nội thành",
+    description: "Đưa đón thú cưng bằng phương tiện chuyên dụng trong khu vực nội thành.",
+    longDescription: "Tài xế xác nhận thời gian, sử dụng lồng hoặc dây an toàn phù hợp và cập nhật khi đón, khi giao.",
+    price: 150000,
+    duration: 60,
+    category: "OTHER",
+    targetPets: ["DOG", "CAT"],
+    benefits: ["Lịch đón rõ ràng", "Phương tiện an toàn", "Cập nhật hành trình"],
+    imageUrl: "https://images.unsplash.com/photo-1601758174114-e711c0cbaa69?auto=format&fit=crop&w=1000&q=80",
+  },
+] as const;
+
+const demoCustomerProfiles = [
+  ["customer_demo_01", "Nguyễn Minh Anh", "Quận 1", "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_02", "Trần Gia Bảo", "Quận 3", "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_03", "Lê Hoàng Yến", "Quận 7", "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_04", "Phạm Quốc Huy", "Quận Bình Thạnh", "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_05", "Võ Thanh Thảo", "Quận Phú Nhuận", "https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_06", "Đặng Tuấn Kiệt", "Thành phố Thủ Đức", "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_07", "Bùi Ngọc Mai", "Quận 10", "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_08", "Đỗ Đức Long", "Quận 5", "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_09", "Hồ Khánh Linh", "Quận 7", "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_10", "Dương Nhật Nam", "Quận 1", "https://images.unsplash.com/photo-1501196354995-cbb51c65aaea?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_11", "Ngô Bảo Trâm", "Quận 3", "https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=400&q=80"],
+  ["customer_demo_12", "Lý Minh Khang", "Quận Bình Thạnh", "https://images.unsplash.com/photo-1504257432389-52343af06ae3?auto=format&fit=crop&w=400&q=80"],
+].map(([userName, fullName, district, avatar], index) => ({
+  userName,
+  fullName,
+  district,
+  location: `${district}, TP. Hồ Chí Minh`,
+  avatar,
+  email: `${userName.split("_").join(".")}@petlink.local`,
+  phone: `092200${String(index + 1).padStart(4, "0")}`,
+}));
+
 const demoProviders = demoProviderBusinessNames.map((businessName, index) => {
   const number = index + 1;
   const serial = String(number).padStart(2, "0");
@@ -142,6 +302,15 @@ const testUsers = [
     role: "PROVIDER" as const,
     status: "ACTIVE" as const,
   })),
+  ...demoCustomerProfiles.map((customer) => ({
+    userName: customer.userName,
+    email: customer.email,
+    phone: customer.phone,
+    fullName: customer.fullName,
+    avatar: customer.avatar,
+    role: "CUSTOMER" as const,
+    status: "ACTIVE" as const,
+  })),
 ] as const;
 
 // ─── Provider definitions ────────────────────────────────────────────────────
@@ -156,6 +325,13 @@ const providerCases = [
     depositBalance: 500000,
     walletBalance: 1200000,
     adminNote: null,
+    description: "PetLink Verified Spa chuyên grooming, spa thư giãn và chăm sóc sức khỏe toàn diện cho chó mèo.",
+    avatarUrl: "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&w=500&q=80",
+    coverImageUrl: "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1400&q=80",
+    serviceImageUrls: [
+      "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&w=1000&q=80",
+      "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&w=1000&q=80",
+    ],
   },
   {
     userName: "provider_pending",
@@ -224,6 +400,9 @@ async function main() {
   const password = await bcrypt.hash(TEST_PASSWORD, 10);
   const usersByName = new Map<string, { id: string }>();
   const customersByName = new Map<string, { id: string }>();
+  const customerLocationByName = new Map(
+    demoCustomerProfiles.map((customer) => [customer.userName, customer.location]),
+  );
 
   // ── 0. Teardown (ordered: leaf → root) ────────────────────────────────────
   console.log("▶ Cleaning old seed data...");
@@ -247,19 +426,29 @@ async function main() {
   // ── 1. Users ────────────────────────────────────────────────────────────────
   console.log("▶ Seeding users...");
   for (const user of testUsers) {
+    const avatar = "avatar" in user ? user.avatar : undefined;
     const saved = await prisma.users.upsert({
       where: { userName: user.userName },
-      update: { email: user.email, phone: user.phone, fullName: user.fullName, password, role: user.role, status: user.status },
+      update: {
+        email: user.email,
+        phone: user.phone,
+        fullName: user.fullName,
+        password,
+        role: user.role,
+        status: user.status,
+        ...(avatar ? { avatar } : {}),
+      },
       create: { ...user, password },
       select: { id: true },
     });
     usersByName.set(user.userName, saved);
 
     if (user.role === "CUSTOMER") {
+      const location = customerLocationByName.get(user.userName) ?? "TP. Hồ Chí Minh";
       const customer = await prisma.customers.upsert({
         where: { userId: saved.id },
-        update: {},
-        create: { userId: saved.id, location: "TP. Hồ Chí Minh" },
+        update: { location },
+        create: { userId: saved.id, location },
         select: { id: true },
       });
       customersByName.set(user.userName, customer);
@@ -290,7 +479,7 @@ async function main() {
   console.log("▶ Seeding providers...");
   const providersByName = new Map<string, { id: string }>();
 
-  for (const pc of providerCases) {
+  for (const [providerIndex, pc] of providerCases.entries()) {
     const user = usersByName.get(pc.userName)!;
     const description = "description" in pc
       ? pc.description
@@ -382,37 +571,29 @@ async function main() {
 
     // Services
     await prisma.services.deleteMany({ where: { providerId: provider.id } });
+    const providerServices = Array.from({ length: 4 }, (_, offset) =>
+      demoServiceCatalog[(providerIndex + offset * 3) % demoServiceCatalog.length],
+    );
     await prisma.services.createMany({
-      data: [
-        {
-          providerId: provider.id,
-          name: `${pc.businessName} - Tắm & làm đẹp`,
-          description: "Dịch vụ tắm, cắt tỉa lông và chăm sóc da cho thú cưng.",
-          longDescription: "Dịch vụ tắm và làm đẹp toàn diện cho thú cưng bao gồm tắm bằng sữa tắm chuyên dụng, sấy khô, cắt tỉa lông tạo kiểu, vệ sinh tai và cắt móng.",
-          price: 250000,
-          duration: 60,
-          category: "GROOMING",
-          imageUrls: serviceImageUrls,
-          targetPets: ["DOG", "CAT"],
-          benefits: ["Lông mượt thơm tho", "Sạch ve rận", "Tạo kiểu chuẩn spa"],
-          isActive: true,
-          isHiddenByAdmin: false,
-        },
-        {
-          providerId: provider.id,
-          name: `${pc.businessName} - Tiêm phòng`,
-          description: "Dịch vụ tiêm phòng và tư vấn sức khỏe định kỳ.",
-          longDescription: "Vắc-xin thiết yếu cho chó mèo và kiểm tra sức khỏe tổng quát trước khi tiêm.",
-          price: 180000,
-          duration: 45,
-          category: "VETERINARY",
-          imageUrls: [...serviceImageUrls].reverse(),
-          targetPets: ["DOG", "CAT"],
-          benefits: ["Tăng cường hệ miễn dịch", "Phòng bệnh truyền nhiễm", "Tư vấn miễn phí"],
-          isActive: pc.providerStatus === "VERIFIED",
-          isHiddenByAdmin: false,
-        },
-      ],
+      data: providerServices.map((service, serviceIndex) => ({
+        providerId: provider.id,
+        name: service.name,
+        description: service.description,
+        longDescription: service.longDescription,
+        price: service.price + (providerIndex % 4) * 20000,
+        duration: service.duration,
+        category: service.category,
+        imageUrls: Array.from(
+          new Set([
+            service.imageUrl,
+            serviceImageUrls[serviceIndex % serviceImageUrls.length],
+          ]),
+        ),
+        targetPets: [...service.targetPets],
+        benefits: [...service.benefits],
+        isActive: pc.providerStatus === "VERIFIED",
+        isHiddenByAdmin: false,
+      })),
     });
 
     await prisma.working_hours.deleteMany({
@@ -641,6 +822,122 @@ async function main() {
       },
     ],
   });
+
+  // ── 5.1 Reviews for every verified provider ─────────────────────────────
+  console.log("▶ Seeding provider social-proof reviews...");
+  const reviewCustomers = demoCustomerProfiles.map((profile) => ({
+    profile,
+    customer: customersByName.get(profile.userName)!,
+  }));
+  const verifiedProviderCases = providerCases.filter(
+    (providerCase) => providerCase.providerStatus === "VERIFIED",
+  );
+  const verifiedProviderIds = verifiedProviderCases.map(
+    (providerCase) => providersByName.get(providerCase.userName)!.id,
+  );
+  const reviewServices = await prisma.services.findMany({
+    where: {
+      providerId: { in: verifiedProviderIds },
+      isActive: true,
+    },
+    select: {
+      id: true,
+      providerId: true,
+      price: true,
+      duration: true,
+      imageUrls: true,
+    },
+  });
+  const servicesByProvider = new Map<string, typeof reviewServices>();
+  for (const service of reviewServices) {
+    const providerServices = servicesByProvider.get(service.providerId) ?? [];
+    providerServices.push(service);
+    servicesByProvider.set(service.providerId, providerServices);
+  }
+
+  const reviewComments = [
+    "Nhân viên tư vấn kỹ, bé được chăm sóc nhẹ nhàng và đúng giờ.",
+    "Không gian sạch sẽ, dịch vụ chuyên nghiệp, mình sẽ quay lại.",
+    "Bé về nhà thơm tho, lông mềm và không bị căng thẳng.",
+    "Provider cập nhật tình trạng thường xuyên nên mình rất yên tâm.",
+    "Đặt lịch thuận tiện, tiếp nhận nhanh và kết quả đúng mong đợi.",
+    "Giá hợp lý so với chất lượng, nhân viên thân thiện với thú cưng.",
+    "Quy trình rõ ràng, có dặn dò cách chăm sóc tại nhà rất chi tiết.",
+    "Dịch vụ tốt, chỉ chờ hơi lâu một chút vào giờ cao điểm.",
+  ] as const;
+  const reviewRatings = [5, 5, 4, 5, 4, 5, 3, 4] as const;
+  const socialBookingRows: Prisma.bookingsCreateManyInput[] = [];
+  const socialReviewRows: Prisma.reviewsCreateManyInput[] = [];
+
+  verifiedProviderCases.forEach((providerCase, providerIndex) => {
+    const providerId = providersByName.get(providerCase.userName)!.id;
+    const providerServices = servicesByProvider.get(providerId) ?? [];
+    if (providerServices.length === 0) {
+      throw new Error(`Missing active services for ${providerCase.userName}`);
+    }
+
+    for (let reviewIndex = 0; reviewIndex < 5; reviewIndex += 1) {
+      const reviewer = reviewCustomers[
+        (providerIndex * 3 + reviewIndex) % reviewCustomers.length
+      ];
+      const service = providerServices[reviewIndex % providerServices.length];
+      const bookingId = new ObjectId().toHexString();
+      const appointmentStart = daysAgo(
+        12 + ((providerIndex * 5 + reviewIndex) % 120),
+      );
+      const appointmentEnd = new Date(
+        appointmentStart.getTime() + service.duration * 60 * 1000,
+      );
+      const completedAt = new Date(appointmentEnd.getTime() + 10 * 60 * 60 * 1000);
+      const paymentMethod = reviewIndex % 2 === 0 ? "ONLINE" : "CASH";
+      const commissionAmount = service.price * 0.15;
+
+      socialBookingRows.push({
+        id: bookingId,
+        customerId: reviewer.customer.id,
+        providerId,
+        serviceId: service.id,
+        appointmentStart,
+        appointmentEnd,
+        status: "COMPLETED",
+        paymentMethod,
+        paymentStatus: paymentMethod === "ONLINE" ? "SUCCESS" : "UNPAID",
+        paymentReference:
+          paymentMethod === "ONLINE" ? `seed-review-payment-${bookingId}` : null,
+        paidAt: paymentMethod === "ONLINE" ? appointmentStart : null,
+        totalAmount: service.price,
+        currency: "VND",
+        note: `Seed review booking by ${reviewer.profile.userName}`,
+        confirmedAt: new Date(appointmentStart.getTime() - 60 * 60 * 1000),
+        checkedInAt: appointmentStart,
+        checkedOutAt: appointmentEnd,
+        completedAt,
+        commissionAmount,
+        providerEarning: service.price - commissionAmount,
+        walletCommissionAmount: paymentMethod === "CASH" ? commissionAmount : 0,
+        depositCommissionAmount: 0,
+        commissionProcessedAt: completedAt,
+        createAt: new Date(appointmentStart.getTime() - 24 * 60 * 60 * 1000),
+      });
+
+      socialReviewRows.push({
+        bookingId,
+        providerId,
+        customerId: reviewer.customer.id,
+        rating: reviewRatings[(providerIndex + reviewIndex) % reviewRatings.length],
+        comment:
+          reviewComments[(providerIndex * 2 + reviewIndex) % reviewComments.length],
+        images:
+          reviewIndex % 3 === 0 && service.imageUrls[0]
+            ? [service.imageUrls[0]]
+            : [],
+        createAt: new Date(completedAt.getTime() + 2 * 60 * 60 * 1000),
+      });
+    }
+  });
+
+  await prisma.bookings.createMany({ data: socialBookingRows });
+  await prisma.reviews.createMany({ data: socialReviewRows });
 
   // ── 6. Disputes ───────────────────────────────────────────────────────────
   console.log("▶ Seeding disputes...");
