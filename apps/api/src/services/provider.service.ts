@@ -34,6 +34,11 @@ const REQUIRED_PROVIDER_DOC_TYPES = [
 
 type ProviderStatus = (typeof VALID_PROVIDER_STATUSES)[number];
 type DocType = (typeof VALID_DOC_TYPES)[number];
+type ProviderProfileImageKind = "avatar" | "cover";
+type ProviderProfileImageUpload = {
+    publicId: string;
+    secureUrl: string;
+};
 
 // ─── Select fields ────────────────────────────────────────────────────────────
 const PROVIDER_SELECT = {
@@ -116,6 +121,97 @@ async function ensureUniqueSlug(base: string): Promise<string> {
         counter++;
     }
     return slug;
+}
+
+function getProviderProfileImageFiles(req: Request) {
+    const files = req.files as
+        | Record<string, Express.Multer.File[]>
+        | Express.Multer.File[]
+        | undefined;
+
+    if (!files || Array.isArray(files)) {
+        return { avatar: null, cover: null };
+    }
+
+    return {
+        avatar: files.avatar?.[0] ?? null,
+        cover: files.cover?.[0] ?? null,
+    };
+}
+
+function getProviderImageFolder(kind: ProviderProfileImageKind) {
+    return kind === "avatar"
+        ? "petlink/providers/avatars"
+        : "petlink/providers/covers";
+}
+
+function getCloudinaryPublicIdFromUrl(
+    imageUrl: string | null | undefined,
+    folder: string,
+) {
+    if (!imageUrl) return null;
+
+    let path = imageUrl;
+    try {
+        if (imageUrl.startsWith("http://") || imageUrl.startsWith("https://")) {
+            const pathname = new URL(imageUrl).pathname;
+            const uploadIndex = pathname.indexOf("/upload/");
+            path =
+                uploadIndex >= 0
+                    ? pathname.slice(uploadIndex + "/upload/".length)
+                    : pathname;
+            path = path.replace(/^v\d+\//, "");
+        }
+    } catch {
+        path = imageUrl;
+    }
+
+    path = path.replace(/^\/+/, "").replace(/^v\d+\//, "");
+    if (!path.startsWith(`${folder}/`)) return null;
+
+    return path.replace(/\.[^/.]+$/, "");
+}
+
+async function uploadProviderProfileImage(
+    file: Express.Multer.File,
+    kind: ProviderProfileImageKind,
+) {
+    return new Promise<ProviderProfileImageUpload>((resolve, reject) => {
+        cloudinary.uploader
+            .upload_stream(
+                {
+                    folder: getProviderImageFolder(kind),
+                    resource_type: "image",
+                    use_filename: true,
+                    unique_filename: true,
+                },
+                (error, result) => {
+                    if (error || !result) {
+                        reject(error ?? new Error("Cloudinary upload failed"));
+                        return;
+                    }
+
+                    resolve({
+                        publicId: result.public_id,
+                        secureUrl: result.secure_url,
+                    });
+                },
+            )
+            .end(file.buffer);
+    });
+}
+
+function destroyCloudinaryImage(publicId: string | null) {
+    if (!publicId) return;
+
+    cloudinary.uploader.destroy(publicId, { resource_type: "image" }).catch(
+        (error: unknown) => {
+            console.error(
+                "[providerProfileImage] Failed to destroy old image:",
+                error,
+            );
+        },
+    );
 }
 
 // ─── Service ──────────────────────────────────────────────────────────────────
@@ -297,6 +393,88 @@ export const providerService = {
     },
 
     // ── Upload verification documents ─────────────────────────────────────────
+    async uploadProfileImages(req: Request) {
+        const userId = getRequesterId(req);
+
+        const provider = await prisma.providers.findUnique({ where: { userId } });
+        if (!provider) {
+            throw new NotFoundException("Provider profile not found");
+        }
+
+        const files = getProviderProfileImageFiles(req);
+        if (!files.avatar && !files.cover) {
+            throw new BadRequestException(
+                "avatar or cover image is required. Use multipart fields avatar and/or cover.",
+            );
+        }
+
+        const uploaded: Partial<
+            Record<ProviderProfileImageKind, ProviderProfileImageUpload>
+        > = {};
+
+        try {
+            if (files.avatar) {
+                uploaded.avatar = await uploadProviderProfileImage(
+                    files.avatar,
+                    "avatar",
+                );
+            }
+
+            if (files.cover) {
+                uploaded.cover = await uploadProviderProfileImage(
+                    files.cover,
+                    "cover",
+                );
+            }
+
+            const updated = await prisma.providers.update({
+                where: { userId },
+                data: {
+                    ...(uploaded.avatar
+                        ? { avatarUrl: uploaded.avatar.secureUrl }
+                        : {}),
+                    ...(uploaded.cover
+                        ? { coverImageUrl: uploaded.cover.secureUrl }
+                        : {}),
+                },
+                select: PROVIDER_SELECT,
+            });
+
+            if (uploaded.avatar) {
+                destroyCloudinaryImage(
+                    getCloudinaryPublicIdFromUrl(
+                        provider.avatarUrl,
+                        getProviderImageFolder("avatar"),
+                    ),
+                );
+            }
+
+            if (uploaded.cover) {
+                destroyCloudinaryImage(
+                    getCloudinaryPublicIdFromUrl(
+                        provider.coverImageUrl,
+                        getProviderImageFolder("cover"),
+                    ),
+                );
+            }
+
+            return {
+                provider: updated,
+                avatarUrl: updated.avatarUrl,
+                coverImageUrl: updated.coverImageUrl,
+            };
+        } catch (error) {
+            await Promise.allSettled(
+                Object.values(uploaded).map((image) =>
+                    cloudinary.uploader.destroy(image.publicId, {
+                        resource_type: "image",
+                    }),
+                ),
+            );
+            throw error;
+        }
+    },
+
     async uploadDocument(req: Request) {
         const userId = getRequesterId(req);
 

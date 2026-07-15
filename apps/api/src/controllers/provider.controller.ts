@@ -27,6 +27,14 @@ export const providerController = {
         } catch (error) { next(error); }
     },
 
+    async uploadProfileImages(req: Request, res: Response, next: NextFunction): Promise<void> {
+        try {
+            const result = await providerService.uploadProfileImages(req);
+            const response = responseSuccess(result, "Provider profile images uploaded successfully", 201);
+            res.status(response.statusCode).json(response);
+        } catch (error) { next(error); }
+    },
+
     async uploadDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
         try {
             const result = await providerService.uploadDocument(req);

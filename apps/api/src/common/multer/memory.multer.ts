@@ -76,3 +76,17 @@ export const uploadServiceImages: RequestHandler = (req, res, next) => {
     next();
   });
 };
+
+export const uploadProviderProfileImages: RequestHandler = (req, res, next) => {
+  uploadMemory.fields([
+    { name: "avatar", maxCount: 1 },
+    { name: "cover", maxCount: 1 },
+  ])(req, res, (error) => {
+    if (error) {
+      next(new BadRequestException(error.message));
+      return;
+    }
+
+    next();
+  });
+};
